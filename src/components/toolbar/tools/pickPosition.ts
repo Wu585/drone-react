@@ -1,0 +1,45 @@
+import {clearAll} from "@/components/toolbar/tools/index.ts";
+
+let handler: any;
+
+export const clearPickPosition = () => {
+  handler && handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK);
+};
+
+const createCallback = (onFinish?: ({longitude, latitude}: {
+  longitude: number,
+  latitude: number
+}) => void) => (e: any) => {
+  viewer.scene.pickPositionAsync(e.position).then((position: any) => {
+    //将笛卡尔坐标转化为经纬度坐标
+    const cartographic = Cesium.Cartographic.fromCartesian(position);
+    const longitude = Cesium.Math.toDegrees(cartographic.longitude);
+    const latitude = Cesium.Math.toDegrees(cartographic.latitude);
+    let height = cartographic.height;
+    if (height < 0) {
+      height = 0;
+    }
+    const text = `x:${longitude}\ny:${latitude}\nh:${height}`;
+    // 创建文本元素
+    const textElement = document.createElement("textarea");
+    textElement.value = text;
+    document.body.appendChild(textElement);
+
+    // 选择文本并复制到剪贴板
+    textElement.select();
+    document.execCommand("copy");
+    // alert(text);
+    // 调用回调函数
+    onFinish?.({longitude, latitude});
+  });
+};
+
+export const pickPosition = (onFinish?: ({longitude, latitude}: {
+  longitude: number,
+  latitude: number
+}) => void, isClear = true) => {
+  isClear && clearAll();
+  handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+  handler.setInputAction(createCallback(onFinish), Cesium.ScreenSpaceEventType.LEFT_CLICK);
+};

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="23px" height="23px" viewBox="0 0 23 23" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>编组 2</title>
+    <g id="页面-5" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="视点管理" transform="translate(-1219.000000, -641.000000)">
+            <g id="弹窗" transform="translate(960.000000, 575.000000)">
+                <g id="编组-33" transform="translate(22.000000, 65.000000)">
+                    <g id="编组-2" transform="translate(237.000000, 1.000000)">
+                        <circle id="椭圆形" stroke="#FFFFFF" cx="11.5" cy="11.5" r="11"></circle>
+                        <g id="飞行漫游" transform="translate(3.631579, 4.236842)" fill-rule="nonzero">
+                            <rect id="矩形" fill="#000000" opacity="0" x="0" y="0" width="13.9210526" height="13.9210526"></rect>
+                            <polygon id="路径" fill="#FFFFFF" points="1.21052632 7.96929484 13.3157895 1.81578947 10.1180484 12.1052632 6.55502604 10.4987499 5.04460779 12.1052632 5.04460779 9.92498749 11.8053712 3.19286188 3.72786304 9.23647798 1.21053983 7.96929484"></polygon>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

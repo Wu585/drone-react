@@ -1,0 +1,138 @@
+/** @type {import('tailwindcss').Config} */
+const plugin = require('tailwindcss/plugin')
+
+module.exports = {
+  darkMode: ["class"],
+  content: [
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
+  ],
+  prefix: "",
+  theme: {
+    backgroundSize: {
+      'auto': 'auto',
+      'cover': 'cover',
+      'contain': 'contain',
+      '100': '100% 100%',
+    },
+    fontFamily: {
+      fzdh: ['FZZhengHeiS-EB-GB'],
+      sansCjk: ['SansCJK'],
+      EER: ['EER'],
+      DINAlternate: ['DINAlternate'],
+      Alimama: ['Alimama'],
+      NotoCJK: ['NotoCJK'],
+      Pingfang: ['Pingfang'],
+    },
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: {height: "0"},
+          to: {height: "var(--radix-accordion-content-height)"},
+        },
+        "accordion-up": {
+          from: {height: "var(--radix-accordion-content-height)"},
+          to: {height: "0"},
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      backgroundImage: {
+        'home': "url('@/assets/home/home-bg.png')",
+        'zt': "url('@/assets/home/zt-bg.png')",
+        'header-bg': "url('@/assets/images/header-bg.png')",
+        'children-menu': "url('@/assets/images/children-menu-bg.png')",
+        'header-menu-active': "url('@/assets/images/header-menu-active-bg.png')",
+        'display-item-title': "url('@/assets/images/display-item-title-bg.png')",
+        'add-facility': "url('@/assets/images/add-facility-bg.png')",
+        'bicycle-detail-bg': "url('@/assets/images/bicycle-detail-bg.png')",
+        'rwsjzs-bg': "url('@/assets/images/rwsjzs-bg.png')",
+        'facilities-panel': "url('@/assets/images/facilities-panel-bg.png')",
+        'facility-item': "url('@/assets/images/facility-item-bg.png')",
+        'aqi': "url('@/assets/images/aqi-bg.png')",
+        'wuran-item': "url('@/assets/images/wuran-item-bg.png')",
+        'side-container': "url('@/assets/images/side-container-bg.png')",
+        'weather': "url('@/assets/images/weather-bg.png')",
+        'login': "url('@/assets/images/login-bg.png')",
+        'login-module': "url('@/assets/images/login-module-bg.png')",
+        'rain-time': "url('@/assets/images/rain-time.png')",
+        'shared-dock-header': "url('@/assets/images/shared-dock/header-bg.png')",
+        'shared-dock-page': "url('@/assets/images/shared-dock/page-bg.png')",
+        'top-business': "url('@/assets/images/bg-top-business.png')",
+        'add-facility-icon': "url('@/assets/images/add-facility-icon-bg.png')",
+        'add-facility-property': "url('@/assets/images/add-facility-property-bg.png')",
+        'supplies-panel': "url('@/assets/images/supplies-panel-bg.png')",
+        'hgyq-header': "url('@/assets/images/hgyq/bg-header.png')",
+        'hgyq-header-menu-active': "url('@/assets/images/hgyq/bg-menu-active.png')",
+        'login-panel': "url('@/assets/images/hgyq/bg-login-panel.png')",
+        'center': "url('@/assets/images/hgyq/bg-center.png')",
+      }
+    },
+  },
+  plugins: [
+    require("tailwindcss-animate"),
+    plugin(function ({addUtilities}) {
+      addUtilities({
+        '.content-center': {
+          'display': "flex",
+          'justify-content': 'center',
+          'align-items': 'center',
+        },
+        '.bg-full-size': {
+          'backgroundSize': "100% 100%",
+        },
+      })
+    })
+  ],
+}
