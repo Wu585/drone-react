@@ -1,5 +1,8 @@
-import axios, {AxiosError, AxiosInstance, AxiosRequestConfig} from "axios";
+import axios, {AxiosInstance, AxiosRequestConfig, AxiosResponse} from "axios";
 import {useNavigate} from "react-router-dom";
+import {ELocalStorageKey} from "@/types/enum.ts";
+import {CURRENT_CONFIG} from "@/lib/config.ts";
+import {toast} from "@/components/ui/use-toast.ts";
 
 export class Http {
   instance: AxiosInstance;
@@ -7,7 +10,6 @@ export class Http {
   constructor(baseURL: string) {
     this.instance = axios.create({
       baseURL,
-      withCredentials: true,
     });
   }
 
@@ -37,61 +39,65 @@ export class Http {
   }
 }
 
-export const http = new Http("/api/v1");
+function getAuthToken() {
+  return localStorage.getItem(ELocalStorageKey.Token);
+}
 
-http.instance.interceptors.response.use((response) => {
-  return response;
-}, error => {
-  // 通用错误这里处理，业务错误外面的catch里处理
-  if (error.response) {
-    const axiosError = error as AxiosError;
-    if (axiosError.response?.status === 429) {
-      alert("你太频繁了");
-    } else if (axiosError.response?.status === 500) {
-      alert("服务器繁忙");
-    }
+const client = new Http("");
+
+client.instance.interceptors.request.use(
+  (config) => {
+    config.headers[ELocalStorageKey.Token] = getAuthToken();
+    config.baseURL = CURRENT_CONFIG.baseURL;
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  // 如果不抛出错误，那么外面调用时catch不到错误，就不会走到catch里面
-  return Promise.reject(error);
-});
+);
 
-const iPortalClient = new Http("iPortal");
+client.instance.interceptors.response.use(
+  (response) => {
+    if (response.data.code && response.data.code !== 0) {
+      return Promise.reject(response);
+    }
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export const useAjax = () => {
   const navigate = useNavigate();
-  const onError = (error: AxiosError) => {
-    console.log('error');
+  const onError = (error: AxiosResponse) => {
+    console.log("error===");
     console.log(error);
-    if (error.response?.status === 401) {
-      console.log("401");
-      /*toast({
-        description: (error.response.data as {
-          error: {
-            code: number
-            errorMsg: string
-          }
-        }).error.errorMsg,
-      });*/
+    if (error.data?.code === 401) {
       navigate("/login");
+      toast({
+        variant: "destructive",
+        description: error.data.message
+      });
     }
     throw error;
   };
 
   return {
     get: <T>(url: string, query?: Record<string, string | number>, config?: Omit<AxiosRequestConfig, "params" | "url" | "method">) => {
-      return iPortalClient.get<T>(url, query, config).catch(onError);
+      return client.get<T>(url, query, config).catch(onError);
     },
     post: <T>(url: string, data?: Record<string, JSONValue> | string[], config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
-      return iPortalClient.post<T>(url, data, config).catch(onError);
+      return client.post<T>(url, data, config).catch(onError);
     },
     patch: <T>(url: string, data?: Record<string, JSONValue>, config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
-      return iPortalClient.patch<T>(url, data, config).catch(onError);
+      return client.patch<T>(url, data, config).catch(onError);
     },
     put: <T>(url: string, data?: Record<string, JSONValue> | string[], config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
-      return iPortalClient.put<T>(url, data, config).catch(onError);
+      return client.put<T>(url, data, config).catch(onError);
     },
     delete: <T>(url: string, query?: Record<string, string>, config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
-      return iPortalClient.delete<T>(url, query, config).catch(onError);
+      return client.delete<T>(url, query, config).catch(onError);
     },
   };
 };

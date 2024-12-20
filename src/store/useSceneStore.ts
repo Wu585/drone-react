@@ -28,6 +28,8 @@ interface SceneStore {
   setIsFullScreen: (status: boolean) => void,
   user: User
   setUser: (user: User) => void
+  dronePanelVisible: boolean
+  setDronePanelVisible: (visible: boolean) => void
 }
 
 export const useSceneStore = create<SceneStore>((set) => ({
@@ -37,6 +39,7 @@ export const useSceneStore = create<SceneStore>((set) => ({
     username: "",
     password: ""
   },
+  dronePanelVisible: false,
   setKeyAreas: (keyAreas: SceneStore["keyAreas"]) => set(() => ({
     keyAreas
   })),
@@ -46,4 +49,7 @@ export const useSceneStore = create<SceneStore>((set) => ({
   setUser: (user) => set(() => ({
     user
   })),
+  setDronePanelVisible: (dronePanelVisible) => set(() => ({
+    dronePanelVisible
+  }))
 }));

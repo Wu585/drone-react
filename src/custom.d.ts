@@ -1,9 +1,9 @@
 declare interface Window {
   Cesium: any;
-  bicyclesSource: any
-  regionSource: any
-  polygonSource: any
-  getPosition: () => void
+  bicyclesSource: any;
+  regionSource: any;
+  polygonSource: any;
+  getPosition: () => void;
 }
 
 declare let Cesium: Window.Cesium;
@@ -16,4 +16,11 @@ type JSONValue = string | number | boolean | null | { [k: string | number]: JSON
 
 type Resource<T> = {
   data: T
+  code?: number;
+  message?: string;
+}
+
+declare module 'mqtt/dist/mqtt.min' {
+  import MQTT from 'mqtt'
+  export = MQTT
 }

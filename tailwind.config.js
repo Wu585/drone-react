@@ -117,6 +117,11 @@ module.exports = {
         'hgyq-header-menu-active': "url('@/assets/images/hgyq/bg-menu-active.png')",
         'login-panel': "url('@/assets/images/hgyq/bg-login-panel.png')",
         'center': "url('@/assets/images/hgyq/bg-center.png')",
+        'drone-system': "url('@/assets/images/drone/bg-drone.png')",
+        'dock-panel': "url('@/assets/images/drone/bg-dock-panel.png')",
+        'control-panel': "url('@/assets/images/drone/bg-control-panel.png')",
+        'take-off-panel': "url('@/assets/images/drone/bg-take-off-panel.png')",
+        'take-off-panel-header': "url('@/assets/images/drone/bg-take-off-panel-header.png')",
       }
     },
   },

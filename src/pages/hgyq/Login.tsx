@@ -5,10 +5,10 @@ import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormMessage} from "@/components/ui/form.tsx";
-import {login} from "@/hooks/manage-system/api.ts";
-import {toast} from "@/components/ui/use-toast.ts";
+import {useAjax} from "@/lib/http.ts";
+import {HTTP_PREFIX} from "@/api/manage.ts";
+import {ELocalStorageKey, EUserType} from "@/types/enum.ts";
 import {useNavigate} from "react-router-dom";
-import {useSceneStore} from "@/store/useSceneStore.ts";
 
 const formSchema = z.object({
   username: z.string().min(3, {
@@ -20,27 +20,36 @@ const formSchema = z.object({
 });
 
 const Login = () => {
-  const navigate = useNavigate();
-  const {setUser} = useSceneStore();
+  const {post} = useAjax();
+  const navigate = useNavigate()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
-      password: ""
+      username: "adminPC",
+      password: "adminPC"
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const {succeed} = (await login(values)).data;
-    if (!succeed) {
-      return toast({
-        description: "登录失败，用户名或密码错误！"
-      });
+    const url = `${HTTP_PREFIX}/login`;
+    const result = await post<Resource<{
+      access_token: string
+      workspace_id: string
+      username: string
+      user_id: string
+    }>>(url, {
+      ...values,
+      flag: EUserType.Web,
+    });
+    if (result.data.code === 0) {
+      localStorage.setItem(ELocalStorageKey.Token, result.data.data.access_token);
+      localStorage.setItem(ELocalStorageKey.WorkspaceId, result.data.data.workspace_id);
+      localStorage.setItem(ELocalStorageKey.Username, result.data.data.username);
+      localStorage.setItem(ELocalStorageKey.UserId, result.data.data.user_id);
+      localStorage.setItem(ELocalStorageKey.Flag, EUserType.Web.toString());
+      navigate("/tsa")
     }
-    setUser(values);
-    localStorage.setItem("username", values.username);
-    navigate("/resource-center")
   };
 
   return (
@@ -73,7 +82,7 @@ const Login = () => {
                   <FormControl>
                     <div className={"flex items-center relative"}>
                       <LockKeyhole className={"absolute left-[18px]"}/>
-                      <Input {...field} className={"bg-[#0B3B7D] pl-[53px]"} placeholder="请输入密码"/>
+                      <Input {...field} className={"bg-[#0B3B7D] pl-[53px]"} type={"password"} placeholder="请输入密码"/>
                     </div>
                   </FormControl>
                   <FormMessage/>
