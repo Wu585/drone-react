@@ -1,4 +1,4 @@
-import axios, {AxiosInstance, AxiosRequestConfig, AxiosResponse} from "axios";
+import axios, {AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse} from "axios";
 import {useNavigate} from "react-router-dom";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {CURRENT_CONFIG} from "@/lib/config.ts";
@@ -39,7 +39,7 @@ export class Http {
   }
 }
 
-function getAuthToken() {
+export function getAuthToken() {
   return localStorage.getItem(ELocalStorageKey.Token);
 }
 
@@ -70,14 +70,15 @@ client.instance.interceptors.response.use(
 
 export const useAjax = () => {
   const navigate = useNavigate();
-  const onError = (error: AxiosResponse) => {
+  const onError = (error: AxiosResponse | AxiosError) => {
     console.log("error===");
     console.log(error);
-    if (error.data?.code === 401) {
+    if ((error as AxiosError).response?.status === 401) {
       navigate("/login");
+    } else if ((error as AxiosResponse).data?.code !== 0) {
       toast({
         variant: "destructive",
-        description: error.data.message
+        description: (error as AxiosResponse).data.message
       });
     }
     throw error;

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="11px" height="12px" viewBox="0 0 11 12" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 64 (93537) - https://sketch.com -->
+    <title>形状结合</title>
+    <desc>Created with Sketch.</desc>
+    <g id="飞控" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="飞行权限" transform="translate(-619.000000, -501.000000)" stroke="#FFFFFF">
+            <path d="M624.5446,502.288497 L620.468129,506.970682 L623.337246,506.96977 L623.338089,510.556128 C623.338089,510.914754 623.483403,511.239322 623.718345,511.474263 C623.953286,511.709204 624.277854,511.854518 624.636362,511.854518 C624.99487,511.854518 625.319438,511.709204 625.55438,511.474263 C625.789321,511.239322 625.934635,510.914754 625.934635,510.556246 L625.934321,506.986597 L628.84654,506.887847 L624.5446,502.288497 Z" id="形状结合"></path>
+        </g>
+    </g>
+</svg>

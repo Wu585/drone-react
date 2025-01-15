@@ -1,4 +1,4 @@
-import {FC} from "react";
+import {FC, useEffect, useState} from "react";
 import {DateRange} from "react-day-picker";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
 import {Button} from "@/components/ui/button.tsx";
@@ -9,12 +9,39 @@ import {zhCN} from "date-fns/locale";
 import {Calendar} from "@/components/ui/calendar.tsx";
 
 interface Props {
-  date: DateRange | undefined;
-  setDate: (date: Props["date"]) => void;
+  date: Date[] | undefined;
+  setDate: (date: Date[] | undefined) => void;
   className?: string;
 }
 
 const NewCommonDateRangePicker: FC<Props> = ({date, setDate, className}) => {
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => ({
+    from: date?.[0],
+    to: date?.[1]
+  }));
+
+  useEffect(() => {
+    if (!date) {
+      setDateRange(undefined);
+    } else if (date.length === 2) {
+      setDateRange({
+        from: date[0],
+        to: date[1]
+      });
+    }
+  }, [date]);
+
+  const handleSelect = (range: DateRange | undefined) => {
+    console.log('range');
+    console.log(range);
+    setDateRange(range);
+    if (range?.from && range?.to) {
+      setDate([range.from, range.to]);
+    } else if (!range) {
+      setDate(undefined);
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild className={className}>
@@ -22,19 +49,20 @@ const NewCommonDateRangePicker: FC<Props> = ({date, setDate, className}) => {
           id="date"
           variant={"outline"}
           className={cn(
-            "w-[300px] justify-start text-left font-normal bg-transparent hover:text-white hover:bg-transparent",
-            !date && "text-muted-foreground", className
+            "w-full justify-start text-left font-normal bg-transparent hover:text-white hover:bg-transparent border-[#43ABFF] border-[1px]",
+            !dateRange && "text-muted-foreground",
+            className
           )}
         >
           <CalendarIcon className={cn("mr-2 h-4 w-4 text-white", className)}/>
-          {date?.from ? (
-            date.to ? (
+          {dateRange?.from ? (
+            dateRange.to ? (
               <>
-                {format(date.from, "yyyy-MM-dd", {locale: zhCN})} -{" "}
-                {format(date.to, "yyyy-MM-dd", {locale: zhCN})}
+                {format(dateRange.from, "yyyy-MM-dd", {locale: zhCN})} -{" "}
+                {format(dateRange.to, "yyyy-MM-dd", {locale: zhCN})}
               </>
             ) : (
-              format(date.from, "yyyy-MM-dd", {locale: zhCN})
+              format(dateRange.from, "yyyy-MM-dd", {locale: zhCN})
             )
           ) : (
             <span className={"text-white"}>请选择日期范围</span>
@@ -45,9 +73,10 @@ const NewCommonDateRangePicker: FC<Props> = ({date, setDate, className}) => {
         <Calendar
           initialFocus
           mode="range"
-          defaultMonth={date?.from}
-          selected={date}
-          onSelect={setDate}
+          defaultMonth={dateRange?.from}
+          selected={dateRange}
+          onSelect={handleSelect}
+          locale={zhCN}
         />
       </PopoverContent>
     </Popover>

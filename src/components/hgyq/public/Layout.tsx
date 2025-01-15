@@ -1,12 +1,12 @@
-import Header from "@/components/hgyq/public/Header.tsx";
 import {Outlet} from "react-router-dom";
+import TopBar from "@/components/drone/public/TopBar.tsx";
 
 const Layout = () => {
 
   return (
-    <div className="h-full bg-home relative bg-full-size">
+    <div className="h-full bg-login relative bg-full-size">
       <div className={"absolute top-0 w-full"}>
-        <Header/>
+        <TopBar/>
       </div>
       <Outlet/>
     </div>

@@ -159,7 +159,10 @@
 
 input {
   outline: none;
-  border: none;
+}
+
+img {
+  user-select: none;
 }
 
 /*

@@ -1,19 +1,28 @@
 import {Navigate, RouteObject} from "react-router-dom";
 import {lazy, Suspense} from "react";
-import Layout from "@/components/hgyq/public/Layout.tsx";
+import Layout from "@/components/drone/public/Layout.tsx";
+import Tsa from "@/pages/Tsa.tsx";
+import TaskList from "@/pages/TaskList.tsx";
+import Cockpit from "@/pages/Cockpit.tsx";
+import WayLine from "@/pages/WayLine.tsx";
+import TaskCreate from "@/pages/TaskCreate.tsx";
+import DeviceManage from "@/pages/DeviceManage.tsx";
 
-const Home = lazy(() => import("@/pages/hgyq/Home.tsx"));
 const Login = lazy(() => import("@/pages/hgyq/Login.tsx"));
-const Tsa = lazy(() => import("@/pages/Tsa.tsx"));
-const ResourceCenter = lazy(() => import("@/pages/hgyq/ResourceCenter.tsx"));
 
 export const routes: RouteObject[] = [
   {
-    path: "/tsa",
+    path: "/login",
     element: (
       <Suspense>
-        <Tsa/>
+        <Login/>
       </Suspense>
+    ),
+  },
+  {
+    path: "/cockpit",
+    element: (
+      <Cockpit/>
     ),
   },
   {
@@ -26,22 +35,27 @@ export const routes: RouteObject[] = [
     children: [
       {
         path: "",
-        element: <Navigate to="/home" replace/>
+        element: <Navigate to="/tsa" replace/>
       },
       {
-        path: "home",
-        element:
-          <Home/>
+        path: "tsa",
+        element: <Tsa/>
       },
       {
-        path: "login",
-        element:
-          <Login/>
+        path: "task-list",
+        element: <TaskList/>
       },
       {
-        path: "resource-center",
-        element:
-          <ResourceCenter/>
+        path: "task-create",
+        element: <TaskCreate/>
+      },
+      {
+        path: "device-manage",
+        element: <DeviceManage/>
+      },
+      {
+        path: "wayline",
+        element: <WayLine/>
       },
     ]
   },

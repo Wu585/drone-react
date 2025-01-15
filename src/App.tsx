@@ -9,7 +9,7 @@ function App() {
     <SWRConfig value={{
       refreshInterval: 5 * 60 * 1000
     }}>
-        <div className={"h-full relative"}>
+        <div className={"h-full relative font-Pingfang"}>
           <RouterProvider router={router}/>
           <Toaster/>
         </div>

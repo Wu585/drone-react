@@ -256,7 +256,7 @@ const TakeOffFormPanel: FC<Props> = ({sn = "4SEDL9S00178K9", onClose}) => {
             />
             <FormField
               control={form.control}
-              name={"commander_mode_lost_action"}
+              name={"commander_flight_mode"}
               render={({field}) => (
                 <FormItem className={"grid grid-cols-6 px-4 items-center"}>
                   <FormLabel className={"col-span-3"}>指令飞行模式</FormLabel>

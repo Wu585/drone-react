@@ -22,8 +22,8 @@ const TopBar = () => {
       <div className={"text-[24px] font-semibold"}>翼枭航空科技有限公司</div>
       <div className={"flex space-x-4"}>
         <CircleUser/>
-        <span>{username}</span>
-        <DropdownMenu>
+        <span>{username || "未登录"}</span>
+        {username && <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <ArrowDown/>
           </DropdownMenuTrigger>
@@ -35,7 +35,7 @@ const TopBar = () => {
               </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu>}
       </div>
     </div>
   );
