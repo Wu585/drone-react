@@ -14,8 +14,10 @@ export const useDeviceTopo = (workspace_id: string) => {
   return useSWR(url, async (path) => (await get<Resource<any[]>>(path)).data.data);
 };
 
+const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+
+
 export const useOnlineDocks = () => {
-  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const {data: deviceTopo} = useDeviceTopo(workspaceId);
   const [onlineDocks, setOnlineDocks] = useState<OnlineDevice[]>([]);
 
@@ -151,11 +153,9 @@ export const useBindingDevice = (workspace_id: string, body: Pagination & {
 }) => {
   const {get} = useAjax();
   const url = `${HTTP_PREFIX}/devices/${workspace_id}/devices/bound`;
-  return useSWR(url, async (path) => (await get<Resource<BindingDevice>>(path, {
-    ...body
-  })).data.data);
+  const key = body ? [url, body] as const : null;
+  return useSWR(key, async ([path, body]) => (await get<Resource<BindingDevice>>(path, body)).data.data);
 };
-
 
 /**
  * 下载文件
@@ -257,6 +257,90 @@ export const useWaylinJobs = (workspaceId: string, body: Pagination) => {
     list: Task[]
     pagination: Pagination
   }>>(path, {
+    ...body
+  })).data.data);
+};
+
+interface Video {
+  id: string;
+  index: string;
+  type: string;
+  switch_video_types: string[];
+}
+
+interface Camera {
+  id: string;
+  name: string;
+  index: string;
+  videos_list: Video[];
+}
+
+interface VideoDevice {
+  sn: string;
+  name: string;
+  cameras_list: Camera[];
+}
+
+// Get Livestream Capacity
+export const useCapacity = () => {
+  const {get} = useAjax();
+  const url = `${HTTP_PREFIX}/live/capacity`;
+  return useSWR(url, async (path) => (await get<Resource<VideoDevice[]>>(path)).data.data);
+};
+
+export const MEDIA_HTTP_PREFIX = "/media/api/v1";
+
+export interface FileItem {
+  file_id: string;
+  file_name: string;
+  file_path: string;
+  object_key: string;
+  is_original: boolean;
+  drone: string;
+  payload: string;
+  tinny_fingerprint: string;
+  fingerprint: string;
+  create_time: string;
+  job_id: string;
+}
+
+interface FileData {
+  list: FileItem[];
+  pagination: Pagination;
+}
+
+// Get Media files
+export const useMediaList = (workspaceId: string, body: Pagination) => {
+  const {get} = useAjax();
+  const url = `${MEDIA_HTTP_PREFIX}/files/${workspaceId}/files`;
+  const key = body ? [url, body] as const : null;
+  return useSWR(key, async ([path, body]) => (await get<Resource<FileData>>(path, {
+    ...body
+  })).data.data);
+};
+
+export interface UserItem {
+  user_id: string;
+  username: string;
+  workspace_name: string;
+  user_type: string;
+  mqtt_username: string;
+  mqtt_password: string;
+  create_time: string;
+}
+
+
+interface MembersData {
+  list: UserItem[];
+  pagination: Pagination;
+}
+
+// Get all uses
+export const useMembers = (workspaceId: string, body: Pagination) => {
+  const {get} = useAjax();
+  const url = `${HTTP_PREFIX}/users/${workspaceId}/users`;
+  const key = body ? [url, body] as const : null;
+  return useSWR(key, async ([path, body]) => (await get<Resource<MembersData>>(path, {
     ...body
   })).data.data);
 };

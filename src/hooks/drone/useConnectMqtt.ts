@@ -1,21 +1,20 @@
 import {useSceneStore} from "@/store/useSceneStore.ts";
-import {useEffect, useRef} from "react";
+import {useEffect, useMemo, useRef} from "react";
 import {UranusMqtt} from "@/mqt";
 import {useAjax} from "@/lib/http.ts";
 import {ELocalStorageKey} from "@/types/enum.ts";
 
 const DRC_API_PREFIX = "/control/api/v1";
 
+const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
+
 export const useConnectMqtt = () => {
   const {osdVisible, setMqttState, setClientId} = useSceneStore();
   const {post} = useAjax();
   const mqttStateRef = useRef<UranusMqtt | null>(null);
-  console.log('osdVisible');
-  console.log(osdVisible);
-  const dockOsdVisible = osdVisible && osdVisible.visible && osdVisible.is_dock;
-  console.log('dockOsdVisible');
-  console.log(dockOsdVisible);
-  const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
+
+  const dockOsdVisible = useMemo(() => osdVisible && osdVisible.visible && osdVisible.is_dock, [osdVisible]);
+
   useEffect(() => {
     if (dockOsdVisible) {
       if (mqttStateRef.current) return;

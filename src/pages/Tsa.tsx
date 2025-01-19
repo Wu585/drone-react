@@ -1,56 +1,33 @@
-import {Info, Server} from "lucide-react";
+import {Eye, EyeOff, Info} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion.tsx";
-import {useConnectWebSocket} from "@/lib/websocket/useConnectWebSocket.ts";
 import {useOnlineDocks} from "@/hooks/drone";
-import {useEffect} from "react";
 import GMap from "@/components/drone/public/GMap.tsx";
 import DronePanel from "@/components/drone/public/DronePanel.tsx";
 import {useSceneStore} from "@/store/useSceneStore.ts";
-import {EBizCode} from "@/types/enum.ts";
 import {EDockModeCode, EModeCode} from "@/types/device.ts";
 import {OnlineDevice} from "@/hooks/drone/device.ts";
+import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 
 const Tsa = () => {
   const {
-    setDeviceState,
     deviceState,
     osdVisible,
+    hmsInfo,
     setOsdVisible
   } = useSceneStore();
 
-  useConnectWebSocket(async (payload: any) => {
-    if (!payload) {
-      return;
-    }
-    switch (payload.biz_code) {
-      case EBizCode.DockOsd: {
-        setDeviceState(payload.data);
-        break;
-      }
-    }
-  });
+  useInitialConnectWebSocket();
 
   const {onlineDocks} = useOnlineDocks();
 
-  useEffect(() => {
-    console.log("onlineDocks");
-    console.log(onlineDocks);
-  }, [onlineDocks]);
-
   const switchVisible = (dock: OnlineDevice) => {
-    console.log("osdVisible");
-    console.log(osdVisible);
-    console.log("dock");
-    console.log(dock);
     if (dock.sn === osdVisible.sn) {
-      console.log("false");
       setOsdVisible({
         ...osdVisible,
         visible: !osdVisible.visible
       });
     } else {
-      console.log("true");
       setOsdVisible({
         sn: dock.sn,
         callsign: dock.callsign,
@@ -58,7 +35,8 @@ const Tsa = () => {
         visible: true,
         gateway_sn: dock.gateway.sn,
         gateway_callsign: dock.gateway.callsign,
-        payloads: dock.payload
+        payloads: dock.payload,
+        is_dock: true
       });
     }
   };
@@ -86,23 +64,30 @@ const Tsa = () => {
                       </div>
                       <div className={"pl-[24px] pt-[16px] space-y-4"}>
                         <div className={"flex"}>
-                              <span className={cn("pl-4 w-1/2 bg-[#2E3751]/[.88] text-[#40F2FF]",
-                                deviceState.dockInfo[dock.gateway.sn] && deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code !== EDockModeCode.Disconnected ? "text-[#00ee8b]" : "text-red-500")}>
-                                {deviceState.dockInfo[dock.gateway.sn] ? EDockModeCode[deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code] : EModeCode[EModeCode.Disconnected]}
-                              </span>
-                          <span className={"w-1/2 bg-[#52607D] pl-4"}>N/A</span>
+                          <div
+                            className={cn("pl-4 w-2/3 bg-[#2E3751]/[.88] text-[#40F2FF]",
+                              deviceState.dockInfo[dock.gateway.sn] && deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code !== EDockModeCode.Disconnected ? "text-[#00ee8b]" : "text-red-500")}>
+                            {deviceState.dockInfo[dock.gateway.sn] ? EDockModeCode[deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code] : EModeCode[EModeCode.Disconnected]}
+                          </div>
+                          <div className={"w-1/3 bg-[#52607D] pl-4"}>
+                            <span>{hmsInfo[dock.gateway.sn]?.length}</span>
+                          </div>
                         </div>
                         <div className={"flex"}>
-                          <span className={cn("pl-4 w-1/2 bg-[#2E3751]/[.88] text-[#40F2FF]",
+                          <div className={cn("pl-4 w-2/3 bg-[#2E3751]/[.88] text-[#40F2FF]",
                             deviceState.deviceInfo[dock.sn] && deviceState.deviceInfo[dock.sn].mode_code !== EDockModeCode.Disconnected ? "text-[#00ee8b]" : "text-red-500")}>
-                                {deviceState.deviceInfo[dock.sn] ? EDockModeCode[deviceState.deviceInfo[dock.sn].mode_code] : EModeCode[EModeCode.Disconnected]}
-                              </span>
-                          <span className={"w-1/2 bg-[#52607D] pl-4"}>N/A</span>
+                            {deviceState.deviceInfo[dock.sn] ? EModeCode[deviceState.deviceInfo[dock.sn].mode_code] : EModeCode[EModeCode.Disconnected]}
+                          </div>
+                          <div className={"w-1/3 bg-[#52607D] pl-4"}>N/A</div>
                         </div>
                       </div>
                     </div>
-                    <div className={"px-[28px] content-center"}>
-                      <Server className={"cursor-pointer"} onClick={() => switchVisible(dock)}/>
+                    <div className={"px-[20px] content-center"}>
+                      <div
+                        onClick={() => switchVisible(dock)}
+                        className={cn("cursor-pointer", deviceState.dockInfo[dock.gateway.sn] && deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code !== EModeCode.Disconnected ? "" : "cursor-not-allowed")}>
+                        {osdVisible.gateway_sn === dock.gateway.sn && osdVisible.visible ? <Eye/> : <EyeOff/>}
+                      </div>
                     </div>
                   </div>
                   {/*<div className={"h-[38px] mb-[18px] ml-[12px] flex items-center font-medium"}>

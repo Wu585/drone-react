@@ -7,6 +7,8 @@ import Cockpit from "@/pages/Cockpit.tsx";
 import WayLine from "@/pages/WayLine.tsx";
 import TaskCreate from "@/pages/TaskCreate.tsx";
 import DeviceManage from "@/pages/DeviceManage.tsx";
+import Media from "@/pages/Media.tsx";
+import Members from "@/pages/Members.tsx";
 
 const Login = lazy(() => import("@/pages/hgyq/Login.tsx"));
 
@@ -48,6 +50,14 @@ export const routes: RouteObject[] = [
       {
         path: "task-create",
         element: <TaskCreate/>
+      },
+      {
+        path: "media",
+        element: <Media/>
+      },
+      {
+        path: "members",
+        element: <Members/>
       },
       {
         path: "device-manage",

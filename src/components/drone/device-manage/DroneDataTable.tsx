@@ -5,52 +5,48 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {Task, useWaylinJobs} from "@/hooks/drone";
+import {Device, useBindingDevice} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {OutOfControlActionMap, TaskTypeMap} from "@/types/task.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
+import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 
-export const columns: ColumnDef<Task>[] = [
-  {
-    accessorKey: "job_name",
-    header: "任务名",
-  },
-  {
-    accessorKey: "task_type",
-    header: "任务类型",
-    cell: ({row}) => <span>{TaskTypeMap[row.original.task_type]}</span>
-  },
-  {
-    accessorKey: "file_name",
-    header: "线路名称",
-  },
-  {
-    accessorKey: "dock_name",
-    header: "机场",
-  },
-  {
-    accessorKey: "rth_altitude",
-    header: "RTH高度",
-  },
-  {
-    accessorKey: "out_of_control_action",
-    header: "失联动作",
-    cell: ({row}) => <span>{OutOfControlActionMap[row.original.out_of_control_action]}</span>
-  },
-  {
-    accessorKey: "username",
-    header: "用户",
-  },
-  {
-    header: "操作",
-    cell: () => <span className={"bg-[#43ABFF] hover:bg-[#43ABFF] py-2 px-4 rounded-md cursor-pointer"}>删除</span>
-  }
-];
+const DroneDataTable = () => {
+  const columns: ColumnDef<Device>[] = [
+    {
+      accessorKey: "device_name",
+      header: "型号",
+    },
+    {
+      accessorKey: "device_sn",
+      header: "SN",
+    },
+    {
+      accessorKey: "nickname",
+      header: "名称",
+    },
+    {
+      accessorKey: "firmware_version",
+      header: "固件版本",
+    },
+    {
+      accessorKey: "status",
+      header: "状态",
+      cell: ({row}) =>
+        <span className={row.original.status ? "text-green-500" : "text-red-500"}>{row.original.status ? "在线" : "离线"}</span>
+    },
+    {
+      accessorKey: "workspace_name",
+      header: "工作空间",
+    },
+    {
+      accessorKey: "login_time",
+      header: "最后在线时间",
+    },
+  ];
 
-const TaskDataTable = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
@@ -64,16 +60,12 @@ const TaskDataTable = () => {
     pageSize: 10,
   });
 
-  const {data} = useWaylinJobs(workspaceId, {
+  const {data} = useBindingDevice(workspaceId, {
     page: pagination.pageIndex + 1,
     page_size: pagination.pageSize,
-    total: 0
+    total: 0,
+    domain: EDeviceTypeName.Aircraft
   });
-
-  useEffect(() => {
-    console.log("data==");
-    console.log(data);
-  }, [data]);
 
   const table = useReactTable({
     data: data?.list || [],
@@ -165,5 +157,5 @@ const TaskDataTable = () => {
   );
 };
 
-export default TaskDataTable;
+export default DroneDataTable;
 

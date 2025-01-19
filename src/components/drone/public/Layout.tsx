@@ -1,12 +1,12 @@
 import TopBar from "@/components/drone/public/TopBar.tsx";
 import {Link, Outlet, useLocation} from "react-router-dom";
 import {cn} from "@/lib/utils.ts";
-import {LayoutList, Proportions, Users, Waypoints} from "lucide-react";
+import {Film, LayoutList, Proportions, RefreshCcwDot, Send, Users, Waypoints} from "lucide-react";
 
 const menuList = [
   {
     name: "tsa",
-    icon: <Users fill="#fff" size={20}/>,
+    icon: <Send size={20}/>,
     href: "/tsa"
   },
   {
@@ -20,6 +20,18 @@ const menuList = [
     icon: <LayoutList fill="#fff" size={20}/>,
     href: "/task-list",
     activeHref: "task"
+  },
+  {
+    name: "media",
+    icon: <Film size={20}/>,
+    href: "/media",
+    activeHref: "media"
+  },
+  {
+    name: "members",
+    icon: <Users size={20}/>,
+    href: "/members",
+    activeHref: "members"
   },
   {
     name: "device-manage",

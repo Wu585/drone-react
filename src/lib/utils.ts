@@ -218,3 +218,30 @@ export function display12HourValue(hours: number) {
   if (hours % 12 > 9) return `${hours}`;
   return `0${hours % 12}`;
 }
+
+export const extractIPFromRTMP = (rtmpUrl: string) => {
+  // 正则表达式匹配IP地址
+  const ipRegex = /rtmp:\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
+  const match = rtmpUrl.match(ipRegex);
+
+  if (match) {
+    return match[1]; // 返回提取的IP地址
+  }
+
+  return ""; // 如果没有找到IP地址，返回null
+};
+
+export const convertWebRTCtoHTTP = (webrtcUrl: string) => {
+  // 使用正则表达式提取IP地址和路径
+  const regex = /webrtc:\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(\/.*)/;
+  const match = webrtcUrl.match(regex);
+
+  if (match) {
+    const ipAddress = match[1]; // 提取IP地址
+    const path = match[2]; // 提取路径
+    // 构建新的HTTP URL
+    return `http://${ipAddress}:8080${path}.m3u8`;
+  }
+
+  return ""; // 如果格式不正确，返回null
+};

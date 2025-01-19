@@ -19,7 +19,7 @@ import {FC} from "react";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 
-const formSchema = z.object({
+export const formSchema = z.object({
   target_latitude: z.string().min(1, {
     message: ""
   }),
@@ -48,13 +48,13 @@ const formSchema = z.object({
 interface Props {
   sn: string;
   onClose?: () => void;
+  type: "take-off" | "fly-to";
 }
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
 
-//TODO 动态sn
-const TakeOffFormPanel: FC<Props> = ({sn = "4SEDL9S00178K9", onClose}) => {
+const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
   const {post} = useAjax();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -75,28 +75,46 @@ const TakeOffFormPanel: FC<Props> = ({sn = "4SEDL9S00178K9", onClose}) => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!sn) return;
-    const body = {
-      ...values,
-      target_latitude: parseFloat(values.target_latitude),
-      target_longitude: parseFloat(values.target_longitude),
-      target_height: parseFloat(values.target_height),
-      security_takeoff_height: parseFloat(values.security_takeoff_height),
-      rth_altitude: parseFloat(values.rth_altitude),
-      commanderFlightHeight: parseFloat(values.commander_flight_height),
-      rc_lost_action: +values.rc_lost_action,
-      exit_wayline_when_rc_lost: +values.exit_wayline_when_rc_lost,
-      rth_mode: +values.rth_mode,
-      commander_mode_lost_action: +values.commander_mode_lost_action,
-      commander_flight_mode: +values.commander_flight_mode,
-      max_speed: 14,
-    };
-    console.log("body");
-    console.log(body);
-    const resp: any = await post(`${DRC_API_PREFIX}/devices/${sn}/jobs/takeoff-to-point`, body);
-    if (resp.data.code === 0) {
-      toast({
-        description: <span className={"text-green-500"}>起飞成功</span>
+    if (type === "take-off") {
+      const body = {
+        ...values,
+        target_latitude: parseFloat(values.target_latitude),
+        target_longitude: parseFloat(values.target_longitude),
+        target_height: parseFloat(values.target_height),
+        security_takeoff_height: parseFloat(values.security_takeoff_height),
+        rth_altitude: parseFloat(values.rth_altitude),
+        commanderFlightHeight: parseFloat(values.commander_flight_height),
+        rc_lost_action: +values.rc_lost_action,
+        exit_wayline_when_rc_lost: +values.exit_wayline_when_rc_lost,
+        rth_mode: +values.rth_mode,
+        commander_mode_lost_action: +values.commander_mode_lost_action,
+        commander_flight_mode: +values.commander_flight_mode,
+        max_speed: 14,
+      };
+      console.log("body");
+      console.log(body);
+      const resp: any = await post(`${DRC_API_PREFIX}/devices/${sn}/jobs/takeoff-to-point`, body);
+      if (resp.data.code === 0) {
+        toast({
+          description: <span>起飞成功</span>
+        });
+      }
+      onClose?.();
+    } else {
+      await post(`${DRC_API_PREFIX}/devices/${sn}/jobs/fly-to-point`, {
+        max_speed: 14,
+        points: [
+          {
+            latitude: parseFloat(values.target_latitude),
+            longitude: parseFloat(values.target_longitude),
+            height: parseFloat(values.target_height)
+          }
+        ]
       });
+      toast({
+        description: "飞行成功！"
+      });
+      onClose?.();
     }
   };
 
@@ -146,147 +164,149 @@ const TakeOffFormPanel: FC<Props> = ({sn = "4SEDL9S00178K9", onClose}) => {
               )}
               name={"target_height"}
             />
-            <FormField
-              control={form.control}
-              render={({field}) => (
-                <FormItem className={"grid grid-cols-6 px-4"}>
-                  <FormLabel className={"col-span-3 flex items-center"}>安全起飞高度</FormLabel>
-                  <FormControl className={"col-span-3"}>
-                    <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
-                  </FormControl>
-                </FormItem>
-              )}
-              name={"security_takeoff_height"}
-            />
-            <FormField
-              control={form.control}
-              render={({field}) => (
-                <FormItem className={"grid grid-cols-6 px-4"}>
-                  <FormLabel className={"col-span-3 flex items-center"}>返航高度</FormLabel>
-                  <FormControl className={"col-span-3"}>
-                    <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
-                  </FormControl>
-                </FormItem>
-              )}
-              name={"rth_altitude"}
-            />
-            <FormField
-              control={form.control}
-              name={"rc_lost_action"}
-              render={({field}) => (
-                <FormItem className={"grid grid-cols-6 px-4 items-center"}>
-                  <FormLabel className={"col-span-3"}>失联动作</FormLabel>
-                  <Select value={field.value.toString()} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
-                        <SelectValue placeholder=""/>
-                      </SelectTrigger>
+            {type === "take-off" && <>
+              <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-6 px-4"}>
+                    <FormLabel className={"col-span-3 flex items-center"}>安全起飞高度</FormLabel>
+                    <FormControl className={"col-span-3"}>
+                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
                     </FormControl>
-                    <SelectContent className={""}>
-                      <SelectGroup>
-                        {LostControlActionInCommandFLightOptions.map(item =>
-                          <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormItem>)}
-            />
-            <FormField
-              control={form.control}
-              name={"exit_wayline_when_rc_lost"}
-              render={({field}) => (
-                <FormItem className={"grid grid-cols-6 px-4 items-center"}>
-                  <FormLabel className={"col-span-3"}>失控动作</FormLabel>
-                  <Select value={field.value.toString()} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
-                        <SelectValue placeholder=""/>
-                      </SelectTrigger>
+                  </FormItem>
+                )}
+                name={"security_takeoff_height"}
+              />
+              <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-6 px-4"}>
+                    <FormLabel className={"col-span-3 flex items-center"}>返航高度</FormLabel>
+                    <FormControl className={"col-span-3"}>
+                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
                     </FormControl>
-                    <SelectContent className={""}>
-                      <SelectGroup>
-                        {WaylineLostControlActionInCommandFlightOptions.map(item =>
-                          <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormItem>)}
-            />
-            <FormField
-              control={form.control}
-              name={"rth_mode"}
-              render={({field}) => (
-                <FormItem className={"grid grid-cols-6 px-4 items-center"}>
-                  <FormLabel className={"col-span-3"}>返航模式</FormLabel>
-                  <Select value={field.value.toString()} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
-                        <SelectValue placeholder=""/>
-                      </SelectTrigger>
+                  </FormItem>
+                )}
+                name={"rth_altitude"}
+              />
+              <FormField
+                control={form.control}
+                name={"rc_lost_action"}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-6 px-4 items-center"}>
+                    <FormLabel className={"col-span-3"}>失联动作</FormLabel>
+                    <Select value={field.value.toString()} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
+                          <SelectValue placeholder=""/>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className={""}>
+                        <SelectGroup>
+                          {LostControlActionInCommandFLightOptions.map(item =>
+                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>)}
+              />
+              <FormField
+                control={form.control}
+                name={"exit_wayline_when_rc_lost"}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-6 px-4 items-center"}>
+                    <FormLabel className={"col-span-3"}>失控动作</FormLabel>
+                    <Select value={field.value.toString()} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
+                          <SelectValue placeholder=""/>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className={""}>
+                        <SelectGroup>
+                          {WaylineLostControlActionInCommandFlightOptions.map(item =>
+                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>)}
+              />
+              <FormField
+                control={form.control}
+                name={"rth_mode"}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-6 px-4 items-center"}>
+                    <FormLabel className={"col-span-3"}>返航模式</FormLabel>
+                    <Select value={field.value.toString()} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
+                          <SelectValue placeholder=""/>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className={""}>
+                        <SelectGroup>
+                          {RthModeInCommandFlightOptions.map(item =>
+                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>)}
+              />
+              <FormField
+                control={form.control}
+                name={"commander_mode_lost_action"}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-6 px-4 items-center"}>
+                    <FormLabel className={"col-span-3"}>指令失联动作</FormLabel>
+                    <Select value={field.value.toString()} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
+                          <SelectValue placeholder=""/>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className={""}>
+                        <SelectGroup>
+                          {CommanderModeLostActionInCommandFlightOptions.map(item =>
+                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>)}
+              />
+              <FormField
+                control={form.control}
+                name={"commander_flight_mode"}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-6 px-4 items-center"}>
+                    <FormLabel className={"col-span-3"}>指令飞行模式</FormLabel>
+                    <Select value={field.value.toString()} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
+                          <SelectValue placeholder=""/>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className={""}>
+                        <SelectGroup>
+                          {CommanderFlightModeInCommandFlightOptions.map(item =>
+                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>)}
+              />
+              <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-6 px-4"}>
+                    <FormLabel className={"col-span-3 flex items-center"}>指令飞行高度</FormLabel>
+                    <FormControl className={"col-span-3"}>
+                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
                     </FormControl>
-                    <SelectContent className={""}>
-                      <SelectGroup>
-                        {RthModeInCommandFlightOptions.map(item =>
-                          <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormItem>)}
-            />
-            <FormField
-              control={form.control}
-              name={"commander_mode_lost_action"}
-              render={({field}) => (
-                <FormItem className={"grid grid-cols-6 px-4 items-center"}>
-                  <FormLabel className={"col-span-3"}>指令失联动作</FormLabel>
-                  <Select value={field.value.toString()} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
-                        <SelectValue placeholder=""/>
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className={""}>
-                      <SelectGroup>
-                        {CommanderModeLostActionInCommandFlightOptions.map(item =>
-                          <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormItem>)}
-            />
-            <FormField
-              control={form.control}
-              name={"commander_flight_mode"}
-              render={({field}) => (
-                <FormItem className={"grid grid-cols-6 px-4 items-center"}>
-                  <FormLabel className={"col-span-3"}>指令飞行模式</FormLabel>
-                  <Select value={field.value.toString()} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
-                        <SelectValue placeholder=""/>
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className={""}>
-                      <SelectGroup>
-                        {CommanderFlightModeInCommandFlightOptions.map(item =>
-                          <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormItem>)}
-            />
-            <FormField
-              control={form.control}
-              render={({field}) => (
-                <FormItem className={"grid grid-cols-6 px-4"}>
-                  <FormLabel className={"col-span-3 flex items-center"}>指令飞行高度</FormLabel>
-                  <FormControl className={"col-span-3"}>
-                    <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
-                  </FormControl>
-                </FormItem>
-              )}
-              name={"commander_flight_height"}
-            />
+                  </FormItem>
+                )}
+                name={"commander_flight_height"}
+              />
+            </>}
             <div className={"text-right mt-2 px-4"}>
               <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]"} type={"submit"}>立即执行</Button>
             </div>

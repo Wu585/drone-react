@@ -1,8 +1,11 @@
 import {useEffect} from "react";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import {AMapConfig} from "@/constants";
+import {useConnectMqtt} from "@/hooks/drone/useConnectMqtt.ts";
 
 const GMap = () => {
+  useConnectMqtt();
+
   useEffect(() => {
     AMapLoader.load({
       ...AMapConfig

@@ -7,50 +7,79 @@ import {
 } from "@tanstack/react-table";
 import {useEffect, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {Task, useWaylinJobs} from "@/hooks/drone";
+import {downloadFile, FileItem, MEDIA_HTTP_PREFIX, useMediaList} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {OutOfControlActionMap, TaskTypeMap} from "@/types/task.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
+import {Download} from "lucide-react";
+import {useAjax} from "@/lib/http.ts";
+import {toast} from "@/components/ui/use-toast.ts";
 
-export const columns: ColumnDef<Task>[] = [
-  {
-    accessorKey: "job_name",
-    header: "任务名",
-  },
-  {
-    accessorKey: "task_type",
-    header: "任务类型",
-    cell: ({row}) => <span>{TaskTypeMap[row.original.task_type]}</span>
-  },
-  {
-    accessorKey: "file_name",
-    header: "线路名称",
-  },
-  {
-    accessorKey: "dock_name",
-    header: "机场",
-  },
-  {
-    accessorKey: "rth_altitude",
-    header: "RTH高度",
-  },
-  {
-    accessorKey: "out_of_control_action",
-    header: "失联动作",
-    cell: ({row}) => <span>{OutOfControlActionMap[row.original.out_of_control_action]}</span>
-  },
-  {
-    accessorKey: "username",
-    header: "用户",
-  },
-  {
-    header: "操作",
-    cell: () => <span className={"bg-[#43ABFF] hover:bg-[#43ABFF] py-2 px-4 rounded-md cursor-pointer"}>删除</span>
-  }
-];
+const MeidaDataTable = () => {
+  const {get} = useAjax();
 
-const TaskDataTable = () => {
+  const columns: ColumnDef<FileItem>[] = [
+    {
+      accessorKey: "file_name",
+      header: "文件名",
+    },
+    {
+      accessorKey: "file_path",
+      header: "文件路径",
+      cell: ({row}) => (
+        <div className="max-w-[200px] truncate" title={row.getValue("file_path")}>
+          {row.getValue("file_path")}
+        </div>
+      )
+    },
+    {
+      accessorKey: "drone",
+      header: "飞行器",
+    },
+    {
+      accessorKey: "payload",
+      header: "负载类型",
+    },
+    {
+      accessorKey: "is_original",
+      header: "原创",
+      cell: ({row}) => <span>{row.original.is_original ? "是" : "否"}</span>
+    },
+    {
+      accessorKey: "create_time",
+      header: "创建时间",
+    },
+    {
+      header: "操作",
+      cell: ({row}) =>
+        <span className={"cursor-pointer"}
+              onClick={() => downloadMediaFile(workspaceId, row.original.file_id, row.original.file_name)}>
+      <Download size={18}/>
+    </span>
+    }
+  ];
+
+  const downloadMediaFile = async (workspaceId: string, fileId: string, fileName: string) => {
+    const url = `${MEDIA_HTTP_PREFIX}/files/${workspaceId}/file/${fileId}/url`;
+    const result: any = await get(url, {}, {responseType: "blob"});
+    if (!result.data) return;
+    if (result.data.type === "application/json") {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = reader.result as string;
+        const result = JSON.parse(text);
+        toast({
+          description: result.data.message,
+          variant: "destructive"
+        });
+      };
+      reader.readAsText(result.data, "utf-8");
+    } else {
+      const data = new Blob([result.data]);
+      downloadFile(data, fileName);
+    }
+  };
+
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
@@ -64,7 +93,7 @@ const TaskDataTable = () => {
     pageSize: 10,
   });
 
-  const {data} = useWaylinJobs(workspaceId, {
+  const {data} = useMediaList(workspaceId, {
     page: pagination.pageIndex + 1,
     page_size: pagination.pageSize,
     total: 0
@@ -165,5 +194,5 @@ const TaskDataTable = () => {
   );
 };
 
-export default TaskDataTable;
+export default MeidaDataTable;
 

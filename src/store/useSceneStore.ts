@@ -1,13 +1,14 @@
 import {create} from "zustand";
-import {DeviceOsd, DockOsd, GatewayOsd, OSDVisible} from "@/types/device.ts";
+import {DeviceHms, DeviceOsd, DeviceStatus, DockOsd, GatewayOsd, OSDVisible} from "@/types/device.ts";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
+import {immer} from "zustand/middleware/immer";
 
 interface User {
   username: string;
   password: string;
 }
 
-interface SceneStore {
+interface SceneState {
   keyAreas: {
     datasetInfos: {
       datasetName: string
@@ -24,14 +25,10 @@ interface SceneStore {
         }[]
       }
     }[]
-  }[] | null
-  setKeyAreas: (keyAreas: any) => void
-  isFullScreen: boolean
-  setIsFullScreen: (status: boolean) => void,
-  user: User
-  setUser: (user: User) => void
-  dronePanelVisible: boolean
-  setDronePanelVisible: (visible: boolean) => void
+  }[] | null;
+  isFullScreen: boolean;
+  user: User;
+  dronePanelVisible: boolean;
   deviceState: {
     gatewayInfo: {
       [sn: string]: GatewayOsd
@@ -44,91 +41,147 @@ interface SceneStore {
     }
     currentSn: string
     currentType: number
-  }
-  setDeviceState: (info: any) => void
-  setDeviceInfo: (info: any) => void
-  clientId: string // mqtt 连接 唯一客户端id
-  setClientId: (clientId: string) => void
-  osdVisible: Partial<OSDVisible>
-  setOsdVisible: (osdVisible: Partial<OSDVisible>) => void
-  mqttState: any // mqtt 实例
-  setMqttState: (mqttState: any) => void
+  };
+  clientId: string;
+  osdVisible: Partial<OSDVisible>;
+  mqttState: any;
+  deviceStatusEvent: {
+    deviceOnline: DeviceStatus
+    deviceOffline: any
+  };
+  hmsInfo: {
+    [sn: string]: DeviceHms[]
+  };
 }
 
-export const useSceneStore = create<SceneStore>((set) => ({
-  keyAreas: null,
-  isFullScreen: true,
-  user: {
-    username: "",
-    password: ""
-  },
-  dronePanelVisible: false,
-  deviceState: {
-    gatewayInfo: {},
-    deviceInfo: {},
-    dockInfo: {},
-    currentSn: "",
-    currentType: -1
-  },
-  clientId: "",
-  osdVisible: {
-    sn: "",
-    callsign: "",
-    model: "",
-    visible: false,
-    gateway_sn: "",
-    is_dock: false,
-    payloads: null
-  },
-  mqttState: null,
-  setKeyAreas: (keyAreas: SceneStore["keyAreas"]) => set(() => ({
-    keyAreas
-  })),
-  setIsFullScreen: (isFullScreen) => set(() => ({
-    isFullScreen
-  })),
-  setUser: (user) => set(() => ({
-    user
-  })),
-  setDronePanelVisible: (dronePanelVisible) => set(() => ({
-    dronePanelVisible
-  })),
-  setDeviceInfo:()=>set(()=>{
+interface SceneActions {
+  setKeyAreas: (keyAreas: SceneState["keyAreas"]) => void;
+  setIsFullScreen: (status: boolean) => void;
+  setUser: (user: User) => void;
+  setDronePanelVisible: (visible: boolean) => void;
+  setGateWayInfo: (info: any) => void;
+  setDeviceInfo: (info: any) => void;
+  setDockInfo: (info: any) => void;
+  setClientId: (clientId: string) => void;
+  setOsdVisible: (osdVisible: Partial<OSDVisible>) => void;
+  setMqttState: (mqttState: any) => void;
+  setDeviceOnline: (info: DeviceStatus) => void;
+  setDeviceOffline: (info: any) => void;
+  setHmsInfo: (info: any) => void;
+}
 
-  }),
-  setDeviceState: (info) => set((state) => {
-    if (Object.keys(info.host).length === 0) {
-      return state;
-    }
-    const dockInfo = {...state.deviceState.dockInfo};
-    const dock = dockInfo[info.sn] || (dockInfo[info.sn] = {} as DockOsd);
+export const useSceneStore = create<SceneState & SceneActions>()(
+  immer((set) => ({
+    // 初始状态
+    keyAreas: null,
+    isFullScreen: true,
+    user: {
+      username: "",
+      password: ""
+    },
+    dronePanelVisible: false,
+    deviceState: {
+      gatewayInfo: {},
+      deviceInfo: {},
+      dockInfo: {},
+      currentSn: "",
+      currentType: -1
+    },
+    clientId: "",
+    osdVisible: {
+      sn: "",
+      callsign: "",
+      model: "",
+      visible: false,
+      gateway_sn: "",
+      is_dock: false,
+      payloads: null
+    },
+    mqttState: null,
+    deviceStatusEvent: {
+      deviceOnline: {} as DeviceStatus,
+      deviceOffline: {}
+    },
+    hmsInfo: {},
 
-    // 更新当前设备状态
-    const newState = {
-      ...state.deviceState,
-      dockInfo: dockInfo,
-      currentSn: info.sn,
-      currentType: EDeviceTypeName.Dock,
-    };
+    // Actions
+    setKeyAreas: (keyAreas) => set((state) => {
+      state.keyAreas = keyAreas;
+    }),
 
-    // 根据 info.host 更新 dock 的状态
-    if (info.host.mode_code !== undefined) {
-      dock.basic_osd = info.host;
-    } else if (info.host.wireless_link) {
-      dock.link_osd = info.host;
-    } else if (info.host.job_number !== undefined) {
-      dock.work_osd = info.host;
-    }
+    setIsFullScreen: (isFullScreen) => set((state) => {
+      state.isFullScreen = isFullScreen;
+    }),
 
-    return {deviceState: newState};
-  }),
-  setClientId: (clientId) => set(() => ({
-    clientId
-  })),
-  setOsdVisible: (osdVisible) => set(() => ({
-    osdVisible
-  })),
-  setMqttState: (mqttState) => set(() => ({
-    mqttState
+    setUser: (user) => set((state) => {
+      state.user = user;
+    }),
+
+    setDronePanelVisible: (visible) => set((state) => {
+      state.dronePanelVisible = visible;
+    }),
+
+    setGateWayInfo: (info) => set((state) => {
+      state.deviceState.gatewayInfo[info.sn] = info.host;
+      state.deviceState.currentSn = info.sn;
+      state.deviceState.currentType = EDeviceTypeName.Gateway;
+    }),
+
+    setDeviceInfo: (info) => set((state) => {
+      state.deviceState.deviceInfo[info.sn] = info.host;
+      state.deviceState.currentSn = info.sn;
+      state.deviceState.currentType = EDeviceTypeName.Aircraft;
+    }),
+
+    setDockInfo: (info) => set((state) => {
+      if (Object.keys(info.host).length === 0) return;
+
+      if (!state.deviceState.dockInfo[info.sn]) {
+        state.deviceState.dockInfo[info.sn] = {} as DockOsd;
+      }
+
+      const dock = state.deviceState.dockInfo[info.sn];
+      if (info.host.mode_code !== undefined) {
+        dock.basic_osd = info.host;
+      } else if (info.host.wireless_link) {
+        dock.link_osd = info.host;
+      } else if (info.host.job_number !== undefined) {
+        dock.work_osd = info.host;
+      }
+
+      state.deviceState.currentSn = info.sn;
+      state.deviceState.currentType = EDeviceTypeName.Dock;
+    }),
+
+    setClientId: (clientId) => set((state) => {
+      state.clientId = clientId;
+    }),
+
+    setOsdVisible: (osdVisible) => set((state) => {
+      state.osdVisible = osdVisible;
+    }),
+
+    setMqttState: (mqttState) => set((state) => {
+      state.mqttState = mqttState;
+    }),
+
+    setDeviceOnline: (info) => set((state) => {
+      state.deviceStatusEvent.deviceOnline = info;
+    }),
+
+    setDeviceOffline: (info) => set((state) => {
+      delete state.deviceState.gatewayInfo[info.sn];
+      delete state.deviceState.deviceInfo[info.sn];
+      delete state.deviceState.dockInfo[info.sn];
+      delete state.hmsInfo[info.sn];
+      state.deviceStatusEvent.deviceOffline = info;
+    }),
+    setHmsInfo: (info) => set((state) => {
+      const hmsList: Array<DeviceHms> = state.hmsInfo[info.sn];
+      console.log('hmsList');
+      console.log(hmsList);
+      state.hmsInfo[info.sn] = info.host.concat(hmsList ?? []);
+    }),
+    // setHmsInfo:()
   }))
-}));
+);

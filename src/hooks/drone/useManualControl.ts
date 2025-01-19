@@ -1,5 +1,5 @@
 import {DeviceTopicInfo, useMqtt} from "@/hooks/drone/use-mqtt.ts";
-import {useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef} from "react";
 import {DRC_METHOD, DroneControlProtocol} from "@/types/drc.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 
@@ -15,28 +15,33 @@ export enum KeyCode {
 }
 
 export const useManualControl = (deviceTopicInfo: DeviceTopicInfo, isCurrentFlightController: boolean) => {
-  const [activeCodeKey, setActiveCodeKey] = useState<KeyCode | null>(null);
+  const activeCodeKeyRef = useRef<KeyCode | null>(null);
   const mqttHooks = useMqtt(deviceTopicInfo);
   const seqRef = useRef(0);
   const intervalRef = useRef<NodeJS.Timeout | undefined>();
+  const isKeyDownRef = useRef(false);
+
+  const handleClearInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = undefined;
+    }
+  }, []);
 
   const handlePublish = (params: DroneControlProtocol) => {
     const body = {
       method: DRC_METHOD.DRONE_CONTROL,
       data: params,
     };
-    handleClearInterval();
+    
+    if (intervalRef.current) return;
+    
     intervalRef.current = setInterval(() => {
       body.data.seq = seqRef.current++;
       seqRef.current++;
-      console.log("keyCode>>>>", activeCodeKey, body);
+      window.console.log('keyCode>>>>', activeCodeKeyRef.current, body);
       mqttHooks?.publishMqtt(deviceTopicInfo.pubTopic, body, {qos: 0});
     }, 50);
-  };
-
-  const handleClearInterval = () => {
-    clearInterval(intervalRef.current);
-    intervalRef.current = undefined;
   };
 
   const handleKeyup = (keyCode: KeyCode) => {
@@ -46,115 +51,98 @@ export const useManualControl = (deviceTopicInfo: DeviceTopicInfo, isCurrentFlig
         variant: "destructive"
       });
     }
-    const SPEED = 5; //  check
-    const HEIGHT = 5; //  check
-    const W_SPEED = 20; // 机头角速度
-    seqRef.current = 0;
+
+    if (!isKeyDownRef.current) return;
+
+    const SPEED = 5;
+    const HEIGHT = 5;
+    const W_SPEED = 20;
+
     switch (keyCode) {
-      case "KeyA":
-        if (activeCodeKey === keyCode) return;
+      case KeyCode.KEY_A:
         handlePublish({y: -SPEED});
-        setActiveCodeKey(keyCode);
+        activeCodeKeyRef.current = keyCode;
         break;
-      case "KeyW":
-        if (activeCodeKey === keyCode) return;
+      case KeyCode.KEY_W:
         handlePublish({x: SPEED});
-        setActiveCodeKey(keyCode);
+        activeCodeKeyRef.current = keyCode;
         break;
-      case "KeyS":
-        if (activeCodeKey === keyCode) return;
+      case KeyCode.KEY_S:
         handlePublish({x: -SPEED});
-        setActiveCodeKey(keyCode);
+        activeCodeKeyRef.current = keyCode;
         break;
-      case "KeyD":
-        if (activeCodeKey === keyCode) return;
+      case KeyCode.KEY_D:
         handlePublish({y: SPEED});
-        setActiveCodeKey(keyCode);
+        activeCodeKeyRef.current = keyCode;
         break;
       case "ArrowUp":
-        if (activeCodeKey === keyCode) return;
         handlePublish({h: HEIGHT});
-        setActiveCodeKey(keyCode);
+        activeCodeKeyRef.current = keyCode;
         break;
       case "ArrowDown":
-        if (activeCodeKey === keyCode) return;
         handlePublish({h: -HEIGHT});
-        setActiveCodeKey(keyCode);
+        activeCodeKeyRef.current = keyCode;
         break;
-      case "KeyQ":
-        if (activeCodeKey === keyCode) return;
+      case KeyCode.KEY_Q:
         handlePublish({w: -W_SPEED});
-        setActiveCodeKey(keyCode);
+        activeCodeKeyRef.current = keyCode;
         break;
-      case "KeyE":
-        if (activeCodeKey === keyCode) return;
+      case KeyCode.KEY_E:
         handlePublish({w: W_SPEED});
-        setActiveCodeKey(keyCode);
+        activeCodeKeyRef.current = keyCode;
         break;
       default:
         break;
     }
   };
 
-  const resetControlState = () => {
-    setActiveCodeKey(null);
+  const resetControlState = useCallback(() => {
+    activeCodeKeyRef.current = null;
     seqRef.current = 0;
+    isKeyDownRef.current = false;
     handleClearInterval();
-  };
-
-  const onKeyup = () => {
-    resetControlState();
-  };
-
-  const onKeydown = (e: KeyboardEvent) => {
-    handleKeyup(e.code as KeyCode);
-  };
-
-  const startKeyboardManualControl = () => {
-    window.addEventListener("keydown", onKeydown);
-    window.addEventListener("keyup", onKeyup);
-  };
-
-  const closeKeyboardManualControl = () => {
-    resetControlState();
-    window.removeEventListener("keydown", onKeydown);
-    window.removeEventListener("keyup", onKeyup);
-  };
+  }, []);
 
   useEffect(() => {
     if (isCurrentFlightController && deviceTopicInfo.pubTopic) {
-      startKeyboardManualControl();
-    } else {
-      closeKeyboardManualControl();
-    }
-  }, [isCurrentFlightController]);
+      const handleKeyDown = (e: KeyboardEvent) => {
+        isKeyDownRef.current = true;
+        handleKeyup(e.code as KeyCode);
+      };
 
-  useEffect(() => {
-    return () => {
-      closeKeyboardManualControl();
-    };
-  }, []);
+      const handleKeyUp = () => {
+        isKeyDownRef.current = false;
+        resetControlState();
+      };
 
-  const handleEmergencyStop = () => {
-    if (!deviceTopicInfo.pubTopic) {
-      return toast({
-        description: "请确保已经建立DRC链路",
-        variant: "destructive"
-      });
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
+
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("keyup", handleKeyUp);
+        resetControlState();
+      };
     }
-    const body = {
-      method: DRC_METHOD.DRONE_EMERGENCY_STOP,
-      data: {}
-    };
-    resetControlState();
-    console.log("handleEmergencyStop>>>>", deviceTopicInfo.pubTopic, body);
-    mqttHooks?.publishMqtt(deviceTopicInfo.pubTopic, body, {qos: 1});
-  };
+  }, [isCurrentFlightController, deviceTopicInfo.pubTopic, resetControlState]);
 
   return {
-    activeCodeKey,
+    activeCodeKey: activeCodeKeyRef.current,
     handleKeyup,
-    handleEmergencyStop,
+    handleEmergencyStop: () => {
+      if (!deviceTopicInfo.pubTopic) {
+        return toast({
+          description: "请确保已经建立DRC链路",
+          variant: "destructive"
+        });
+      }
+      const body = {
+        method: DRC_METHOD.DRONE_EMERGENCY_STOP,
+        data: {}
+      };
+      resetControlState();
+      mqttHooks?.publishMqtt(deviceTopicInfo.pubTopic, body, {qos: 1});
+    },
     resetControlState,
   };
 };
