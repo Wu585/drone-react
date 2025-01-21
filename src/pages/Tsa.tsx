@@ -1,4 +1,4 @@
-import {Eye, EyeOff, Info} from "lucide-react";
+import {Eye, EyeOff} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion.tsx";
 import {useOnlineDocks} from "@/hooks/drone";
@@ -7,7 +7,6 @@ import DronePanel from "@/components/drone/public/DronePanel.tsx";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {EDockModeCode, EModeCode} from "@/types/device.ts";
 import {OnlineDevice} from "@/hooks/drone/device.ts";
-import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 
 const Tsa = () => {
   const {
@@ -17,15 +16,20 @@ const Tsa = () => {
     setOsdVisible
   } = useSceneStore();
 
-  useInitialConnectWebSocket();
-
   const {onlineDocks} = useOnlineDocks();
 
   const switchVisible = (dock: OnlineDevice) => {
     if (dock.sn === osdVisible.sn) {
       setOsdVisible({
         ...osdVisible,
-        visible: !osdVisible.visible
+        sn: dock.sn,
+        callsign: dock.callsign,
+        model: dock.model,
+        gateway_sn: dock.gateway.sn,
+        gateway_callsign: dock.gateway.callsign,
+        payloads: dock.payload,
+        visible: !osdVisible.visible,
+        is_dock: true
       });
     } else {
       setOsdVisible({
@@ -46,12 +50,12 @@ const Tsa = () => {
       <div
         className={"w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r " +
           "from-[#074578]/[.5] to-[#0B142E]/[.9] rounded-tr-lg rounded-br-lg border-l-0"}>
-        <Accordion type="single" collapsible>
+        <Accordion type="single" defaultValue="item-1" collapsible>
           <AccordionItem value="item-1" className={"border-b-[1px] border-b-[#265C9A]"}>
             <AccordionTrigger className={"px-[12px]"}>
               <div className={"flex content-center space-x-4"}>
                 <span>机场</span>
-                <Info size={14}/>
+                {/*<Info size={14}/>*/}
               </div>
             </AccordionTrigger>
             <AccordionContent className={"p-[12px]"}>
@@ -78,7 +82,7 @@ const Tsa = () => {
                             deviceState.deviceInfo[dock.sn] && deviceState.deviceInfo[dock.sn].mode_code !== EDockModeCode.Disconnected ? "text-[#00ee8b]" : "text-red-500")}>
                             {deviceState.deviceInfo[dock.sn] ? EModeCode[deviceState.deviceInfo[dock.sn].mode_code] : EModeCode[EModeCode.Disconnected]}
                           </div>
-                          <div className={"w-1/3 bg-[#52607D] pl-4"}>N/A</div>
+                          <div className={"w-1/3 bg-[#52607D] pl-4"}></div>
                         </div>
                       </div>
                     </div>

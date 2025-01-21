@@ -8,16 +8,16 @@ export enum TaskType {
 }
 
 export const TaskTypeMap = {
-  [TaskType.Immediate]: '立即',
-  [TaskType.Timed]: '单次定时',
-  [TaskType.Condition]: '连续定时',
-}
+  [TaskType.Immediate]: "立即",
+  [TaskType.Timed]: "单次定时",
+  [TaskType.Condition]: "连续定时",
+};
 
 export const TaskTypeOptions = [
-  { value: TaskType.Immediate, label: TaskTypeMap[TaskType.Immediate] },
-  { value: TaskType.Timed, label: TaskTypeMap[TaskType.Timed] },
-  { value: TaskType.Condition, label: TaskTypeMap[TaskType.Condition] },
-]
+  {value: TaskType.Immediate, label: TaskTypeMap[TaskType.Immediate]},
+  {value: TaskType.Timed, label: TaskTypeMap[TaskType.Timed]},
+  {value: TaskType.Condition, label: TaskTypeMap[TaskType.Condition]},
+];
 
 // 失控动作
 export enum OutOfControlAction {
@@ -27,16 +27,16 @@ export enum OutOfControlAction {
 }
 
 export const OutOfControlActionMap = {
-  [OutOfControlAction.ReturnToHome]: '返航',
-  [OutOfControlAction.Hover]: '悬浮',
-  [OutOfControlAction.Land]: '着陆',
-}
+  [OutOfControlAction.ReturnToHome]: "返航",
+  [OutOfControlAction.Hover]: "悬浮",
+  [OutOfControlAction.Land]: "着陆",
+};
 
 export const OutOfControlActionOptions = [
-  { value: OutOfControlAction.ReturnToHome, label: OutOfControlActionMap[OutOfControlAction.ReturnToHome] },
-  { value: OutOfControlAction.Hover, label: OutOfControlActionMap[OutOfControlAction.Hover] },
-  { value: OutOfControlAction.Land, label: OutOfControlActionMap[OutOfControlAction.Land] },
-]
+  {value: OutOfControlAction.ReturnToHome, label: OutOfControlActionMap[OutOfControlAction.ReturnToHome]},
+  {value: OutOfControlAction.Hover, label: OutOfControlActionMap[OutOfControlAction.Hover]},
+  {value: OutOfControlAction.Land, label: OutOfControlActionMap[OutOfControlAction.Land]},
+];
 
 // 任务状态
 export enum TaskStatus {
@@ -49,14 +49,14 @@ export enum TaskStatus {
 }
 
 export const TaskStatusMap = {
-  [TaskStatus.Wait]: 'To be performed',
-  [TaskStatus.Carrying]: 'In progress',
-  [TaskStatus.Success]: 'Task completed',
-  [TaskStatus.CanCel]: 'Task canceled',
-  [TaskStatus.Fail]: 'Task failed',
-  [TaskStatus.Paused]: 'Paused',
+  [TaskStatus.Wait]: "待执行",
+  [TaskStatus.Carrying]: "执行中",
+  [TaskStatus.Success]: "完成",
+  [TaskStatus.CanCel]: "取消",
+  [TaskStatus.Fail]: "失败",
+  [TaskStatus.Paused]: "中止",
 
-}
+};
 
 export const TaskStatusColor = {
   [TaskStatus.Wait]: commonColor.BLUE,
@@ -65,29 +65,29 @@ export const TaskStatusColor = {
   [TaskStatus.CanCel]: commonColor.FAIL,
   [TaskStatus.Fail]: commonColor.FAIL,
   [TaskStatus.Paused]: commonColor.BLUE,
-}
+};
 
 // 任务执行 ws 消息状态
 export enum TaskProgressStatus {
-  Sent = 'sent', // 已下发
-  inProgress = 'in_progress', // 执行中
-  Paused = 'paused', // 暂停
-  Rejected = 'rejected', // 拒绝
-  Canceled = 'canceled', // 取消或终止
-  Timeout = 'timeout', // 超时
-  Failed = 'failed', // 失败
-  OK = 'ok', // 上传成功
+  Sent = "sent", // 已下发
+  inProgress = "in_progress", // 执行中
+  Paused = "paused", // 暂停
+  Rejected = "rejected", // 拒绝
+  Canceled = "canceled", // 取消或终止
+  Timeout = "timeout", // 超时
+  Failed = "failed", // 失败
+  OK = "ok", // 上传成功
 }
 
 // 任务进度消息
 export interface TaskProgressInfo {
   bid: string,
-  output:{
+  output: {
     ext: {
       current_waypoint_index: number,
       media_count: number // 媒体文件
     },
-    progress:{
+    progress: {
       current_step: number,
       percent: number
     },
@@ -106,7 +106,7 @@ export const TaskProgressWsStatusMap = {
   [TaskProgressStatus.Canceled]: TaskStatus.CanCel,
   [TaskProgressStatus.Timeout]: TaskStatus.Fail,
   [TaskProgressStatus.Paused]: TaskStatus.Paused,
-}
+};
 
 // 根据媒体文件上传进度信息，前端自己判断出的状态
 export enum MediaStatus { // 媒体上传进度
@@ -117,18 +117,18 @@ export enum MediaStatus { // 媒体上传进度
 }
 
 export const MediaStatusMap = {
-  [MediaStatus.ToUpload]: 'Waiting to upload',
-  [MediaStatus.Uploading]: 'Uploading…',
-  [MediaStatus.Success]: 'Uploaded',
-  [MediaStatus.Empty]: 'No media files',
-}
+  [MediaStatus.ToUpload]: "Waiting to upload",
+  [MediaStatus.Uploading]: "Uploading…",
+  [MediaStatus.Success]: "Uploaded",
+  [MediaStatus.Empty]: "No media files",
+};
 
 export const MediaStatusColorMap = {
   [MediaStatus.ToUpload]: commonColor.BLUE,
   [MediaStatus.Uploading]: commonColor.BLUE,
   [MediaStatus.Success]: commonColor.NORMAL,
   [MediaStatus.Empty]: commonColor.WARN,
-}
+};
 
 // 媒体上传进度消息
 export interface MediaStatusProgressInfo {

@@ -7,6 +7,7 @@ import {EDeviceTypeName, EModeCode, OnlineDevice} from "@/hooks/drone/device.ts"
 import {useToast} from "@/components/ui/use-toast.ts";
 import {OutOfControlAction, TaskStatus, TaskType} from "@/types/task.ts";
 import {WaylineType} from "@/types/wayline.ts";
+import {EFlightAreaType, FlightAreaContent} from "@/types/flight-area.ts";
 
 export const useDeviceTopo = (workspace_id: string) => {
   const {get} = useAjax();
@@ -329,7 +330,6 @@ export interface UserItem {
   create_time: string;
 }
 
-
 interface MembersData {
   list: UserItem[];
   pagination: Pagination;
@@ -343,4 +343,80 @@ export const useMembers = (workspaceId: string, body: Pagination) => {
   return useSWR(key, async ([path, body]) => (await get<Resource<MembersData>>(path, {
     ...body
   })).data.data);
+};
+
+
+interface Content {
+  properties: Properties;
+  geometry: Geometry;
+}
+
+interface Properties {
+  color: string;
+  clampToGround: boolean;
+}
+
+interface Geometry {
+  type: string;
+  coordinates: number[]; // 数组，包含经度和纬度
+  radius: number; // 半径
+}
+
+export interface AreaItem {
+  area_id: string;
+  name: string;
+  type: EFlightAreaType;
+  content: FlightAreaContent;
+  status: boolean;
+  username: string;
+  create_time: number; // 时间戳
+  update_time: number; // 时间戳
+}
+
+export const MAP_API_PREFIX = "/map/api/v1";
+// const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || ''
+// Get all flight areas
+export const useFlightAreas = (workspaceId: string) => {
+  const {get} = useAjax();
+  const url = `${MAP_API_PREFIX}/workspaces/${workspaceId}/flight-areas`;
+  return useSWR(url, async (path) => (await get<Resource<AreaItem[]>>(path)).data.data);
+};
+
+// get all elements
+interface Child {
+  type: number; // Assuming type is a number based on the provided data
+  content: {
+    type: string; // "Feature"
+    properties: {
+      color: string; // Hex color code
+      clampToGround: boolean; // true or false
+    };
+    geometry: {
+      type: string; // "Polygon" or "Point"
+      coordinates: Array<number[][] | number[]>; // Nested arrays for Polygon or single array for Point
+    };
+  };
+  user_name: string; // Username associated with the resource
+}
+
+interface Element {
+  id: string; // Unique identifier for the element
+  name: string; // Name of the element
+  resource: Child; // Resource associated with the element
+  create_time: number; // Timestamp for creation
+  update_time: number; // Timestamp for last update
+}
+
+interface Layer {
+  id: string; // Unique identifier for the layer
+  name: string; // Name of the layer
+  type: number; // Type of the layer (0, 1, 2, etc.)
+  elements: Element[]; // Array of elements in the layer
+  is_lock: boolean; // Lock status of the layer
+}
+
+export const useElementsGroups = (workspaceId: string) => {
+  const {get} = useAjax();
+  const url = `${MAP_API_PREFIX}/workspaces/` + workspaceId + "/element-groups";
+  return useSWR(url, async (path) => (await get<Resource<Layer[]>>(path)).data.data);
 };

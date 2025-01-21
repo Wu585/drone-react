@@ -1,6 +1,6 @@
 import {useAjax} from "@/lib/http.ts";
-import {ELocalStorageKey} from "@/types/enum.ts";
 import {
+  Airplay,
   Earth, Eclipse, HardDriveDownload,
   HardDriveUpload, LandPlot,
   Rocket,
@@ -22,7 +22,7 @@ import KeyboardControl from "@/components/drone/public/KeyboardControl.tsx";
 import {useNavigate} from "react-router-dom";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
-import {memo, useEffect, useState} from "react";
+import {memo, useState} from "react";
 import {useMqtt} from "@/hooks/drone/use-mqtt.ts";
 import {KeyCode, useManualControl} from "@/hooks/drone/useManualControl.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
@@ -34,11 +34,21 @@ import {CURRENT_CONFIG} from "@/lib/config.ts";
 import {useVideoJS} from "react-hook-videojs";
 import {useCapacity} from "@/hooks/drone";
 import {useFlightControl} from "@/hooks/drone/useFlightControl.ts";
+import {useMapTool} from "@/hooks/drone/map/useMapTool.ts";
+import {GeojsonCoordinate} from "@/types/map.ts";
+import {wgs84togcj02} from "@/vendor/coordtransform.ts";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
 
 const MANAGE_HTTP_PREFIX = "/manage/api/v1";
+
+const getGcj02 = <T extends GeojsonCoordinate | GeojsonCoordinate[]>(coordinate: T): T => {
+  if (coordinate[0] instanceof Array) {
+    return (coordinate as GeojsonCoordinate[]).map(c => wgs84togcj02(c[0], c[1])) as T;
+  }
+  return wgs84togcj02(coordinate[0], coordinate[1]);
+};
 
 const DronePanel = () => {
   const osdVisible = useSceneStore(state => state.osdVisible);
@@ -55,7 +65,13 @@ const DronePanel = () => {
 
   const {post, delete: deleteClient} = useAjax();
 
-  const {isRemoteControl, exitFlightControl, enterFlightControl, deviceTopicInfo, outRemoteControl} = useFlightControl();
+  const {
+    isRemoteControl,
+    exitFlightControl,
+    enterFlightControl,
+    deviceTopicInfo,
+    outRemoteControl
+  } = useFlightControl();
 
   useMqtt(deviceTopicInfo);
 
@@ -211,6 +227,12 @@ const DronePanel = () => {
     setDeviceVideoSrc("");
   };
 
+  const useMapToolHook = useMapTool();
+  const onPintoDock = () => {
+    const coordinate = getGcj02([deviceInfo.dock.basic_osd.longitude, deviceInfo.dock.basic_osd.latitude]);
+    useMapToolHook.panTo(coordinate);
+  };
+
   return (
     <div className={"flex relative"}>
       <div className={"w-[422px] bg-control-panel bg-full-size relative"}>
@@ -220,7 +242,7 @@ const DronePanel = () => {
           DJI Dock
         </div>
         <div className={"flex text-[12px] border-b-[1px] border-[#104992]/[.85] mr-[4px]"}>
-          <div className={"w-[65px] bg-[#2A8DFE]/[.5] content-center"}>Dock</div>
+          <div className={"w-[65px] bg-[#2A8DFE]/[.5] content-center"} onClick={onPintoDock}>Dock</div>
           <div className={"flex-1 p-[12px] space-y-2 bg-[#001E37]/[.9]"}>
             <div className={"grid grid-cols-4"}>
               <span className={"col-span-1 py-[2px] text-[#40F2FF]"}>设备状态</span>
@@ -300,7 +322,9 @@ const DronePanel = () => {
           </div>
         </div>
         <div className={"flex text-[12px] border-b-[1px] border-[#104992]/[.85] mr-[4px]"}>
-          <div className={"w-[65px] bg-[#2A8DFE]/[.5] content-center"}>M30</div>
+          <div className={"w-[65px] bg-[#2A8DFE]/[.5] content-center text-center"}>
+            {osdVisible.model}
+          </div>
           <div className={"flex-1 p-[12px] space-y-2 bg-[#001E37]/[.9]"}>
             <div className={"grid grid-cols-4"}>
               <span className={"col-span-1 py-[2px] text-[#40F2FF]"}>设备状态</span>
@@ -461,7 +485,7 @@ const DronePanel = () => {
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
                   <span className={"text-[12px]"}>ALT</span>
-                  <span>{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}</span>
+                  <span>{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " m" : str}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
@@ -548,9 +572,9 @@ const DronePanel = () => {
                 <Button key={cmdItem.cmdKey} onClick={() => sendControlCmd(cmdItem)}
                         className={"bg-[#104992]/[.85] h-6 w-14"}>{cmdItem.operateText}</Button>)}
             </div>
-            <div className={"flex items-center space-x-4 bg-[#104992]/[.85] px-2 py-[2px] cursor-pointer"}
+            <div className={"content-center space-x-4 bg-[#104992]/[.85] px-2 py-[2px] cursor-pointer"}
                  onClick={onClickCockpit}>
-              <Settings size={16}/>
+              <Airplay size={16}/>
               <span>虚拟座舱</span>
             </div>
           </div>

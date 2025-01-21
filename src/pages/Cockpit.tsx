@@ -3,6 +3,12 @@ import batteryPng from "@/assets/images/drone/cockpit/battery.png";
 import workTimePng from "@/assets/images/drone/cockpit/work-time.png";
 import flyTimePng from "@/assets/images/drone/cockpit/fly-time.png";
 import rtkPng from "@/assets/images/drone/cockpit/rtk.png";
+import czsd from "@/assets/images/drone/cockpit/czsd.png";
+import spsd from "@/assets/images/drone/cockpit/spsd.png";
+import asl from "@/assets/images/drone/cockpit/asl.png";
+import alt from "@/assets/images/drone/cockpit/alt.png";
+import windSpeed from "@/assets/images/drone/cockpit/wind-speed.png";
+import qsdjl from "@/assets/images/drone/cockpit/qsdjl.png";
 import CockpitTitle from "@/components/drone/public/CockpitTitle.tsx";
 import weatherBasePng from "@/assets/images/drone/cockpit/weather-base.png";
 import cloudyPng from "@/assets/images/drone/cockpit/cloudy.png";
@@ -13,8 +19,8 @@ import windPowerPng from "@/assets/images/drone/cockpit/wind-power.png";
 import CockpitFlyControl from "@/components/drone/public/CockpitFlyControl.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import GMap from "@/components/drone/public/GMap.tsx";
-import {useDeviceVideo} from "@/hooks/drone/useDeviceVideo.ts";
-import {useEffect} from "react";
+import {clarityList, useDeviceVideo} from "@/hooks/drone/useDeviceVideo.ts";
+import {useEffect, useState} from "react";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {useSearchParams} from "react-router-dom";
@@ -41,6 +47,16 @@ import {useAjax} from "@/lib/http.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {EModeCode, RainfallEnum} from "@/types/device.ts";
 import {cn} from "@/lib/utils.ts";
+import PayloadControl from "@/components/drone/PayloadControl.tsx";
+import compassWrapperPng from "@/assets/images/drone/cockpit/compass-wrapper.png";
+import compassPng from "@/assets/images/drone/cockpit/compass.png";
+import {RefreshCcw, Settings} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -65,7 +81,30 @@ const Cockpit = () => {
     },
   });
 
-  const {dockVideoSrc, Video, startDockVideo, deviceVideoSrc, DeviceVideo, startDeviceVideo} = useDeviceVideo();
+  const {
+    dockVideoSrc,
+    Video,
+    startDockVideo,
+    onRefreshDockVideo,
+    updateVideo,
+    deviceVideoSrc,
+    DeviceVideo,
+    startDeviceVideo,
+    stopDeviceVideo,
+    onRefreshDeviceVideo,
+    dockPosition,
+    devicePosition,
+    setDockPosition,
+    setDevicePosition,
+    setCurrentDeviceCamera,
+    stopDockVideo,
+    currentDeviceCamera,
+    currentMode,
+    setCurrentMode,
+    switchDeviceVideoMode
+  } = useDeviceVideo();
+  console.log("deviceVideoSrc");
+  console.log(deviceVideoSrc);
   const {post} = useAjax();
   const {data: capacityData} = useCapacity();
   const {onlineDocks} = useOnlineDocks();
@@ -73,14 +112,22 @@ const Cockpit = () => {
   const [searchParams] = useSearchParams();
   const dockSn = searchParams.get("gateway_sn") || "";
   const deviceSn = searchParams.get("sn") || "";
-  // useEffect(() => {
-  //   if (capacityData) {
-  //     startDockVideo(dockSn);
-  //     startDeviceVideo(deviceSn);
-  //   }
-  // }, [capacityData]);
-
   const deviceInfo = useRealTimeDeviceInfo();
+  const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
+
+  useEffect(() => {
+    console.log("capacityData");
+    console.log(capacityData);
+    if (capacityData) {
+      startDockVideo(dockSn);
+      console.log("deviceStatus=======================");
+      console.log(deviceStatus);
+      if (deviceStatus !== EModeCode[EModeCode.Disconnected]) {
+        startDeviceVideo(deviceSn);
+      }
+    }
+  }, [capacityData, deviceStatus]);
+
   useEffect(() => {
     console.log("deviceInfo");
     console.log(deviceInfo);
@@ -106,27 +153,62 @@ const Cockpit = () => {
     const resp: any = await post(`${DRC_API_PREFIX}/devices/${dockSn}/jobs/takeoff-to-point`, body);
     if (resp.data.code === 0) {
       toast({
-        description: <span className={"text-green-500"}>起飞成功</span>
+        description: <span>起飞成功</span>
       });
     }
   };
 
-  const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
-  console.log("onlineDocks");
-  console.log(onlineDocks);
   const deviceType = onlineDocks.find(item => item.sn === deviceSn);
+
+  const onChangeClarity = async (value: string) => {
+    await updateVideo(dockSn, +value);
+    setDockPosition(value);
+  };
+
+  // useEffect(() => {
+  //   return () => {
+  //     stopDockVideo();
+  //     console.log('currentDeviceCamera');
+  //     console.log(currentDeviceCamera);
+  //     stopDeviceVideo(currentDeviceCamera);
+  //   };
+  // }, [currentDeviceCamera]);
+
+  const onSwitchMode = async (mode: "ir" | "wide" | "zoom") => {
+    await switchDeviceVideoMode(mode, currentDeviceCamera);
+  };
 
   return (
     <FitScreen width={1920} height={1080} mode="full">
       <Form {...form}>
         <form className={"h-full bg-cockpit bg-full-size relative grid grid-cols-5"}
               onSubmit={form.handleSubmit(onSubmit)}>
-          <header className={"bg-cockpit-header h-[164px] bg-full-size absolute top-0 w-full left-0 flex justify-center py-4"}>
-            远程控制 - <span className={!deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected ? "text-red-500 px-2 font-bold" : "text-[#00ee8b] px-2 font-bold"}>{deviceStatus}</span>
+          <header
+            className={"bg-cockpit-header h-[164px] bg-full-size absolute top-0 w-full left-0 flex justify-center py-4 z-10"}>
+            远程控制 - <span
+            className={!deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected ? "text-red-500 px-2 font-bold" : "text-[#00ee8b] px-2 font-bold"}>{deviceStatus}</span>
           </header>
-          <div className={"col-span-1"}>
-            <div className={"mt-[123px] ml-[53px] mb-[16px]"}>
+          <div className={"col-span-1 z-50"}>
+            <div className={"mt-[123px] ml-[53px] mb-[12px] flex items-center justify-between pr-4 z-50"}>
               <CockpitTitle title={"机场直播"}/>
+              <div className={"flex space-x-2"}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <Settings size={16}/>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-16">
+                    <DropdownMenuLabel>清晰度</DropdownMenuLabel>
+                    <DropdownMenuRadioGroup
+                      value={dockPosition}
+                      onValueChange={onChangeClarity}>
+                      {clarityList.map(item =>
+                        <DropdownMenuRadioItem key={item.value}
+                                               value={item.value.toString()}>{item.label}</DropdownMenuRadioItem>)}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <RefreshCcw className={"cursor-pointer"} onClick={() => onRefreshDockVideo(dockSn)} size={16}/>
+              </div>
             </div>
             <div className={"w-[360px] h-[186px] ml-[30px]"}>
               {dockVideoSrc && <Video className={"video-js vjs-default-skin h-[180px] w-full"}/>}
@@ -350,17 +432,34 @@ const Cockpit = () => {
               />
             </div>
           </div>
-          <div className={"col-span-3"}>
-            <div className={"h-[596px] bg-center-video mt-[52px] bg-full-size content-center"}>
-              {deviceVideoSrc ? <DeviceVideo
-                  className={"video-js vjs-default-skin h-[500px] w-[1030px] rounded-[100px] overflow-auto"}/> :
+          <div className={"col-span-3 z-50"}>
+            <div className={"h-[596px] bg-center-video mt-[52px] bg-full-size content-center relative"}>
+              {deviceStatus !== EModeCode[EModeCode.Disconnected] ? <DeviceVideo
+                  className={"video-js vjs-default-skin h-[450px] w-[930px] rounded-[100px] overflow-visible"}/> :
                 <div className={"text-[#d0d0d0]"}>
                   当前设备已关机，无法进行直播
                 </div>}
+              <div className={"absolute right-40 top-10 z-50"}>
+                <PayloadControl
+                  currentMode={currentMode}
+                  onChangeMode={onSwitchMode}
+                  currentDeviceCamera={currentDeviceCamera}
+                  onChangeCamera={async (value) => {
+                    await stopDeviceVideo(currentDeviceCamera);
+                    setCurrentDeviceCamera(value);
+                    await startDeviceVideo(deviceSn, value);
+                  }}
+                  deviceSn={deviceSn}
+                  devicePosition={devicePosition}
+                  setDevicePosition={setDevicePosition}
+                  onRefreshVideo={() => onRefreshDeviceVideo(deviceSn)}
+                  updateVideo={(value) => updateVideo(deviceSn, +value, "device", currentDeviceCamera)}
+                />
+              </div>
             </div>
             <div className={"grid grid-cols-3 h-[380px]"}>
-              <div className={"col-span-1 py-8"}>
-                <div className={"grid grid-cols-2 gap-10"}>
+              <div className={"col-span-1 py-6 space-y-8"}>
+                <div className={"grid grid-cols-2 gap-8"}>
                   <div className={"flex space-x-4"}>
                     <img src={batteryPng} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
@@ -368,20 +467,6 @@ const Cockpit = () => {
                       <span>
                         {deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}
                       </span>
-                    </div>
-                  </div>
-                  <div className={"flex space-x-4"}>
-                    <img src={workTimePng} alt=""/>
-                    <div className={"flex flex-col justify-center space-y-2"}>
-                      <span className={"text-[12px] text-[#D0D0D0] whitespace-nowrap"}>剩余作业时长</span>
-                      <span>30min</span>
-                    </div>
-                  </div>
-                  <div className={"flex space-x-4"}>
-                    <img src={flyTimePng} alt=""/>
-                    <div className={"flex flex-col justify-center space-y-2"}>
-                      <span className={"text-[12px] text-[#D0D0D0]"}>剩余飞行时长</span>
-                      <span>30min</span>
                     </div>
                   </div>
                   <div className={"flex space-x-4"}>
@@ -393,9 +478,58 @@ const Cockpit = () => {
                       </span>
                     </div>
                   </div>
+                  <div className={"flex space-x-4"}>
+                    <img src={czsd} alt=""/>
+                    <div className={"flex flex-col justify-center space-y-2"}>
+                      <span className={"text-[12px] text-[#D0D0D0]"}>垂直速度</span>
+                      <span>{!deviceInfo.device || deviceInfo.device.vertical_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
+                    </div>
+                  </div>
+                  <div className={"flex space-x-4"}>
+                    <img src={spsd} alt=""/>
+                    <div className={"flex flex-col justify-center space-y-2"}>
+                      <span
+                        className={"text-[12px] text-[#D0D0D0]"}>水平速度</span>
+                      <span>{!deviceInfo.device || deviceInfo.device?.horizontal_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className={"grid grid-cols-2 gap-8"}>
+                  <div className={"flex space-x-4"}>
+                    <img src={asl} alt=""/>
+                    <div className={"flex flex-col justify-center space-y-2"}>
+                      <span className={"text-[12px] text-[#D0D0D0]"}>ASL</span>
+                      <span>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height).toFixed(2) + " m"}</span>
+                    </div>
+                  </div>
+                  <div className={"flex space-x-4"}>
+                    <img src={alt} alt=""/>
+                    <div className={"flex flex-col justify-center space-y-2"}>
+                      <span className={"text-[12px] text-[#D0D0D0] whitespace-nowrap"}>ALT</span>
+                      <span>{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " m" : str}</span>
+                    </div>
+                  </div>
+                  <div className={"flex space-x-4"}>
+                    <img src={windSpeed} alt=""/>
+                    <div className={"flex flex-col justify-center space-y-2"}>
+                      <span className={"text-[12px] text-[#D0D0D0]"}>风速</span>
+                      <span>{!deviceInfo.device || deviceInfo.device.wind_speed === str ? str : (parseFloat(deviceInfo.device?.wind_speed) / 10).toFixed(2) + " m/s"}</span>
+                    </div>
+                  </div>
+                  <div className={"flex space-x-4"}>
+                    <img src={qsdjl} alt=""/>
+                    <div className={"flex flex-col justify-center space-y-2"}>
+                      <span className={"text-[12px] text-[#D0D0D0]"}>距起始点距离</span>
+                      <span>
+                        {deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className={"col-span-1h-full relative"}>
+              <div className={"col-span-1h-full relative content-center"}>
+                <img src={compassWrapperPng} className={"absolute right-14 scale-150 bottom-28"} alt=""/>
+                <img src={compassPng} className={"absolute left-18 top-[70px]"} alt=""/>
                 <Button type={"submit"} className={"bg-transparent absolute bottom-0"}>
                   <img src={yjqfPng} alt=""/>
                 </Button>
@@ -447,10 +581,6 @@ const Cockpit = () => {
                 <span>温度：</span>
                 <div className={"text-[34px]"}>
                   {deviceInfo.dock.basic_osd?.environment_temperature}°C
-                </div>
-                <div>
-                  <span>当前状态：</span>
-                  <span className={"text-[#2BE7FF]"}>适合飞行</span>
                 </div>
               </div>
             </div>

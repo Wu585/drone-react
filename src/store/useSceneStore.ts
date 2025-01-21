@@ -52,6 +52,22 @@ interface SceneState {
   hmsInfo: {
     [sn: string]: DeviceHms[]
   };
+  mapState: {
+    aMap: any // Map类
+    map: any // 地图对象
+    mouseTool: any
+  };
+  coverMap: {
+    [key: string]: any[]
+  };
+  markerInfo: {
+    coverMap: {
+      [sn: string]: any
+    },
+    pathMap: {
+      [sn: string]: any[]
+    }
+  };
 }
 
 interface SceneActions {
@@ -68,6 +84,11 @@ interface SceneActions {
   setDeviceOnline: (info: DeviceStatus) => void;
   setDeviceOffline: (info: any) => void;
   setHmsInfo: (info: any) => void;
+  setMapState: (mapState: SceneState["mapState"]) => void;
+  setCoverMap: (key: string, value: any[]) => void;
+  setMarkerInfoCoverMap: (key: string, value: any) => void;
+  deleteMarkerInfoCoverMap: (key: string) => void;
+  deleteMarkerInfoPathMap: (key: string) => void;
 }
 
 export const useSceneStore = create<SceneState & SceneActions>()(
@@ -103,6 +124,16 @@ export const useSceneStore = create<SceneState & SceneActions>()(
       deviceOffline: {}
     },
     hmsInfo: {},
+    mapState: {
+      aMap: null,
+      map: null,
+      mouseTool: null
+    },
+    coverMap: {},
+    markerInfo: {
+      pathMap: {},
+      coverMap: {}
+    },
 
     // Actions
     setKeyAreas: (keyAreas) => set((state) => {
@@ -178,10 +209,27 @@ export const useSceneStore = create<SceneState & SceneActions>()(
     }),
     setHmsInfo: (info) => set((state) => {
       const hmsList: Array<DeviceHms> = state.hmsInfo[info.sn];
-      console.log('hmsList');
+      console.log("hmsList");
       console.log(hmsList);
       state.hmsInfo[info.sn] = info.host.concat(hmsList ?? []);
     }),
-    // setHmsInfo:()
+    setMapState: (mapState) => set((state) => {
+      state.mapState = mapState;
+    }),
+    setCoverMap: (key: string, value: any[]) => set((state) => ({
+      coverMap: {
+        ...state.coverMap,
+        [key]: value
+      }
+    })),
+    setMarkerInfoCoverMap: (key: string, value: any) => set((state) => {
+      state.markerInfo.coverMap[key] = value;
+    }),
+    deleteMarkerInfoCoverMap: (key: string) => set((state) => {
+      delete state.markerInfo.coverMap[key];
+    }),
+    deleteMarkerInfoPathMap: (key: string) => set((state) => {
+      delete state.markerInfo.pathMap[key];
+    })
   }))
 );

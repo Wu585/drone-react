@@ -1,5 +1,6 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
+import {MapDoodleColor, MapElementEnum, MapGeographicPosition, pinAMapPosition} from "@/types/map.ts";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -245,3 +246,163 @@ export const convertWebRTCtoHTTP = (webrtcUrl: string) => {
 
   return ""; // 如果格式不正确，返回null
 };
+
+export type GeojsonCoordinate = [number, number, number?]
+
+export interface GeojsonLine {
+  type: "Feature";
+  properties: {
+    color: string
+    directConnected?: boolean
+  };
+  geometry: {
+    type: "LineString"
+    coordinates: GeojsonCoordinate[]
+  };
+}
+
+export interface GeojsonPolygon {
+  type: "Feature";
+  properties: {
+    color: string
+  };
+  geometry: {
+    type: "Polygon"
+    coordinates: GeojsonCoordinate[][]
+  };
+}
+
+export interface GeojsonPoint {
+  type: "Feature";
+  properties: {
+    color: string
+    clampToGround?: boolean
+  };
+  geometry: {
+    type: "Point"
+    coordinates: GeojsonCoordinate
+  };
+}
+
+export interface GeojsonCircle {
+  type: "Feature";
+  properties: {
+    color: string
+    clampToGround?: boolean
+  };
+  geometry: {
+    type: "Circle"
+    coordinates: GeojsonCoordinate
+    radius: number
+  };
+}
+
+export type GeojsonFeature = GeojsonLine | GeojsonPolygon | GeojsonPoint | GeojsonCircle
+
+export function geographic2Coordinate(position: MapGeographicPosition): GeojsonCoordinate {
+  const coordinates: GeojsonCoordinate = [position.longitude, position.latitude];
+  if (position.height !== undefined) coordinates.push(position.height);
+  return coordinates;
+}
+
+export function generateLine(coordinates: MapGeographicPosition[], properties: GeojsonLine["properties"]): GeojsonFeature {
+  return {
+    type: "Feature",
+    properties,
+    geometry: {
+      type: "LineString",
+      coordinates: coordinates.map(geographic2Coordinate),
+    },
+  };
+}
+
+export function generatePolygon(coordinates: MapGeographicPosition[], properties: GeojsonPolygon["properties"]): GeojsonFeature {
+  return {
+    type: "Feature",
+    properties,
+    geometry: {
+      type: "Polygon",
+      coordinates: [coordinates.map(geographic2Coordinate)],
+    },
+  };
+}
+
+export function generatePoint(position: MapGeographicPosition, properties: GeojsonPoint["properties"]): GeojsonFeature {
+  return {
+    type: "Feature",
+    properties,
+    geometry: {
+      type: "Point",
+      coordinates: geographic2Coordinate(position),
+    },
+  };
+}
+
+export function generateCircle(position: MapGeographicPosition, properties: GeojsonCircle["properties"], radius: number): GeojsonFeature {
+  return {
+    type: "Feature",
+    properties,
+    geometry: {
+      type: "Circle",
+      coordinates: geographic2Coordinate(position),
+      radius: radius,
+    },
+  };
+}
+
+export function uuidv4() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === "x" ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function getPinPosition(pinAMapPosition: pinAMapPosition): MapGeographicPosition {
+  return {height: 0, latitude: pinAMapPosition.lat, longitude: pinAMapPosition.lng};
+}
+
+export function generatePointContent(pinAMapPosition: pinAMapPosition) {
+  const position = getPinPosition(pinAMapPosition);
+  return {
+    type: MapElementEnum.PIN,
+    content: generatePoint(position, {
+      color: MapDoodleColor.PinColor,
+      clampToGround: true,
+    })
+  };
+}
+
+function getLieOrPolyPosition(mapPosition: pinAMapPosition[]): MapGeographicPosition[] {
+  const position = [] as MapGeographicPosition[];
+  mapPosition.forEach(item => {
+    position.push({height: 0, latitude: item.lat, longitude: item.lng});
+  });
+  return position;
+}
+
+export function generateLineContent(mapPosition: pinAMapPosition[]) {
+  const position = getLieOrPolyPosition(mapPosition);
+  return {
+    type: MapElementEnum.LINE,
+    content: generateLine(position, {
+      color: MapDoodleColor.PolylineColor,
+      directConnected: false,
+    })
+  };
+}
+
+export function generatePolyContent(mapPosition: pinAMapPosition[]) {
+  const position = getLieOrPolyPosition(mapPosition);
+  return {
+    type: MapElementEnum.POLY,
+    content: generatePolygon(position, {
+      color: MapDoodleColor.PolygonColor,
+    })
+  };
+}
+
+export function generateCircleContent(pinAMapPosition: pinAMapPosition, radius: number) {
+  const position = getPinPosition(pinAMapPosition);
+  return generateCircle(position, {color: MapDoodleColor.PolygonColor}, radius);
+}

@@ -9,6 +9,7 @@ import TaskCreate from "@/pages/TaskCreate.tsx";
 import DeviceManage from "@/pages/DeviceManage.tsx";
 import Media from "@/pages/Media.tsx";
 import Members from "@/pages/Members.tsx";
+import FlightArea from "@/pages/FlightArea.tsx";
 
 const Login = lazy(() => import("@/pages/hgyq/Login.tsx"));
 
@@ -50,6 +51,10 @@ export const routes: RouteObject[] = [
       {
         path: "task-create",
         element: <TaskCreate/>
+      },
+      {
+        path: "flight-area",
+        element: <FlightArea/>
       },
       {
         path: "media",

@@ -9,49 +9,85 @@ import {useEffect, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {Task, useWaylinJobs} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {OutOfControlActionMap, TaskTypeMap} from "@/types/task.ts";
+import {OutOfControlActionMap, TaskStatus, TaskStatusColor, TaskStatusMap, TaskTypeMap} from "@/types/task.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
+import {cn} from "@/lib/utils.ts";
+import {useAjax} from "@/lib/http.ts";
+import {toast} from "@/components/ui/use-toast.ts";
 
-export const columns: ColumnDef<Task>[] = [
-  {
-    accessorKey: "job_name",
-    header: "任务名",
-  },
-  {
-    accessorKey: "task_type",
-    header: "任务类型",
-    cell: ({row}) => <span>{TaskTypeMap[row.original.task_type]}</span>
-  },
-  {
-    accessorKey: "file_name",
-    header: "线路名称",
-  },
-  {
-    accessorKey: "dock_name",
-    header: "机场",
-  },
-  {
-    accessorKey: "rth_altitude",
-    header: "RTH高度",
-  },
-  {
-    accessorKey: "out_of_control_action",
-    header: "失联动作",
-    cell: ({row}) => <span>{OutOfControlActionMap[row.original.out_of_control_action]}</span>
-  },
-  {
-    accessorKey: "username",
-    header: "用户",
-  },
-  {
-    header: "操作",
-    cell: () => <span className={"bg-[#43ABFF] hover:bg-[#43ABFF] py-2 px-4 rounded-md cursor-pointer"}>删除</span>
-  }
-];
+function formatTaskStatus(task: Task) {
+  const statusObj = {
+    text: "",
+    color: ""
+  };
+  const {status} = task;
+  statusObj.text = TaskStatusMap[status];
+  statusObj.color = TaskStatusColor[status];
+  return statusObj;
+}
 
 const TaskDataTable = () => {
+  const {delete: deleteClient} = useAjax();
+
+  const columns: ColumnDef<Task>[] = [
+    {
+      accessorKey: "job_name",
+      header: "任务名",
+    },
+    {
+      accessorKey: "task_type",
+      header: "任务类型",
+      cell: ({row}) => <span>{TaskTypeMap[row.original.task_type]}</span>
+    },
+    {
+      accessorKey: "task_type",
+      header: "任务类型",
+      cell: ({row}) =>
+        <span className={`text-[${formatTaskStatus(row.original).color}]`}>{formatTaskStatus(row.original).text}</span>
+    },
+    {
+      accessorKey: "file_name",
+      header: "线路名称",
+    },
+    {
+      accessorKey: "dock_name",
+      header: "机场",
+    },
+    {
+      accessorKey: "rth_altitude",
+      header: "RTH高度",
+    },
+    {
+      accessorKey: "out_of_control_action",
+      header: "失联动作",
+      cell: ({row}) => <span>{OutOfControlActionMap[row.original.out_of_control_action]}</span>
+    },
+    {
+      accessorKey: "username",
+      header: "用户",
+    },
+    {
+      header: "操作",
+      cell: ({row}) =>
+        <span
+          onClick={() => onDeleteTask(row.original.job_id)}
+          className={cn("bg-[#43ABFF] hover:bg-[#43ABFF] py-2 px-4 rounded-md cursor-pointer", row.original.status === TaskStatus.Wait ? "" : "bg-transparent")}>
+        {row.original.status === TaskStatus.Wait && "删除"}
+      </span>
+    }
+  ];
+
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const HTTP_PREFIX = "/wayline/api/v1";
+  const onDeleteTask = async (jobId: string) => {
+    await deleteClient(`${HTTP_PREFIX}/workspaces/${workspaceId}/jobs`, {
+      job_id: jobId
+    });
+    toast({
+      description: "任务取消成功！"
+    });
+  };
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     []

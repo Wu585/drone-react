@@ -120,7 +120,7 @@ export const useRealTimeDeviceInfo = () => {
         setDeviceInfo(prev => ({
           ...prev,
           dock: currentDock,
-          device: deviceStateInfo[(currentDock.basic_osd.sub_device?.device_sn ?? osdVisible.sn)!]
+          device: deviceStateInfo[(currentDock?.basic_osd?.sub_device?.device_sn ?? osdVisible.sn)!]
         }));
       }
     }

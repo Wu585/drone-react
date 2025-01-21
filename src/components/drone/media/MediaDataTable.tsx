@@ -11,12 +11,26 @@ import {downloadFile, FileItem, MEDIA_HTTP_PREFIX, useMediaList} from "@/hooks/d
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
-import {Download} from "lucide-react";
+import {Download, Loader} from "lucide-react";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 
 const MeidaDataTable = () => {
   const {get} = useAjax();
+
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+
+  const addDownloadingId = (id: string) => {
+    setDownloadingIds(prev => new Set(prev).add(id));
+  };
+
+  const removeDownloadingId = (id: string) => {
+    setDownloadingIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
+  };
 
   const columns: ColumnDef<FileItem>[] = [
     {
@@ -51,34 +65,27 @@ const MeidaDataTable = () => {
     },
     {
       header: "操作",
-      cell: ({row}) =>
-        <span className={"cursor-pointer"}
-              onClick={() => downloadMediaFile(workspaceId, row.original.file_id, row.original.file_name)}>
-      <Download size={18}/>
-    </span>
+      cell: ({row}) => {
+        const isDownloading = downloadingIds.has(row.original.file_id);
+        return (
+          <span 
+            className={`flex items-center ${isDownloading ? 'opacity-50' : 'cursor-pointer hover:opacity-80'}`}
+            onClick={() => {
+              if (!isDownloading) {
+                downloadMediaFile(workspaceId, row.original.file_id, row.original.file_name);
+              }
+            }}
+          >
+            {isDownloading ? (
+              <Loader className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download size={18}/>
+            )}
+          </span>
+        );
+      }
     }
   ];
-
-  const downloadMediaFile = async (workspaceId: string, fileId: string, fileName: string) => {
-    const url = `${MEDIA_HTTP_PREFIX}/files/${workspaceId}/file/${fileId}/url`;
-    const result: any = await get(url, {}, {responseType: "blob"});
-    if (!result.data) return;
-    if (result.data.type === "application/json") {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const text = reader.result as string;
-        const result = JSON.parse(text);
-        toast({
-          description: result.data.message,
-          variant: "destructive"
-        });
-      };
-      reader.readAsText(result.data, "utf-8");
-    } else {
-      const data = new Blob([result.data]);
-      downloadFile(data, fileName);
-    }
-  };
 
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
@@ -123,6 +130,33 @@ const MeidaDataTable = () => {
       pagination: pagination,
     },
   });
+
+  const downloadMediaFile = async (workspaceId: string, fileId: string, fileName: string) => {
+    try {
+      addDownloadingId(fileId);
+      const url = `${MEDIA_HTTP_PREFIX}/files/${workspaceId}/file/${fileId}/url`;
+      const result: any = await get(url, {}, {responseType: "blob"});
+      if (!result.data) return;
+      
+      if (result.data.type === "application/json") {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const text = reader.result as string;
+          const result = JSON.parse(text);
+          toast({
+            description: result.data.message,
+            variant: "destructive"
+          });
+        };
+        reader.readAsText(result.data, "utf-8");
+      } else {
+        const data = new Blob([result.data]);
+        downloadFile(data, fileName);
+      }
+    } finally {
+      removeDownloadingId(fileId);
+    }
+  };
 
   return (
     <div>

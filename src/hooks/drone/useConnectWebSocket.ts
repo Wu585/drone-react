@@ -1,6 +1,7 @@
 import {EBizCode} from "@/types/enum.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {useConnectWebSocket} from "@/lib/websocket/useConnectWebSocket.ts";
+import EventBus from "@/lib/event-bus.ts";
 
 export const useInitialConnectWebSocket = () => {
   const {
@@ -39,6 +40,11 @@ export const useInitialConnectWebSocket = () => {
       }
       case EBizCode.DeviceHms: {
         setHmsInfo(payload.data);
+        break;
+      }
+      case EBizCode.FlightAreasUpdate: {
+        console.log("flightAreasUpdateWs===", payload.data);
+        EventBus.emit("flightAreasUpdateWs", payload.data);
         break;
       }
     }
