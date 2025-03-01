@@ -10,6 +10,11 @@ import DeviceManage from "@/pages/DeviceManage.tsx";
 import Media from "@/pages/Media.tsx";
 import Members from "@/pages/Members.tsx";
 import FlightArea from "@/pages/FlightArea.tsx";
+import OrganDetail from "@/pages/OrganDetail.tsx";
+import DepartPage from "@/pages/DepartPage.tsx";
+import Screen from "@/pages/Screen.tsx";
+import BookOrderPage from "@/pages/BookOrderPage.tsx";
+import TestStep from "@/pages/TestStep.tsx";
 
 const Login = lazy(() => import("@/pages/hgyq/Login.tsx"));
 
@@ -29,6 +34,12 @@ export const routes: RouteObject[] = [
     ),
   },
   {
+    path: "/screen",
+    element: (
+      <Screen/>
+    ),
+  },
+  {
     path: "/",
     element: (
       <Suspense>
@@ -45,6 +56,18 @@ export const routes: RouteObject[] = [
         element: <Tsa/>
       },
       {
+        path: "test",
+        element: <TestStep/>
+      },
+      {
+        path: "depart",
+        element: <DepartPage/>
+      },
+      {
+        path: "organs",
+        element: <OrganDetail/>
+      },
+      {
         path: "task-list",
         element: <TaskList/>
       },
@@ -59,6 +82,10 @@ export const routes: RouteObject[] = [
       {
         path: "media",
         element: <Media/>
+      },
+      {
+        path: "work-order",
+        element: <BookOrderPage/>
       },
       {
         path: "members",

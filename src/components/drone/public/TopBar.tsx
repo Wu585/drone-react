@@ -1,4 +1,4 @@
-import {ArrowDown, CircleUser, LogOut} from "lucide-react";
+import {ArrowDown, CircleUser, LogOut, Users} from "lucide-react";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {
   DropdownMenu,
@@ -7,29 +7,77 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.tsx";
 import {useNavigate} from "react-router-dom";
+import {useCurrentUser, useWorkspaceList} from "@/hooks/drone";
+import {useCallback} from "react";
 
 const TopBar = () => {
   const username = localStorage.getItem(ELocalStorageKey.Username);
   const navigate = useNavigate();
+  const {data: currentUser, mutate: mutateCurrentUser} = useCurrentUser();
+  const {data: workSpaceList, mutate: mutateWorkspaceList} = useWorkspaceList();
+
+  const handleSwitchWorkspace = useCallback(async (workspaceId: string) => {
+    localStorage.setItem(ELocalStorageKey.WorkspaceId, workspaceId);
+    await Promise.all([
+      mutateCurrentUser(),
+      mutateWorkspaceList()
+    ]);
+    window.location.reload();
+  }, [mutateCurrentUser, mutateWorkspaceList]);
 
   const onLogout = () => {
     localStorage.clear();
     navigate("/login");
   };
+
   return (
     <div className={"h-[70px] bg-gradient-to-b from-[#1D3A7A]/[.82] to-[#1157B4]/[.82] " +
       "flex justify-between items-center px-[66px] py-[18px]"}>
       <div className={"text-[24px] font-semibold"}>翼枭航空科技有限公司</div>
       <div className={"flex space-x-4"}>
         <CircleUser/>
-        <span>{username || "未登录"}</span>
+        <span>{currentUser?.username || "未登录"} |</span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <span className="cursor-pointer">
+              {"当前组织: " + workSpaceList?.find(item =>
+                item.workspace_id === localStorage.getItem(ELocalStorageKey.WorkspaceId)
+              )?.workspace_name || "未选择组织"}
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {workSpaceList
+              ?.filter(item => item.lead_user === currentUser?.id)
+              .map(item => (
+                <DropdownMenuItem
+                  key={item.workspace_id}
+                  onClick={() => handleSwitchWorkspace(item.workspace_id)}
+                >
+                  {item.workspace_name}
+                </DropdownMenuItem>
+              ))
+            }
+          </DropdownMenuContent>
+        </DropdownMenu>
         {username && <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <ArrowDown/>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            <DropdownMenuItem>
+              <div className={"flex w-full"} onClick={() => navigate("/organs")}>
+                <Users className="mr-2 h-4 w-4"/>
+                <span>我的组织</span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <div className={"flex w-full"} onClick={() => navigate("/depart")}>
+                <Users className="mr-2 h-4 w-4"/>
+                <span>我的部门</span>
+              </div>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={onLogout}>
-              <div className={"flex w-full justify-center"}>
+              <div className={"flex w-full"}>
                 <LogOut className="mr-2 h-4 w-4"/>
                 <span>登出</span>
               </div>

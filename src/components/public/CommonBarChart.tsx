@@ -4,9 +4,10 @@ import * as echarts from "echarts";
 type Props = {
   xAxisData: string[]
   seriesData: number[]
+  type?: "row" | "column"
 }
 
-const CommonBarChart: FC<Props> = ({xAxisData, seriesData}) => {
+const CommonBarChart: FC<Props> = ({xAxisData, seriesData, type = "row"}) => {
   const div = useRef<HTMLDivElement>(null);
   const myChart = useRef<echarts.ECharts>();
   const initialized = useRef(false);
@@ -39,7 +40,7 @@ const CommonBarChart: FC<Props> = ({xAxisData, seriesData}) => {
         containLabel: true
       },
       xAxis: {
-        type: "category",
+        type: type === "row" ? "category" : "value",
         boundaryGap: [0, 0.01],
         axisLabel: {
           textStyle: {
@@ -50,7 +51,7 @@ const CommonBarChart: FC<Props> = ({xAxisData, seriesData}) => {
         data: xAxisData
       },
       yAxis: {
-        type: "value",
+        type: type === "row" ? "value" : "category",
         axisLabel: {
           textStyle: {
             color: "#fff",

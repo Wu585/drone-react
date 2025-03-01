@@ -14,6 +14,8 @@ export const useInitialConnectWebSocket = () => {
   } = useSceneStore();
 
   useConnectWebSocket(async (payload: any) => {
+    console.log('payload');
+    console.log(payload);
     if (!payload) {
       return;
     }
@@ -23,10 +25,14 @@ export const useInitialConnectWebSocket = () => {
         break;
       }
       case EBizCode.DeviceOsd: {
+        console.log('payload');
+        console.log(payload);
         setDeviceInfo(payload.data);
         break;
       }
       case EBizCode.DockOsd: {
+        console.log('payload');
+        console.log(payload);
         setDockInfo(payload.data);
         break;
       }

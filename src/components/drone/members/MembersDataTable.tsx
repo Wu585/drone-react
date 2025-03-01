@@ -7,16 +7,71 @@ import {
 } from "@tanstack/react-table";
 import {useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {useMembers, UserItem} from "@/hooks/drone";
+import {useMembers, UserItem, useRoleList, useWorkspaceList} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
+import {Input} from "@/components/ui/input.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog.tsx";
+import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
+import {z} from "zod";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
+import {useAjax} from "@/lib/http.ts";
+import {toast} from "@/components/ui/use-toast.ts";
+
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "请输入姓名"
+  }),
+  username: z.string().min(3, {
+    message: "请输入用户名"
+  }),
+  password: z.string().min(3, {
+    message: "请输入密码"
+  }),
+  workspace_id: z.string(),
+  user_type: z.number(),
+  mqtt_username: z.string(),
+  mqtt_password: z.string(),
+  role: z.coerce.number({
+    required_error: "请分配角色",
+    invalid_type_error: "角色必须是数字"
+  }),
+  organ: z.coerce.number({
+    required_error: "请选择所属部门",
+    invalid_type_error: "部门必须是数字"
+  })
+});
+
+const MANAGE_HTTP_PREFIX = "/manage/api/v1";
 
 const MembersDataTable = () => {
+  const {data: roleList} = useRoleList();
+
   const columns: ColumnDef<UserItem>[] = [
     {
       accessorKey: "username",
       header: "用户名",
+    },
+    {
+      accessorKey: "name",
+      header: "姓名",
+    },
+    {
+      accessorKey: "role",
+      header: "角色",
+      cell: ({row}) => (
+        <div>{roleList?.find(item => item.id === row.original.role)?.name}</div>
+      ),
     },
     {
       accessorKey: "user_type",
@@ -24,22 +79,24 @@ const MembersDataTable = () => {
     },
     {
       accessorKey: "workspace_name",
-      header: "工作空间",
+      header: "组织",
     },
-    {
+    /*{
       accessorKey: "mqtt_username",
       header: "Mqtt 用户名",
     },
     {
       accessorKey: "mqtt_password",
       header: "Mqtt 密码",
-    },
+    },*/
     {
       accessorKey: "create_time",
       header: "创建时间",
     },
   ];
 
+  const {post} = useAjax();
+  const [open, setOpen] = useState(false);
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
@@ -53,11 +110,47 @@ const MembersDataTable = () => {
     pageSize: 10,
   });
 
-  const {data} = useMembers(workspaceId, {
+  const {data, mutate} = useMembers(workspaceId, {
     page: pagination.pageIndex + 1,
     page_size: pagination.pageSize,
     total: 0
   });
+
+  const {data: workSpaceList} = useWorkspaceList();
+
+  const defaultValues = {
+    name: "",
+    username: "",
+    password: "",
+    workspace_id: "",
+    user_type: 1,
+    mqtt_username: "admin",
+    mqtt_password: "admin",
+    role: 0,
+    organ: 0
+  };
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues
+  });
+
+  const onError = (errors: any) => {
+    console.log("Form errors:", errors);
+  };
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log("values", values);
+    const res: any = await post(`${MANAGE_HTTP_PREFIX}/users/save`, values);
+    if (res.data.code === 0) {
+      toast({
+        description: "用户创建成功！"
+      });
+      form.reset(defaultValues);
+      setOpen(false);
+      await mutate();
+    }
+  };
 
   const table = useReactTable({
     data: data?.list || [],
@@ -81,6 +174,126 @@ const MembersDataTable = () => {
 
   return (
     <div>
+      <div className={"flex justify-between mb-4"}>
+        <div className={"flex space-x-4"}>
+          {/*<Input placeholder={"请输入用户名"} className={"rounded-none bg-[#072E62]/[.7] border-[#43ABFF]"}/>*/}
+          {/*<Button className={"bg-[#43ABFF]"}>查询</Button>*/}
+          {/*<Button className={"bg-[#43ABFF]"}>重置</Button>*/}
+        </div>
+        <div>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger>
+              <Button className={"bg-[#43ABFF] w-24"}>添加</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>新增用户</DialogTitle>
+              </DialogHeader>
+              <Form {...form} >
+                <form className="grid gap-4 py-4" onSubmit={form.handleSubmit(onSubmit, onError)}>
+                  <FormField
+                    control={form.control}
+                    render={({field}) => (
+                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                        <FormLabel className={"text-right"}>姓名：</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder={"输入人员姓名"} className={"col-span-3"}/>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                    name={"name"}
+                  />
+                  <FormField
+                    control={form.control}
+                    render={({field}) => (
+                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                        <FormLabel className={"text-right"}>账号：</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder={"输入账号"} className={"col-span-3"}/>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                    name={"username"}
+                  />
+                  <FormField
+                    control={form.control}
+                    render={({field}) => (
+                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                        <FormLabel className={"text-right"}>密码：</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder={"输入密码"} className={"col-span-3"}/>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                    name={"password"}
+                  />
+                  <FormField
+                    control={form.control}
+                    render={({field: {value, onChange, ...field}}) => (
+                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                        <FormLabel className={"text-right"}>组织：</FormLabel>
+                        <Select
+                          {...field}
+                          value={String(value)}
+                          onValueChange={onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger className={"col-span-3"}>
+                              <SelectValue placeholder="选择所属组织"/>
+                            </SelectTrigger>
+                          </FormControl>
+                          {/*<FormMessage/>*/}
+                          <SelectContent>
+                            <SelectItem value="0">无</SelectItem>
+                            {workSpaceList?.map(item => (
+                              <SelectItem key={item.workspace_id} value={item.workspace_id}>
+                                {item.workspace_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                    name={"workspace_id"}
+                  />
+                  <FormField
+                    control={form.control}
+                    render={({field: {value, onChange, ...field}}) => (
+                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                        <FormLabel className={"text-right"}>角色：</FormLabel>
+                        <Select
+                          {...field}
+                          value={String(value)}
+                          onValueChange={onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger className={"col-span-3"}>
+                              <SelectValue placeholder="分配角色"/>
+                            </SelectTrigger>
+                          </FormControl>
+                          {/*<FormMessage/>*/}
+                          <SelectContent>
+                            <SelectItem value="0">无</SelectItem>
+                            {roleList?.map(item => (
+                              <SelectItem key={item.id} value={String(item.id)}>
+                                {item.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                    name={"role"}
+                  />
+                  <DialogFooter>
+                    <Button type="submit">创建</Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
       <div className="">
         <Table className={"border-[1px] border-[#0A81E1]"}>
           <TableHeader className={""}>

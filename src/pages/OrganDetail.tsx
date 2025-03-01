@@ -1,22 +1,21 @@
 import titleArrowPng from "@/assets/images/drone/title-arrow.png";
 import MembersDataTable from "@/components/drone/members/MembersDataTable.tsx";
 import {useState} from "react";
-import {cn} from "@/lib/utils.ts";
 import OrganizationDataTable from "@/components/drone/members/OrganizationDataTable.tsx";
 import RoleDataTable from "@/components/drone/members/RoleDataTable.tsx";
-import DepartDataTable from "@/components/drone/members/DepartDataTable.tsx";
+import {cn} from "@/lib/utils.ts";
 
-const Members = () => {
+const OrganDetail = () => {
 
   const menuList = [
     {
-      name: "组织管理",
+      name: "组织详情",
       table: <OrganizationDataTable/>
     },
-    {
-      name: "部门管理",
-      table: <DepartDataTable/>
-    },
+    // {
+    //   name: "部门管理",
+    //   table: <DepartDataTable/>
+    // },
     {
       name: "角色管理",
       table: <RoleDataTable/>
@@ -27,11 +26,11 @@ const Members = () => {
     }
   ];
 
-  const [currentMenu, setCurrentMenu] = useState("组织管理");
+  const [currentMenu, setCurrentMenu] = useState("组织详情");
 
   return (
     <div className={"w-full h-full"}>
-      <div className={"flex-1 border-[#43ABFF] border-[1px] border-l-0 flex flex-col"}>
+      <div className={"flex-1 border-[#43ABFF] border-[1px] flex flex-col h-full rounded-[8px]"}>
         <h1 className={"flex justify-between items-center"}>
           <div className={"py-4 px-4 flex space-x-4"}>
             <img src={titleArrowPng} alt=""/>
@@ -57,5 +56,5 @@ const Members = () => {
   );
 };
 
-export default Members;
+export default OrganDetail;
 

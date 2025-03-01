@@ -458,7 +458,7 @@ const Cockpit = () => {
               </div>
             </div>
             <div className={"grid grid-cols-3 h-[380px]"}>
-              <div className={"col-span-1 py-6 space-y-8"}>
+              <div className={"col-span-1 py-6 space-y-8 pl-16"}>
                 <div className={"grid grid-cols-2 gap-8"}>
                   <div className={"flex space-x-4"}>
                     <img src={batteryPng} alt=""/>

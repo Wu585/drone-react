@@ -8,24 +8,24 @@ import {useToast} from "@/components/ui/use-toast.ts";
 import {OutOfControlAction, TaskStatus, TaskType} from "@/types/task.ts";
 import {WaylineType} from "@/types/wayline.ts";
 import {EFlightAreaType, FlightAreaContent} from "@/types/flight-area.ts";
+import {useSearchParams} from "react-router-dom";
 
-export const useDeviceTopo = (workspace_id: string) => {
+export const useDeviceTopo = () => {
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const {get} = useAjax();
-  const url = `${HTTP_PREFIX}/devices/${workspace_id}/devices`;
+  const url = `${HTTP_PREFIX}/devices/${workspaceId}/devices`;
   return useSWR(url, async (path) => (await get<Resource<any[]>>(path)).data.data);
 };
 
-const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
-
-
 export const useOnlineDocks = () => {
-  const {data: deviceTopo} = useDeviceTopo(workspaceId);
+  const {data: deviceTopo} = useDeviceTopo();
   const [onlineDocks, setOnlineDocks] = useState<OnlineDevice[]>([]);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (!deviceTopo) return;
 
-    const deviceList: OnlineDevice[] = deviceTopo.map((gateway: any) => {
+    const deviceList: OnlineDevice[] = deviceTopo.filter(item => item.organ.toString() === searchParams.get("depart")).map((gateway: any) => {
       const child = gateway.children;
       return {
         model: child?.device_name,
@@ -117,6 +117,7 @@ export interface Device {
   children: ChildDevice;
   firmware_status: number;
   thing_version: string;
+  id: number;
 }
 
 interface ChildDevice {
@@ -141,6 +142,7 @@ interface ChildDevice {
   workspace_name: string;
   firmware_status: number;
   thing_version: string;
+  id: number;
 }
 
 interface BindingDevice {
@@ -321,6 +323,7 @@ export const useMediaList = (workspaceId: string, body: Pagination) => {
 };
 
 export interface UserItem {
+  id: number;
   user_id: string;
   username: string;
   workspace_name: string;
@@ -328,6 +331,9 @@ export interface UserItem {
   mqtt_username: string;
   mqtt_password: string;
   create_time: string;
+  name: string;
+  role: number;
+  workspace_id: string;
 }
 
 interface MembersData {
@@ -344,7 +350,6 @@ export const useMembers = (workspaceId: string, body: Pagination) => {
     ...body
   })).data.data);
 };
-
 
 interface Content {
   properties: Properties;
@@ -419,4 +424,97 @@ export const useElementsGroups = (workspaceId: string) => {
   const {get} = useAjax();
   const url = `${MAP_API_PREFIX}/workspaces/` + workspaceId + "/element-groups";
   return useSWR(url, async (path) => (await get<Resource<Layer[]>>(path)).data.data);
+};
+
+const MANAGE_HTTP_PREFIX = "/manage/api/v1";
+
+export interface WorkSpace {
+  id: number;
+  workspace_id: string;
+  workspace_name: string;
+  workspace_desc: string;
+  platform_name: string;
+  bind_code: string;
+  parent: number;
+  lead_user: number;
+  lead_user_name: string;
+  workspace_code: string;
+}
+
+// 获取组织列表
+export const useWorkspaceList = () => {
+  const {get} = useAjax();
+  const url = `${MANAGE_HTTP_PREFIX}/workspaces/list`;
+  return useSWR(url, async (path) => (await get<Resource<WorkSpace[]>>(path)).data.data);
+};
+
+const OPERATION_HTTP_PREFIX = "/operation/api/v1";
+
+interface CustomUser {
+  id: number;
+  uukey: string;
+  phone: string;
+  organ: number;
+  name: string;
+  role: number;
+  password: string;
+}
+
+// 获取用户列表
+export const useCustomUserList = () => {
+  const {get} = useAjax();
+  const url = `${OPERATION_HTTP_PREFIX}/custom-user/list`;
+  return useSWR(url, async (path) => (await get<Resource<CustomUser[]>>(path)).data.data);
+};
+
+export interface Role {
+  id: number;
+  name: string;
+  create_time: string;
+}
+
+// 获取角色列表
+export const useRoleList = () => {
+  const {get} = useAjax();
+  const url = `${OPERATION_HTTP_PREFIX}/role/list`;
+  return useSWR(url, async (path) => (await get<Resource<Role[]>>(path)).data.data);
+};
+
+export interface Depart {
+  id: number;
+  name: string;
+  lead_user: number;
+  workspace: number;
+}
+
+// 获取部门列表
+export const useDepartList = () => {
+  const {get} = useAjax();
+  const url = `${OPERATION_HTTP_PREFIX}/organ/list`;
+  return useSWR(url, async (path) => (await get<Resource<Depart[]>>(path)).data.data);
+};
+
+// 获取当前用户信息
+export const useCurrentUser = () => {
+  const {get} = useAjax();
+  const url = `${MANAGE_HTTP_PREFIX}/users/current`;
+  return useSWR(url, async (path) => (await get<Resource<UserItem>>(path)).data.data);
+};
+
+// 根据id获取部门详情
+export const useDepartById = (id: number) => {
+  const {get} = useAjax();
+  const key = id !== 0 ? [`${OPERATION_HTTP_PREFIX}/organ/get`, id] : null;
+  // return useSWR(id?[])
+  return useSWR(key, async ([path, id]) => (await get<Resource<any>>(path as string, {id})).data.data);
+};
+
+export const useEditDepart = () => {
+  const [departId, setDepartId] = useState(0);
+  const swrResponse = useDepartById(departId);
+  return {
+    departId,
+    setDepartId,
+    ...swrResponse
+  };
 };

@@ -16,6 +16,10 @@ export const getImageUrl = (name: string) => {
   return new URL(`/src/assets/images/${name}.png`, import.meta.url).href;
 };
 
+export const getScreenImageUrl = (name: string) => {
+  return new URL(`/src/assets/images/drone/screen/${name}.png`, import.meta.url).href;
+};
+
 /**
  * regular expression to check for valid hour format (01-23)
  */
@@ -406,3 +410,16 @@ export function generateCircleContent(pinAMapPosition: pinAMapPosition, radius: 
   const position = getPinPosition(pinAMapPosition);
   return generateCircle(position, {color: MapDoodleColor.PolygonColor}, radius);
 }
+
+export function generateRandomString(length: number = 6): string {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; // 可用字符
+  let result = '';
+
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length); // 生成随机索引
+    result += characters[randomIndex]; // 追加随机字符
+  }
+
+  return result;
+}
+

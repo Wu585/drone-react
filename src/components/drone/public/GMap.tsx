@@ -8,6 +8,7 @@ import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import {wgs84togcj02} from "@/vendor/coordtransform.ts";
 import {DeviceStatus} from "@/types/device.ts";
 import {GeojsonCoordinate} from "@/types/map.ts";
+import {Button} from "@/components/ui/button.tsx";
 
 const getGcj02 = <T extends GeojsonCoordinate | GeojsonCoordinate[]>(coordinate: T): T => {
   if (coordinate[0] instanceof Array) {
@@ -24,6 +25,9 @@ const GMap = () => {
   const deviceState = useSceneStore(state => state.deviceState);
   const setDeviceOnline = useSceneStore(state => state.setDeviceOnline);
   const setDeviceOffline = useSceneStore(state => state.setDeviceOffline);
+  const mapState = useSceneStore(state => state.mapState);
+  const AMap = mapState.aMap;
+  const map = mapState.map;
 
   const deviceTsaUpdateHook = useDeviceTsaUpdate();
   useEffect(() => {
@@ -49,9 +53,22 @@ const GMap = () => {
     }
   }, [deviceStatusEvent]);
 
+  const addSatelliteLayer = () => {
+    const satelliteLayer = new AMap.TileLayer.Satellite();
+    const roadNetLayer = new AMap.TileLayer.RoadNet();
+
+    map.add([satelliteLayer, roadNetLayer]);
+  };
+
   return (
-    <div id="g-container" className={"w-full h-full rounded-lg relative"}>
-    </div>
+    <>
+      <div id="g-container" className={"w-full h-full rounded-lg relative"}>
+      </div>
+      {/*<div className={"absolute left-0 top-0 text-black"}>*/}
+      {/*  <Button>3D</Button>*/}
+      {/*  <Button onClick={addSatelliteLayer}>影像</Button>*/}
+      {/*</div>*/}
+    </>
   );
 };
 

@@ -7,6 +7,7 @@ import DronePanel from "@/components/drone/public/DronePanel.tsx";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {EDockModeCode, EModeCode} from "@/types/device.ts";
 import {OnlineDevice} from "@/hooks/drone/device.ts";
+import _DronePanel from "@/components/drone/public/_DronePanel.tsx";
 
 const Tsa = () => {
   const {
@@ -15,6 +16,9 @@ const Tsa = () => {
     hmsInfo,
     setOsdVisible
   } = useSceneStore();
+
+  console.log('deviceState');
+  console.log(deviceState);
 
   const {onlineDocks} = useOnlineDocks();
 
@@ -107,7 +111,7 @@ const Tsa = () => {
       <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative"}>
         <GMap/>
         <div className={"absolute left-2 top-2"}>
-          {osdVisible.visible && <DronePanel/>}
+          {osdVisible.visible && <_DronePanel/>}
         </div>
       </div>
     </div>

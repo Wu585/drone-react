@@ -22,7 +22,7 @@ tar -cvf $dist .
 title '上传'
 scp $dist $user@$ip:E:\wqy\
 
-ssh $user@$ip "powershell -Command E:;cd E:\wqy\;cp dist.tar E:\wqy\shuzijiayuan-nginx\nginx-1.24.0\html;cd E:\wqy\shuzijiayuan-nginx\nginx-1.24.0\html;tar -xvf $dist;ls"
+ssh $user@$ip "powershell -Command E:;cd E:\wqy\;cp dist.tar E:\wqy\drone-nginx\nginx-1.24.0\html;cd E:\wqy\drone-nginx\nginx-1.24.0\html;tar -xvf $dist;ls"
 title '上传成功'
 
 

@@ -49,7 +49,7 @@ const Login = () => {
       localStorage.setItem(ELocalStorageKey.Username, result.data.data.username);
       localStorage.setItem(ELocalStorageKey.UserId, result.data.data.user_id);
       localStorage.setItem(ELocalStorageKey.Flag, EUserType.Web.toString());
-      navigate("/tsa")
+      navigate("/organs")
     }
   };
 

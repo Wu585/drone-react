@@ -26,9 +26,9 @@ export const CURRENT_CONFIG = {
   rtspPassword: 'Please enter the password.',
   rtspPort: '8554',
   // Agora
-  agoraAPPID: 'Please enter the agora app id.',
-  agoraToken: 'Please enter the agora temporary token.',
-  agoraChannel: 'Please enter the agora channel.',
+  agoraAPPID: '07e91bdb84714bbba89bccc474059503',
+  agoraToken: '007eJxTYFj2Sc/Y5OFD9TcP3NVmLWazbUg0NOdzWDPd6RvTLu0zjUoKDAbmqZaGSSlJFibmhiZJSUmJFpZJycnJJuYmBqaWpgbGB+ZvTW8IZGQovlDNyMgAgSA+J0NKVnJGYl5eag4DAwClTiDI',
+  agoraChannel: 'djchannel',
 
   // map
   // You can apply on the AMap website.
