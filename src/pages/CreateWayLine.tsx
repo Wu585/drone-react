@@ -288,6 +288,21 @@ const CreateWayLine = () => {
         },
       });
 
+      // 添加垂直虚线
+      const verticalLineEntity = viewer.entities.add({
+        polyline: {
+          positions: [
+            Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
+            Cesium.Cartesian3.fromDegrees(longitude, latitude, height + globalHeight)
+          ],
+          width: 2,
+          material: new Cesium.PolylineDashMaterialProperty({
+            color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
+            dashLength: 8.0
+          })
+        }
+      });
+
       // 添加无人机图标
       const droneEntity = viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height + globalHeight),
@@ -310,13 +325,35 @@ const CreateWayLine = () => {
         }
       });
 
+      // 如果有航点，添加到第一个航点的连接线
+      let connectLineEntity = null;
+      if (waypoints.length > 0) {
+        const firstWaypoint = waypoints[0];
+        connectLineEntity = viewer.entities.add({
+          polyline: {
+            positions: [
+              Cesium.Cartesian3.fromDegrees(longitude, latitude, height + globalHeight),
+              Cesium.Cartesian3.fromDegrees(
+                firstWaypoint.longitude,
+                firstWaypoint.latitude,
+                firstWaypoint.height || globalHeight
+              )
+            ],
+            width: 2,
+            material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
+          }
+        });
+      }
+
       setTakeoffPoint({
         longitude,
         latitude,
         height,
         entity: {
           takeoff: takeoffEntity,
-          drone: droneEntity
+          drone: droneEntity,
+          verticalLine: verticalLineEntity,
+          connectLine: connectLineEntity
         }
       });
 
@@ -348,7 +385,9 @@ const CreateWayLine = () => {
     const entitiesToRemove = [];
     viewer.entities.values.forEach((entity: any) => {
       // 检查是否是连接线（不是垂直线）
-      if (entity.polyline && !waypoints.some(wp => wp.entity.verticalLine === entity)) {
+      if (entity.polyline &&
+          !waypoints.some(wp => wp.entity.verticalLine === entity) &&
+          takeoffPoint?.entity.verticalLine !== entity) { // 添加这个条件
         entitiesToRemove.push(entity);
       }
     });
@@ -368,10 +407,7 @@ const CreateWayLine = () => {
         polyline: {
           positions: positions,
           width: 3,
-          material: new Cesium.PolylineGlowMaterialProperty({
-            glowPower: 0.2,
-            color: Cesium.Color.AQUA
-          }),
+          material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
           clampToGround: false
         }
       });
@@ -380,6 +416,36 @@ const CreateWayLine = () => {
       if (waypoints[0].entity) {
         waypoints[0].entity.connectLine = connectLine;
       }
+    }
+
+    // 如果有起飞点和航点，更新起飞点到第一个航点的连接线
+    if (takeoffPoint && waypoints.length > 0) {
+      const globalHeight = form.getValues("global_height");
+
+      // 删除旧的连接线
+      if (takeoffPoint.entity.connectLine) {
+        viewer.entities.remove(takeoffPoint.entity.connectLine);
+      }
+
+      // 添加新的连接线
+      takeoffPoint.entity.connectLine = viewer.entities.add({
+        polyline: {
+          positions: [
+            Cesium.Cartesian3.fromDegrees(
+              takeoffPoint.longitude,
+              takeoffPoint.latitude,
+              takeoffPoint.height + globalHeight
+            ),
+            Cesium.Cartesian3.fromDegrees(
+              waypoints[0].longitude,
+              waypoints[0].latitude,
+              waypoints[0].height || globalHeight
+            )
+          ],
+          width: 2,
+          material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8)
+        }
+      });
     }
   };
 
