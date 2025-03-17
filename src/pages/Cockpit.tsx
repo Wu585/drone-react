@@ -1,7 +1,5 @@
 import FitScreen from "@fit-screen/react";
 import batteryPng from "@/assets/images/drone/cockpit/battery.png";
-import workTimePng from "@/assets/images/drone/cockpit/work-time.png";
-import flyTimePng from "@/assets/images/drone/cockpit/fly-time.png";
 import rtkPng from "@/assets/images/drone/cockpit/rtk.png";
 import czsd from "@/assets/images/drone/cockpit/czsd.png";
 import spsd from "@/assets/images/drone/cockpit/spsd.png";
@@ -22,7 +20,6 @@ import GMap from "@/components/drone/public/GMap.tsx";
 import {clarityList, useDeviceVideo} from "@/hooks/drone/useDeviceVideo.ts";
 import {useEffect, useState} from "react";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
-import {useSceneStore} from "@/store/useSceneStore.ts";
 import {useSearchParams} from "react-router-dom";
 import {useCapacity, useOnlineDocks} from "@/hooks/drone";
 import {z} from "zod";
@@ -50,13 +47,15 @@ import {cn} from "@/lib/utils.ts";
 import PayloadControl from "@/components/drone/PayloadControl.tsx";
 import compassWrapperPng from "@/assets/images/drone/cockpit/compass-wrapper.png";
 import compassPng from "@/assets/images/drone/cockpit/compass.png";
-import {RefreshCcw, Settings} from "lucide-react";
+import {RefreshCcw, Settings, Maximize2, X} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import {useDockLive} from "@/hooks/drone/useDockLive.ts";
+import {useFullscreen} from "@/hooks/useFullscreen";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -86,22 +85,17 @@ const Cockpit = () => {
     Video,
     startDockVideo,
     onRefreshDockVideo,
-    updateVideo,
+    // updateVideo,
     deviceVideoSrc,
     DeviceVideo,
     startDeviceVideo,
     stopDeviceVideo,
     onRefreshDeviceVideo,
-    dockPosition,
     devicePosition,
-    setDockPosition,
     setDevicePosition,
     setCurrentDeviceCamera,
     stopDockVideo,
     currentDeviceCamera,
-    currentMode,
-    setCurrentMode,
-    switchDeviceVideoMode
   } = useDeviceVideo();
   console.log("deviceVideoSrc");
   console.log(deviceVideoSrc);
@@ -114,25 +108,8 @@ const Cockpit = () => {
   const deviceSn = searchParams.get("sn") || "";
   const deviceInfo = useRealTimeDeviceInfo();
   const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
-
-  useEffect(() => {
-    console.log("capacityData");
-    console.log(capacityData);
-    if (capacityData) {
-      startDockVideo(dockSn);
-      console.log("deviceStatus=======================");
-      console.log(deviceStatus);
-      if (deviceStatus !== EModeCode[EModeCode.Disconnected]) {
-        startDeviceVideo(deviceSn);
-      }
-    }
-  }, [capacityData, deviceStatus]);
-
-  useEffect(() => {
-    console.log("deviceInfo");
-    console.log(deviceInfo);
-  }, [deviceInfo]);
-
+  console.log("deviceInfo=====");
+  console.log(deviceInfo);
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!dockSn) return;
     const body = {
@@ -160,22 +137,64 @@ const Cockpit = () => {
 
   const deviceType = onlineDocks.find(item => item.sn === deviceSn);
 
+  const {
+    onStartLiveStream,
+    dockVideoId,
+    updateVideo,
+    dockPosition,
+    setDockPosition,
+    onStopLiveStream
+  } = useDockLive("player1", dockSn);
+  const {onStartLiveStream: startFpv, dockVideoId: fpvVideoId} = useDockLive("player3", deviceSn);
+  const {
+    onStartLiveStream: onStartDroneLive,
+    dockVideoId: droneVideoId,
+    updateVideo: updateDroneVideo,
+    dockPosition: dronePosition,
+    setDockPosition: setDronePosition,
+    switchDeviceVideoMode, currentMode, onChangeCamera
+  } = useDockLive("player2", deviceSn, "1");
+
   const onChangeClarity = async (value: string) => {
-    await updateVideo(dockSn, +value);
+    await updateVideo(+value);
     setDockPosition(value);
   };
 
-  // useEffect(() => {
-  //   return () => {
-  //     stopDockVideo();
-  //     console.log('currentDeviceCamera');
-  //     console.log(currentDeviceCamera);
-  //     stopDeviceVideo(currentDeviceCamera);
-  //   };
-  // }, [currentDeviceCamera]);
+  const onSwitchMode = async (mode: "ir" | "wide" | "zoom" | "normal") => {
+    await switchDeviceVideoMode(mode);
+  };
 
-  const onSwitchMode = async (mode: "ir" | "wide" | "zoom") => {
-    await switchDeviceVideoMode(mode, currentDeviceCamera);
+  useEffect(() => {
+    onStartLiveStream();
+  }, [dockVideoId]);
+
+  useEffect(() => {
+    onStartDroneLive();
+  }, [droneVideoId]);
+
+  useEffect(() => {
+    startFpv();
+  }, [fpvVideoId]);
+
+  // 添加 FPV 全屏控制
+  const {
+    isFullscreen: isFpvFullscreen,
+    toggleFullscreen: toggleFpvFullscreen,
+    exitFullscreen: exitFpvFullscreen
+  } = useFullscreen("player3");
+
+  const [showDockLive, setShowDockLive] = useState(true);
+
+  // 处理机场直播显示/隐藏的切换
+  const handleDockLiveToggle = async () => {
+    if (showDockLive) {
+      // 如果当前是显示状态，切换到隐藏时停止直播
+      await onStopLiveStream();
+    } else {
+      // 如果当前是隐藏状态，切换到显示时开始直播
+      await onStartLiveStream();
+    }
+    setShowDockLive(!showDockLive);
   };
 
   return (
@@ -190,30 +209,47 @@ const Cockpit = () => {
           </header>
           <div className={"col-span-1 z-50"}>
             <div className={"mt-[123px] ml-[53px] mb-[12px] flex items-center justify-between pr-4 z-50"}>
-              <CockpitTitle title={"机场直播"}/>
-              <div className={"flex space-x-2"}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <Settings size={16}/>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-16">
-                    <DropdownMenuLabel>清晰度</DropdownMenuLabel>
-                    <DropdownMenuRadioGroup
-                      value={dockPosition}
-                      onValueChange={onChangeClarity}>
-                      {clarityList.map(item =>
-                        <DropdownMenuRadioItem key={item.value}
-                                               value={item.value.toString()}>{item.label}</DropdownMenuRadioItem>)}
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <RefreshCcw className={"cursor-pointer"} onClick={() => onRefreshDockVideo(dockSn)} size={16}/>
+              <div
+                className="flex items-center space-x-2 cursor-pointer"
+                onClick={handleDockLiveToggle}
+              >
+                <CockpitTitle title={"机场直播"}/>
+                <X size={16} className={cn("transition-transform", !showDockLive && "rotate-45")}/>
               </div>
+              {showDockLive && (
+                <div className={"flex space-x-2"}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <Settings size={16}/>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-16">
+                      <DropdownMenuLabel>清晰度</DropdownMenuLabel>
+                      <DropdownMenuRadioGroup
+                        value={dockPosition}
+                        onValueChange={onChangeClarity}>
+                        {clarityList.map(item =>
+                          <DropdownMenuRadioItem key={item.value}
+                                                 value={item.value.toString()}>{item.label}</DropdownMenuRadioItem>)}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <RefreshCcw
+                    className={"cursor-pointer"}
+                    onClick={() => onStartLiveStream()}
+                    size={16}
+                  />
+                </div>
+              )}
             </div>
-            <div className={"w-[360px] h-[186px] ml-[30px]"}>
-              {dockVideoSrc && <Video className={"video-js vjs-default-skin h-[180px] w-full"}/>}
-            </div>
-            <div className={"w-[360px] h-[244px] mt-[10px] ml-[30px] rounded-lg"}>
+            {showDockLive && (
+              <div className={"w-[360px] h-[186px] ml-[30px]"}>
+                <div className={"h-[180px] w-full"} id={"player1"}></div>
+              </div>
+            )}
+            <div className={cn(
+              "w-[360px] ml-[30px] rounded-lg",
+              showDockLive ? "h-[244px] mt-[10px]" : "h-[430px]"
+            )}>
               <GMap/>
             </div>
             <div className={"ml-[53px] py-[30px]"}>
@@ -434,26 +470,23 @@ const Cockpit = () => {
           </div>
           <div className={"col-span-3 z-50"}>
             <div className={"h-[596px] bg-center-video mt-[52px] bg-full-size content-center relative"}>
-              {deviceStatus !== EModeCode[EModeCode.Disconnected] ? <DeviceVideo
-                  className={"video-js vjs-default-skin h-[450px] w-[930px] rounded-[100px] overflow-visible"}/> :
+              {deviceStatus !== EModeCode[EModeCode.Disconnected] ? <div
+                  className={"h-[450px] w-[930px] rounded-[80px] overflow-hidden"} id={"player2"}/> :
                 <div className={"text-[#d0d0d0]"}>
                   当前设备已关机，无法进行直播
                 </div>}
               <div className={"absolute right-40 top-10 z-50"}>
                 <PayloadControl
+                  onRefreshVideo={onRefreshDeviceVideo}
+                  updateVideo={updateDroneVideo}
+                  devicePosition={dronePosition}
+                  setDevicePosition={setDronePosition}
+                  deviceSn={deviceSn}
+                  currentDeviceCamera={currentDeviceCamera}
+                  onChangeCamera={onChangeCamera}
                   currentMode={currentMode}
                   onChangeMode={onSwitchMode}
-                  currentDeviceCamera={currentDeviceCamera}
-                  onChangeCamera={async (value) => {
-                    await stopDeviceVideo(currentDeviceCamera);
-                    setCurrentDeviceCamera(value);
-                    await startDeviceVideo(deviceSn, value);
-                  }}
-                  deviceSn={deviceSn}
-                  devicePosition={devicePosition}
-                  setDevicePosition={setDevicePosition}
-                  onRefreshVideo={() => onRefreshDeviceVideo(deviceSn)}
-                  updateVideo={(value) => updateVideo(deviceSn, +value, "device", currentDeviceCamera)}
+                  playerId="player2"
                 />
               </div>
             </div>
@@ -570,14 +603,52 @@ const Cockpit = () => {
               </div>
             </div>
           </div>
-          <div className={"col-span-1 pt-[236px]"}>
+          <div className={"col-span-1 pt-[100px]"}>
+            <div className="flex items-center  mr-[60px] z-50 relative">
+              <CockpitTitle title={"FPV直播"}/>
+              {deviceStatus !== EModeCode[EModeCode.Disconnected] && (
+                <div className="flex items-center space-x-2">
+                  <RefreshCcw
+                    size={17}
+                    className="cursor-pointer"
+                    onClick={() => startFpv()}
+                  />
+                  <Maximize2
+                    size={17}
+                    className="cursor-pointer"
+                    onClick={toggleFpvFullscreen}
+                  />
+                </div>
+              )}
+            </div>
+            {deviceStatus !== EModeCode[EModeCode.Disconnected] ? (
+              <div
+                className={cn(
+                  "h-[200px] mr-[60px] z-50 my-2 relative",
+                  isFpvFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black"
+                )}
+                id={"player3"}
+              >
+                {isFpvFullscreen && (
+                  <X
+                    className="absolute top-4 right-4 cursor-pointer text-white z-10"
+                    size={24}
+                    onClick={exitFpvFullscreen}
+                  />
+                )}
+              </div>
+            ) : (
+              <div className={"text-[#d0d0d0] h-[200px] flex items-center pl-6"}>
+                当前设备已关机，无法进行直播
+              </div>
+            )}
             <CockpitTitle title={"实时气象"}/>
             <div className={"flex"}>
               <div className={"flex flex-col content-center"}>
                 <img className={"translate-y-12"} src={cloudyPng} alt=""/>
                 <img src={weatherBasePng} alt=""/>
               </div>
-              <div className={"pl-[32px] space-y-4 flex flex-col justify-center"}>
+              <div className={"pl-[32px] space-y-2 flex flex-col justify-center"}>
                 <span>温度：</span>
                 <div className={"text-[34px]"}>
                   {deviceInfo.dock.basic_osd?.environment_temperature}°C

@@ -1,4 +1,4 @@
-import {Aperture, ArrowUpDown, Camera, CloudFog, RefreshCcw, Settings, Video} from "lucide-react";
+import {Aperture, ArrowUpDown, Camera, CloudFog, RefreshCcw, Settings, Video, Maximize2} from "lucide-react";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {FC, useState} from "react";
 import {
@@ -12,6 +12,7 @@ import {clarityList, VideoType, videoType, videoTypeLabel} from "@/hooks/drone/u
 import {useCapacity} from "@/hooks/drone";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
+import {useFullscreen} from "@/hooks/useFullscreen";
 
 interface Props {
   onRefreshVideo: () => void;
@@ -23,6 +24,7 @@ interface Props {
   onChangeCamera: (value: string) => Promise<void>;
   currentMode: "ir" | "wide" | "zoom";
   onChangeMode: (mode: Props["currentMode"]) => Promise<void>;
+  playerId?: string;
 }
 
 const API_PREFIX = "/control/api/v1";
@@ -36,7 +38,8 @@ const PayloadControl: FC<Props> = ({
                                      currentDeviceCamera,
                                      onChangeCamera,
                                      currentMode,
-                                     onChangeMode
+                                     onChangeMode,
+                                     playerId = "player2"
                                    }) => {
   const osdVisible = useSceneStore(state => state.osdVisible);
   const payloadsOptions = osdVisible.payloads;
@@ -47,6 +50,8 @@ const PayloadControl: FC<Props> = ({
 
   const {data: capacityData} = useCapacity();
   const {post} = useAjax();
+
+  const {toggleFullscreen} = useFullscreen(playerId);
 
   const onChangeClarity = async (value: string) => {
     await updateVideo(value);
@@ -59,9 +64,7 @@ const PayloadControl: FC<Props> = ({
     await onChangeCamera(value);
   };
 
-  const videoModeList = cameraList.find(item => item.index === currentDeviceCamera)?.videos_list?.[0]?.switch_video_types || [];
-  console.log("videoModeList");
-  console.log(videoModeList);
+  const videoModeList = cameraList[1]?.videos_list?.[0]?.switch_video_types || [];
 
   const getPayloadControl = async () => {
     await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/authority/payload`, {
@@ -116,6 +119,7 @@ const PayloadControl: FC<Props> = ({
       background: "linear-gradient( 270deg, rgba(76,175,255,0) 0%, rgba(36,144,232,0.29) 16%, rgba(58,186,255,0.45) 51%, rgba(40,141,222,0.37) 84%, rgba(67,171,255,0) 100%)"
     }} className={"h-[30px] flex content-center space-x-4 z-50"}>
       <RefreshCcw size={16} className={"cursor-pointer"} onClick={onRefreshVideo}/>
+      <Maximize2 size={16} className={"cursor-pointer"} onClick={toggleFullscreen}/>
       <DropdownMenu>
         <DropdownMenuTrigger>
           <Settings size={16}/>
@@ -129,11 +133,11 @@ const PayloadControl: FC<Props> = ({
               <DropdownMenuRadioItem key={item.value}
                                      value={item.value.toString()}>{item.label}</DropdownMenuRadioItem>)}
           </DropdownMenuRadioGroup>
-          <DropdownMenuLabel>镜头</DropdownMenuLabel>
+          {/*<DropdownMenuLabel>镜头</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={currentDeviceCamera} onValueChange={onChangeCurrentCamera}>
             {cameraList.map(item => <DropdownMenuRadioItem key={item.index}
                                                            value={item.index}>{item.name}</DropdownMenuRadioItem>)}
-          </DropdownMenuRadioGroup>
+          </DropdownMenuRadioGroup>*/}
         </DropdownMenuContent>
       </DropdownMenu>
       <DropdownMenu>
@@ -151,10 +155,10 @@ const PayloadControl: FC<Props> = ({
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-      <CloudFog size={16} onClick={getPayloadControl}/>
+      {/*<CloudFog size={16} onClick={getPayloadControl}/>
       <ArrowUpDown onClick={onCameraModeSwitch} size={16}/>
       <Camera onClick={onTakePhoto} size={16}/>
-      <Video onClick={onRecording} size={16}/>
+      <Video onClick={onRecording} size={16}/>*/}
     </div>
   );
 };

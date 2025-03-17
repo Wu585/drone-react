@@ -15,6 +15,7 @@ import DepartPage from "@/pages/DepartPage.tsx";
 import Screen from "@/pages/Screen.tsx";
 import BookOrderPage from "@/pages/BookOrderPage.tsx";
 import TestStep from "@/pages/TestStep.tsx";
+import CreateWayLine from "@/pages/CreateWayLine.tsx";
 
 const Login = lazy(() => import("@/pages/hgyq/Login.tsx"));
 
@@ -38,6 +39,10 @@ export const routes: RouteObject[] = [
     element: (
       <Screen/>
     ),
+  },
+  {
+    path: "create-wayline",
+    element: <CreateWayLine/>
   },
   {
     path: "/",

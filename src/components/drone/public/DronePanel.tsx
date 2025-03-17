@@ -18,12 +18,12 @@ import TakeOffFormPanel from "@/components/drone/public/TakeOffFormPanel.tsx";
 import {useVisible} from "@/hooks/public/utils.ts";
 import remoteControlPng from "@/assets/images/drone/remote-control.png";
 import compassPng from "@/assets/images/drone/compass.png";
-import {cn, convertWebRTCtoHTTP, extractIPFromRTMP} from "@/lib/utils.ts";
+import {cn} from "@/lib/utils.ts";
 import KeyboardControl from "@/components/drone/public/KeyboardControl.tsx";
 import {useNavigate} from "react-router-dom";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
-import {memo, useEffect, useRef, useState} from "react";
+import {memo, useEffect, useState} from "react";
 import {useMqtt} from "@/hooks/drone/use-mqtt.ts";
 import {KeyCode, useManualControl} from "@/hooks/drone/useManualControl.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
@@ -31,19 +31,15 @@ import {EDockModeCode, EGear, EModeCode} from "@/types/device.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {useDockControl} from "@/hooks/drone/useDockControl.ts";
 import {DeviceCmdItem, noDebugCmdList} from "@/types/device-cmd.ts";
-import {CURRENT_CONFIG} from "@/lib/config.ts";
-import {useVideoJS} from "react-hook-videojs";
-import {useCapacity} from "@/hooks/drone";
 import {useFlightControl} from "@/hooks/drone/useFlightControl.ts";
 import {useMapTool} from "@/hooks/drone/map/useMapTool.ts";
 import {GeojsonCoordinate} from "@/types/map.ts";
 import {wgs84togcj02} from "@/vendor/coordtransform.ts";
-import AgoraRTC, {IAgoraRTCClient, IAgoraRTCRemoteUser} from "agora-rtc-sdk-ng";
+import {useDockLive} from "@/hooks/drone/useDockLive.ts";
+import {useFullscreen} from "@/hooks/useFullscreen";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
-
-const MANAGE_HTTP_PREFIX = "/manage/api/v1";
 
 const getGcj02 = <T extends GeojsonCoordinate | GeojsonCoordinate[]>(coordinate: T): T => {
   if (coordinate[0] instanceof Array) {
@@ -54,6 +50,8 @@ const getGcj02 = <T extends GeojsonCoordinate | GeojsonCoordinate[]>(coordinate:
 
 const DronePanel = () => {
   const osdVisible = useSceneStore(state => state.osdVisible);
+  console.log("osdVisible");
+  console.log(osdVisible);
   const setOsdVisible = useSceneStore(state => state.setOsdVisible);
   const {visible, hide, show} = useVisible();
   const navigate = useNavigate();
@@ -61,11 +59,17 @@ const DronePanel = () => {
   const [takeOffType, setTakeOffType] = useState<"take-off" | "fly-to">("take-off");
   const {sendDockControlCmd} = useDockControl();
   const {visible: dockVideoVisible, show: showDockVideo, hide: hideDockVideo} = useVisible();
-  const {data: capacityData} = useCapacity();
+  const {visible: droneVideoVisible, show: showDroneVideo, hide: hideDroneVideo} = useVisible();
 
   const str = "--";
 
-  const {post, delete: deleteClient} = useAjax();
+  const {delete: deleteClient} = useAjax();
+
+  /*useEffect(() => {
+      post(`${MANAGE_HTTP_PREFIX}/devices/4SEDL9S00178K9/binding`,{
+        deviceSn: "4SEDL9S00178K9"
+      })
+  }, []);*/
 
   const {
     isRemoteControl,
@@ -130,112 +134,6 @@ const DronePanel = () => {
     }
   };
 
-  const agoraClientRef1 = useRef<IAgoraRTCClient | null>(null);
-  const agoraClientRef2 = useRef<IAgoraRTCClient | null>(null);
-
-  const [isDockLive, setIsDockLive] = useState(false);
-
-  const agoraPara = {
-    appid: "07e91bdb84714bbba89bccc474059503",
-    token: "007eJxTYJBlnLblU/OvrLJbJhesa78pPH+Xw5wcWTFtrY+p5xYTi1AFBgPzVEvDpJQkCxNzQ5OkpKREC8uk5ORkE3MTA1NLUwPjy8570xsCGRlEkv8xMzJAIIjPxlCSWlySksXAAACWTCBK",
-    channel: "testdj",
-    uid: 123456,
-  };
-
-  const agoraPara2 = {
-    appid: "07e91bdb84714bbba89bccc474059503",
-    token: "007eJxTYDjxlZ3fOfdB8PJvy+wVNX/q73O5X1tg1M0fIqY6/W6iAJcCg4F5qqVhUkqShYm5oUlSUlKihWVScnKyibmJgamlqYHx1bV70xsCGRm4X9YyMTJAIIjPzlCSWlySkmXEwAAAQi4fSQ==",
-    channel: "testdj2",
-    uid: 123456,
-  };
-
-  useEffect(() => {
-    agoraClientRef1.current = AgoraRTC.createClient({mode: "live", codec: "vp8"});
-    const agoraClient = agoraClientRef1.current;
-    agoraClient.setClientRole("audience", {level: 2});
-    if (agoraClient.connectionState === "DISCONNECTED") {
-      agoraClient.join(agoraPara.appid, agoraPara.channel, agoraPara.token);
-    }
-
-    // Subscribe when a remote user publishes a stream
-    agoraClient.on("user-joined", async (user: IAgoraRTCRemoteUser) => {
-      setIsDockLive(true);
-      toast({
-        description: "user[" + user.uid + "] join"
-      });
-    });
-    agoraClient.on("user-published", async (user: IAgoraRTCRemoteUser, mediaType: "audio" | "video") => {
-      await agoraClient.subscribe(user, mediaType);
-      if (mediaType === "video") {
-        console.log("subscribe success");
-        // Get `RemoteVideoTrack` in the `user` object.
-        const remoteVideoTrack = user.videoTrack!;
-        // Dynamically create a container in the form of a DIV element for playing the remote video track.
-        remoteVideoTrack.play(document.getElementById("player") as HTMLElement);
-      }
-    });
-    agoraClient.on("user-unpublished", async (user: any) => {
-      console.log("unpublish live:", user);
-      toast({
-        description: "unpublish live"
-      });
-    });
-    agoraClient.on("exception", async (e: any) => {
-      console.log(e);
-      toast({
-        description: e.msg,
-        variant: "destructive"
-      });
-    });
-
-    return () => {
-      setIsDockLive(false);
-    };
-  }, []);
-
-  useEffect(() => {
-    agoraClientRef2.current = AgoraRTC.createClient({mode: "live", codec: "vp8"});
-    const agoraClient = agoraClientRef2.current;
-    agoraClient.setClientRole("audience", {level: 2});
-    if (agoraClient.connectionState === "DISCONNECTED") {
-      agoraClient.join(agoraPara.appid, agoraPara.channel, agoraPara.token);
-    }
-
-    // Subscribe when a remote user publishes a stream
-    agoraClient.on("user-joined", async (user: IAgoraRTCRemoteUser) => {
-      toast({
-        description: "user[" + user.uid + "] join"
-      });
-    });
-    agoraClient.on("user-published", async (user: IAgoraRTCRemoteUser, mediaType: "audio" | "video") => {
-      await agoraClient.subscribe(user, mediaType);
-      if (mediaType === "video") {
-        console.log("subscribe success");
-        // Get `RemoteVideoTrack` in the `user` object.
-        const remoteVideoTrack = user.videoTrack!;
-        // Dynamically create a container in the form of a DIV element for playing the remote video track.
-        remoteVideoTrack.play(document.getElementById("player2") as HTMLElement);
-      }
-    });
-    agoraClient.on("user-unpublished", async (user: any) => {
-      console.log("unpublish live:", user);
-      toast({
-        description: "unpublish live"
-      });
-    });
-    agoraClient.on("exception", async (e: any) => {
-      console.log(e);
-      toast({
-        description: e.msg,
-        variant: "destructive"
-      });
-    });
-
-    return () => {
-      setIsDockLive(false);
-    };
-  }, []);
-
   /*useEffect(() => {
     if (dockVideoVisible && isDockLive) {
       const playerElement = document.getElementById("player");
@@ -250,131 +148,40 @@ const DronePanel = () => {
     }
   }, [dockVideoVisible, isDockLive]);*/
 
+  const {onStartLiveStream: start, onStopLiveStream: stop} = useDockLive("player", osdVisible.gateway_sn || "");
+  const {onStartLiveStream: startDrone, onStopLiveStream: stopDrone} = useDockLive("player2", osdVisible.sn || "");
+
+  // 开启机场直播
   const onStartLiveStream = async () => {
-    console.log("isDockLive");
-    console.log(isDockLive);
     showDockVideo();  // 先显示播放器容器
-
-    if (isDockLive) {
-      console.log("直播中...");
-      return;  // 如果已经在直播，就不需要重新加入频道
-    }
-
-    const agoraClient = agoraClientRef1.current!;
-    agoraClient.setClientRole("audience", {level: 2});
-
-    if (agoraClient.connectionState === "DISCONNECTED") {
-      await agoraClient.join(agoraPara.appid, agoraPara.channel, agoraPara.token);
-      // setIsDockLive(true);
-    }
-
-    await post(`${MANAGE_HTTP_PREFIX}/live/streams/start`, {
-      url: "channel=testdj&sn=4SEDL9S00178K9&token=007eJxTYJBlnLblU%2FOvrLJbJhesa78pPH%2BXw5wcWTFtrY%2Bp5xYTi1AFBgPzVEvDpJQkCxNzQ5OkpKREC8uk5ORkE3MTA1NLUwPjy8570xsCGRlEkv8xMzJAIIjPxlCSWlySksXAAACWTCBK&uid=123456",
-      video_id: "4SEDL9S00178K9/165-0-7/normal-0",
-      url_type: 0,
-      video_quality: 0
+    await start();
+  };
+  // 停止机场直播
+  const onStopLiveStream = async () => {
+    hideDockVideo();
+    await stop();
+    toast({
+      description: "机场停止直播"
     });
   };
 
   const onStartDroneLiveStream = async () => {
-    const agoraClient = agoraClientRef2.current!;
-    agoraClient.setClientRole("audience", {level: 2});
-
-    if (agoraClient.connectionState === "DISCONNECTED") {
-      await agoraClient.join(agoraPara.appid, agoraPara.channel, agoraPara.token);
-      // setIsDockLive(true);
-    }
-
-    await post(`${MANAGE_HTTP_PREFIX}/live/streams/start`, {
-      url: "channel=testdj&sn=1581F5BMD239S002ZGK5&token=007eJxTYJBlnLblU%2FOvrLJbJhesa78pPH%2BXw5wcWTFtrY%2Bp5xYTi1AFBgPzVEvDpJQkCxNzQ5OkpKREC8uk5ORkE3MTA1NLUwPjy8570xsCGRlEkv8xMzJAIIjPxlCSWlySksXAAACWTCBK&uid=123456",
-      video_id: "1581F5BMD239S002ZGK5/39-0-7/normal-0",
-      url_type: 0,
-      video_quality: 0
-    });
+    showDroneVideo();
+    await startDrone();
   };
 
-  const onStopLiveStream = async () => {
-    hideDockVideo();
-    await post(`${MANAGE_HTTP_PREFIX}/live/streams/stop`, {
-      video_id: "4SEDL9S00178K9/165-0-7/normal-0"
-    });
-    setIsDockLive(false);
-  };
-
-  const _onStopLiveStream = async () => {
-    const dockSn = osdVisible.gateway_sn;
-    const videoId = capacityData?.find(item => item.sn === dockSn)?.cameras_list[0].index;
-    hideDockVideo();
-    await post(`${MANAGE_HTTP_PREFIX}/live/streams/stop`, {
-      video_id: `${dockSn}/${videoId}/normal-0`
-    });
+  const onStopDroneLiveStream = async () => {
+    hideDroneVideo();
+    await stopDrone();
     toast({
-      description: "机场停止直播"
+      description: "无人机停止直播"
     });
-    setDockVideoSrc("");
   };
 
-  const [dockVideoSrc, setDockVideoSrc] = useState("");
   const [deviceVideoSrc, setDeviceVideoSrc] = useState("");
-
-  const {Video} = useVideoJS({
-    controls: true,
-    autoplay: true,
-    // preload: "auto",
-    fluid: true,
-    sources: [{src: dockVideoSrc}],
-  });
-
-  const {Video: DeviceVideo} = useVideoJS({
-    controls: true,
-    autoplay: true,
-    // preload: "auto",
-    fluid: true,
-    sources: [{src: deviceVideoSrc}],
-  });
 
   const dockStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
   const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
-
-  const onStartDeviceLivestream = async () => {
-    const sn = osdVisible.sn;
-    const videoId = capacityData?.find(item => item.sn === sn)?.cameras_list[0].index;
-    if (!videoId) {
-      return toast({
-        description: "飞行器直播准备中!"
-      });
-    }
-    try {
-      const res: any = await post(`${MANAGE_HTTP_PREFIX}/live/streams/start`, {
-        url: CURRENT_CONFIG.rtmpURL,
-        url_type: 1,
-        video_id: `${sn}/${videoId}/normal-0`,
-        video_quality: 0
-      });
-      toast({
-        description: "飞行器开启直播！"
-      });
-      // setDeviceVideoSrc("http://106.14.197.27:8080/live/1581F5BMD239S002ZGK5-39-0-7.m3u8");
-      setDeviceVideoSrc(convertWebRTCtoHTTP(res.data.data.url));
-    } catch (err: any) {
-      if (err.data.code === 513003) {
-        console.log(`http://${extractIPFromRTMP(CURRENT_CONFIG.rtmpURL)}:8080/live/${sn}-${videoId}.m3u8`);
-        setDeviceVideoSrc(`http://${extractIPFromRTMP(CURRENT_CONFIG.rtmpURL)}:8080/live/${sn}-${videoId}.m3u8`);
-      }
-    }
-  };
-
-  const onStopDeviceLivestream = async () => {
-    const sn = osdVisible.sn;
-    const videoId = capacityData?.find(item => item.sn === sn)?.cameras_list[0].index;
-    await post(`${MANAGE_HTTP_PREFIX}/live/streams/stop`, {
-      video_id: `${sn}/${videoId}/normal-0`
-    });
-    toast({
-      description: "飞行器停止直播！"
-    });
-    setDeviceVideoSrc("");
-  };
 
   const useMapToolHook = useMapTool();
   const onPintoDock = () => {
@@ -382,36 +189,9 @@ const DronePanel = () => {
     useMapToolHook.panTo(coordinate);
   };
 
-  // 添加全屏状态
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // 添加全屏处理函数
-  const handleFullscreen = () => {
-    const playerElement = document.getElementById("player");
-    if (!playerElement) return;
-
-    if (!isFullscreen) {
-      if (playerElement.requestFullscreen) {
-        playerElement.requestFullscreen();
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-  };
-
-  // 监听全屏状态变化
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
-  }, []);
+  // 使用全屏 hooks - 分别为机场和飞行器视频创建实例
+  const {isFullscreen: isDockFullscreen, toggleFullscreen: toggleDockFullscreen, exitFullscreen: exitDockFullscreen} = useFullscreen("player");
+  const {isFullscreen: isDroneFullscreen, toggleFullscreen: toggleDroneFullscreen, exitFullscreen: exitDroneFullscreen} = useFullscreen("player2");
 
   return (
     <div className={"flex relative"}>
@@ -489,34 +269,34 @@ const DronePanel = () => {
             <div className={"grid grid-cols-12"}>
               <span
                 onClick={() => dockVideoVisible ? onStopLiveStream() : onStartLiveStream()}
-                className={cn("col-span-10 rounded-[2px] cursor-pointer content-center py-[2px] bg-[#104992]/[.85]",
+                className={cn("col-span-8 rounded-[2px] cursor-pointer content-center py-[2px] bg-[#104992]/[.85]",
                   dockVideoVisible ? "border-[#43ABFF] border-[1px]" : "")}>
                 机场直播
               </span>
-              <span className={"col-span-2 content-center flex justify-end space-x-2"}>
+              <span className={"col-span-4 content-center flex justify-end space-x-2"}>
                 {dockVideoVisible && (
                   <Maximize2
                     size={17}
                     className="cursor-pointer"
-                    onClick={handleFullscreen}
+                    onClick={toggleDockFullscreen}
                   />
                 )}
-                <Settings size={17}/>
+                {/*<Settings size={17}/>*/}
               </span>
             </div>
             <div
               className={cn(
                 "relative",
-                isDockLive && dockVideoVisible ? "h-48" : "h-0",
-                isFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black"
+                dockVideoVisible ? "h-48" : "h-0",
+                isDockFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black"
               )}
               id="player"
             >
-              {isFullscreen && (
+              {isDockFullscreen && (
                 <X
                   className="absolute top-4 right-4 cursor-pointer text-white z-10"
                   size={24}
-                  onClick={() => document.exitFullscreen()}
+                  onClick={exitDockFullscreen}
                 />
               )}
             </div>
@@ -536,63 +316,64 @@ const DronePanel = () => {
               </div>
             </div>
             <div className={"grid grid-cols-12"}>
-              {deviceStatus === EModeCode[EModeCode.Disconnected] ? <span
-                className={"col-span-10 text-[#9F9F9F] cursor-pointer content-center py-[2px]"}>
-              当前设备已关机，无法进行直播
-            </span> : <span
-                // onClick={deviceVideoSrc ? onStopDeviceLivestream : onStartDeviceLivestream}
-                onClick={onStartDroneLiveStream}
-                className={cn("col-span-10 border-[#43ABFF] rounded-[2px] cursor-pointer content-center py-[2px] bg-[#104992]/[.85]", deviceVideoSrc ? "border-[#43ABFF] border-[1px]" : "")}>
-              飞行器直播
-            </span>}
-              <div className={"col-span-2 content-center"}>
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <span
-                        onClick={onClickFightControl}
-                        className={cn("w-[22px] h-[22px] content-center border-[1px] border-[#43ABFF] cursor-pointer",
-                          isRemoteControl ? "bg-[#43ABFF]" : "")}>
-                        <img src={remoteControlPng} alt=""/>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{isRemoteControl ? "离开远程控制" : "进入远程控制"}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              {/*<span className={"col-span-2 content-center"}>
-                <Forward size={17}/>
-              </span>*/}
+              {deviceStatus === EModeCode[EModeCode.Disconnected] ? (
+                <span className={"col-span-12 text-[#9F9F9F] cursor-pointer content-center py-[2px]"}>
+                  当前设备已关机，无法进行直播
+                </span>
+              ) : (
+                <>
+                  <span
+                    onClick={() => droneVideoVisible ? onStopDroneLiveStream() : onStartDroneLiveStream()}
+                    className={cn("col-span-8 border-[#43ABFF] rounded-[2px] cursor-pointer content-center py-[2px] bg-[#104992]/[.85]",
+                      droneVideoVisible ? "border-[#43ABFF] border-[1px]" : "")}>
+                    飞行器直播
+                  </span>
+                  <div className={"col-span-4 content-center flex justify-end space-x-2"}>
+                    {droneVideoVisible && (
+                      <Maximize2
+                        size={17}
+                        className="cursor-pointer"
+                        onClick={toggleDroneFullscreen}
+                      />
+                    )}
+                    <TooltipProvider delayDuration={100}>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span
+                            onClick={onClickFightControl}
+                            className={cn("w-[22px] h-[22px] content-center border-[1px] border-[#43ABFF] cursor-pointer",
+                              isRemoteControl ? "bg-[#43ABFF]" : "")}>
+                            <img src={remoteControlPng} alt=""/>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{isRemoteControl ? "离开远程控制" : "进入远程控制"}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </>
+              )}
             </div>
-            {/*<div className={"grid grid-cols-12"}>
-              {deviceStatus !== EModeCode[EModeCode.Disconnected] ? <span
-                className={"col-span-10 border-[#43ABFF] rounded-[2px] cursor-pointer content-center py-[2px] bg-[#104992]/[.85]"}>
-                飞行器直播
-              </span> : <span className={"col-span-10"}></span>}
-              <div className={"col-span-2 content-center"}>
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <span
-                        onClick={onClickFightControl}
-                        className={cn("w-[22px] h-[22px] content-center border-[1px] border-[#43ABFF] cursor-pointer",
-                          isRemoteControl ? "bg-[#43ABFF]" : "")}>
-                        <img src={remoteControlPng} alt=""/>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{isRemoteControl ? "离开远程控制" : "进入远程控制"}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </div>*/}
-            {/*{deviceStatus !== EModeCode[EModeCode.Disconnected] && deviceVideoSrc && <div className={"h-48"}>*/}
+            <div
+              className={cn(
+                "relative",
+                deviceStatus !== EModeCode[EModeCode.Disconnected] && droneVideoVisible ? "h-48" : "h-0",
+                isDroneFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black"
+              )}
+              id="player2"
+            >
+              {isDroneFullscreen && (
+                <X
+                  className="absolute top-4 right-4 cursor-pointer text-white z-10"
+                  size={24}
+                  onClick={exitDroneFullscreen}
+                />
+              )}
+            </div>
             {/*  <DeviceVideo className={"video-js vjs-default-skin"}/>*/}
             {/*</div>}*/}
-            <div className={"h-48 border-2"} id={"player2"}></div>
+            {/*<div className={"h-48 border-2"} id={"player2"}></div>*/}
           </div>
         </div>
         <div

@@ -21,6 +21,8 @@ const Tsa = () => {
   console.log(deviceState);
 
   const {onlineDocks} = useOnlineDocks();
+  console.log('onlineDocks');
+  console.log(onlineDocks);
 
   const switchVisible = (dock: OnlineDevice) => {
     if (dock.sn === osdVisible.sn) {
@@ -111,7 +113,7 @@ const Tsa = () => {
       <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative"}>
         <GMap/>
         <div className={"absolute left-2 top-2"}>
-          {osdVisible.visible && <_DronePanel/>}
+          {osdVisible.visible && <DronePanel/>}
         </div>
       </div>
     </div>

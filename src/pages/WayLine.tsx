@@ -1,9 +1,9 @@
-import {Camera, Rocket, Upload, User} from "lucide-react";
+import {Camera, Plus, Rocket, Upload, User} from "lucide-react";
 import UploadButton from "@rpldy/upload-button";
 import Uploady from "@rpldy/uploady";
 import GMap from "@/components/drone/public/GMap.tsx";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {useDeleteWalineFile, useDownloadWayline, useWaylines} from "@/hooks/drone";
+import {useDeleteWalineFile, useDownloadWayline, useWaylineById, useWaylines} from "@/hooks/drone";
 import {useEffect} from "react";
 import {DEVICE_NAME} from "@/types/device.ts";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
@@ -20,11 +20,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog.tsx";
+import {useNavigate} from "react-router-dom";
 
 const HTTP_PREFIX_Wayline = "wayline/api/v1";
 
 const WayLine = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const navigate = useNavigate()
 
   const {downloadWayline} = useDownloadWayline(workspaceId);
   const {deleteWaylineFile} = useDeleteWalineFile(workspaceId);
@@ -60,7 +62,7 @@ const WayLine = () => {
     }
     return response.code === 0;
   };
-
+  // const {data: currentWaylineData} = useWaylineById("3dce9002-97da-4f98-822d-440beec6c171" || "");
   return (
     <div className={"w-full h-full flex space-x-[20px]"}>
       <div
@@ -69,20 +71,23 @@ const WayLine = () => {
         <div
           className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between"}>
           <span>航线列表</span>
-          <Uploady
-            isSuccessfulCall={(x) => onComplete(x)}
-            destination={{
-              url: `${CURRENT_CONFIG.baseURL}${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/waylines/file/upload`,
-              headers: {
-                [ELocalStorageKey.Token]: getAuthToken()
-              }
-            }}>
-            <UploadButton>
-              <Upload className={"cursor-pointer"} size={16}/>
-            </UploadButton>
-          </Uploady>
+          <div className={"flex space-x-2"}>
+            <Plus onClick={()=>navigate("/create-wayline")} size={16} className={"cursor-pointer"}/>
+            <Uploady
+              isSuccessfulCall={(x) => onComplete(x)}
+              destination={{
+                url: `${CURRENT_CONFIG.baseURL}${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/waylines/file/upload`,
+                headers: {
+                  [ELocalStorageKey.Token]: getAuthToken()
+                }
+              }}>
+              <UploadButton>
+                <Upload className={"cursor-pointer"} size={16}/>
+              </UploadButton>
+            </Uploady>
+          </div>
         </div>
-        <div className={"px-[12px] py-4 space-y-2"}>
+        <div className={"px-[12px] py-4 space-y-2 h-[calc(100vh-180px)] overflow-y-auto"}>
           {!waylines || waylines.list.length === 0 ? <div className={"content-center py-8 text-[#d0d0d0]"}>
             暂无数据
           </div> : waylines.list.map(line => <div className={"bg-panel-item bg-full-size text-[14px] p-4"}
@@ -98,6 +103,7 @@ const WayLine = () => {
                   <span className={"cursor-pointer"}>...</span>
                 </PopoverTrigger>
                 <PopoverContent className={"w-24 flex flex-col "}>
+                  <Button variant={"ghost"} onClick={() => navigate(`/create-wayline?id=${line.id}`)}>编辑</Button>
                   <Button variant={"ghost"} onClick={() => downloadWayline(line.id, line.name)}>下载</Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>

@@ -26,7 +26,7 @@ const CockpitFlyControl = () => {
 
   const {
     handleKeyup,
-    // handleEmergencyStop,
+    handleEmergencyStop,
     resetControlState,
   } = useManualControl(deviceTopicInfo, isRemoteControl);
 
@@ -114,7 +114,11 @@ const CockpitFlyControl = () => {
           <CockpitButton type={"button"} onClick={() => sendControlCmd(cmdItem)} key={cmdItem.cmdKey}>
             {cmdItem.operateText}
           </CockpitButton>)}
+        <div className={"bg-break bg-full-size w-[117px] h-[36px] content-center cursor-pointer"} onClick={handleEmergencyStop}>
+          急停
+        </div>
       </div>
+
     </>
   );
 };

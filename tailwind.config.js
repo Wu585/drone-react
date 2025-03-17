@@ -123,6 +123,7 @@ module.exports = {
         'take-off-panel': "url('@/assets/images/drone/bg-take-off-panel.png')",
         'take-off-panel-header': "url('@/assets/images/drone/bg-take-off-panel-header.png')",
         'cockpit': "url('@/assets/images/drone/cockpit/bg-cockpit.png')",
+        'break': "url('@/assets/images/drone/cockpit/bg-break.png')",
         'cockpit-header': "url('@/assets/images/drone/cockpit/bg-header.png')",
         'center-video': "url('@/assets/images/drone/cockpit/bg-center-video.png')",
         'cockpit-keyboard': "url('@/assets/images/drone/cockpit/bg-keyboard.png')",

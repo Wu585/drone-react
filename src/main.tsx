@@ -4,6 +4,15 @@ import "normalize.css";
 import "./index.css";
 import "./video-js.css";
 
+window.Cesium = SuperMap3D;
+
+window.getPosition = function () {
+  const {position, heading, pitch, roll} = viewer.camera;
+  const {x, y, z} = position;
+  // return `${x},${y},${z},${heading},${pitch},${roll}`;
+  return `"x":${x},"y":${y},"z":${z},"heading":${heading},"pitch":${pitch},"roll":${roll}`;
+};
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <App/>
 );

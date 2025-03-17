@@ -63,7 +63,7 @@ const Layout = () => {
         <TopBar/>
       </header>
       <div className={"flex-1 p-[22px] flex"}>
-        {!pathname.includes("organ") && !pathname.includes("depart") &&
+        {!pathname.includes("organ") && !pathname.includes("depart") && !pathname.includes("create-wayline") &&
           <aside className={"w-[50px] flex border-[1px] border-[#43ABFF] rounded-l-lg border-r-0"}>
             <div className={"w-[50px] bg-[#0059BF]/[.5]"}>
               {menuList.map((item, index) =>

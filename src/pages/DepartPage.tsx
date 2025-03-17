@@ -165,7 +165,10 @@ const DepartPage = () => {
                   />
                   <Trash2 size={16} className={"cursor-pointer"}/>
                   <LogInIcon size={16} className={"cursor-pointer"}
-                             onClick={() => navigate(`/tsa?depart=${item.id}`)}/>
+                             onClick={() => {
+                               navigate(`/tsa`);
+                               localStorage.setItem("departId", item.id.toString());
+                             }}/>
                 </div>
               </div>
             </div>)}

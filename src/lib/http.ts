@@ -76,10 +76,10 @@ export const useAjax = () => {
     if ((error as AxiosError).response?.status === 401) {
       navigate("/login");
     } else if ((error as AxiosResponse).data?.code !== 0) {
-      toast({
+      /*toast({
         variant: "destructive",
         description: (error as AxiosResponse).data.message
-      });
+      });*/
     }
     throw error;
   };

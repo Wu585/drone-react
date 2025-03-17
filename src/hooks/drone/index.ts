@@ -8,7 +8,6 @@ import {useToast} from "@/components/ui/use-toast.ts";
 import {OutOfControlAction, TaskStatus, TaskType} from "@/types/task.ts";
 import {WaylineType} from "@/types/wayline.ts";
 import {EFlightAreaType, FlightAreaContent} from "@/types/flight-area.ts";
-import {useSearchParams} from "react-router-dom";
 
 export const useDeviceTopo = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
@@ -17,15 +16,16 @@ export const useDeviceTopo = () => {
   return useSWR(url, async (path) => (await get<Resource<any[]>>(path)).data.data);
 };
 
+
 export const useOnlineDocks = () => {
   const {data: deviceTopo} = useDeviceTopo();
   const [onlineDocks, setOnlineDocks] = useState<OnlineDevice[]>([]);
-  const [searchParams] = useSearchParams();
+  const departId = localStorage.getItem("departId");
 
   useEffect(() => {
     if (!deviceTopo) return;
 
-    const deviceList: OnlineDevice[] = deviceTopo.filter(item => item.organ.toString() === searchParams.get("depart")).map((gateway: any) => {
+    const deviceList: OnlineDevice[] = deviceTopo.filter(item => item.organ.toString() === departId).map((gateway: any) => {
       const child = gateway.children;
       return {
         model: child?.device_name,
@@ -334,6 +334,7 @@ export interface UserItem {
   name: string;
   role: number;
   workspace_id: string;
+  organs: number[];
 }
 
 interface MembersData {
@@ -485,6 +486,7 @@ export interface Depart {
   name: string;
   lead_user: number;
   workspace: number;
+  create_time: number;
 }
 
 // 获取部门列表
@@ -517,4 +519,104 @@ export const useEditDepart = () => {
     setDepartId,
     ...swrResponse
   };
+};
+
+/*// Get all uses
+export const useMembers = (workspaceId: string, body: Pagination) => {
+  const {get} = useAjax();
+  const url = `${HTTP_PREFIX}/users/${workspaceId}/users`;
+  const key = body ? [url, body] as const : null;
+  return useSWR(key, async ([path, body]) => (await get<Resource<MembersData>>(path, {
+    ...body
+  })).data.data);
+};*/
+
+export interface WorkOrder {
+  id: number;
+  name: string;
+  workspaceId: string;
+  uuKey: string;
+  wayline: number;
+  waylineName: string;
+  address: string;
+  contact: string;
+  status: number;
+  operator: number;
+  operatorName: string;
+  createTime: string;
+  updateTime: string;
+  found_time: number;
+  order_type: number;
+}
+
+// 查询工单列表
+export const useWorkOrderList = (body: {
+  page: number
+  tab: number
+  page_size: number
+  status?: number
+}, fix: string) => {
+  const {post} = useAjax();
+  const url = `${OPERATION_HTTP_PREFIX}/order/${fix}`;
+  // const url = `${OPERATION_HTTP_PREFIX}/order/pageByOperator`;
+  const key = fix && body ? [url, body] as const : null;
+  return useSWR(key, async ([path, body]) => (await post<Resource<{
+    list: WorkOrder[]
+    pagination: {
+      page: number;
+      total: number;
+      page_size: number;
+    }
+  }>>(path, {
+    ...body
+  })).data.data);
+};
+
+// 查看图片url
+export const useGetImageUrl = (file: string) => {
+  const {post} = useAjax();
+  const key = file ? [`${OPERATION_HTTP_PREFIX}/file/getUrl?key=${file}`] : null;
+  return useSWR(key, async ([path]) => (await post<Resource<any>>(path)).data.data);
+};
+
+interface OrderOperation {
+  id: number;
+  uu_key: string;
+  status: number;
+  order: number;
+  order_uukey: string;
+  result: string;
+  operate_pic_list: string[];
+  operator: number;
+  operator_name: string;
+  create_time: number;
+  update_time: number;
+}
+
+// 查看工单操作记录
+export const useOperationList = (orderId: number) => {
+  const {post} = useAjax();
+  const url = `${OPERATION_HTTP_PREFIX}/orderOperation/pageByOrder`;
+
+  const key = orderId ? [url, orderId] as const : null;
+
+  return useSWR(key, async ([path, orderId]) => (await post<Resource<{
+    list: OrderOperation[]
+    pagination: {
+      page: number
+      page_size: number
+      total: number
+    }
+  }>>(path, {
+    page: 1,
+    page_size: 1000,
+    order: orderId,
+  })).data.data);
+};
+
+// 查询航线参数
+export const useWaylineById = (waylineId: string) => {
+  const {get} = useAjax();
+  const key = waylineId ? [`/wayline/api/v1/common/get?waylineId=${waylineId}`] : null;
+  return useSWR(key, async ([path]) => (await get<Resource<any>>(path)).data.data);
 };
