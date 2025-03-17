@@ -189,8 +189,6 @@ const formSchema = z.object({
   }),
 });
 
-const DEFAULT_WAYPOINT_HEIGHT = 120; // 设置默认航点高度为 120 米
-
 const CreateWayLine = () => {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
