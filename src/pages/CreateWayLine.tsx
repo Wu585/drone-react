@@ -268,9 +268,12 @@ const CreateWayLine = () => {
   const [selectedWaypointId, setSelectedWaypointId] = useState<number | null>(null);
 
   const onSetPoint = () => {
+    // 只删除起飞点相关的实体，而不是所有实体
     if (takeoffPoint?.entity) {
-      // 清除之前的实体
-      viewer.entities.removeAll();
+      if (takeoffPoint.entity.takeoff) viewer.entities.remove(takeoffPoint.entity.takeoff);
+      if (takeoffPoint.entity.drone) viewer.entities.remove(takeoffPoint.entity.drone);
+      if (takeoffPoint.entity.verticalLine) viewer.entities.remove(takeoffPoint.entity.verticalLine);
+      if (takeoffPoint.entity.connectLine) viewer.entities.remove(takeoffPoint.entity.connectLine);
     }
 
     pickPosition(({longitude, latitude, height}) => {
@@ -384,8 +387,8 @@ const CreateWayLine = () => {
     viewer.entities.values.forEach((entity: any) => {
       // 检查是否是连接线（不是垂直线）
       if (entity.polyline &&
-          !waypoints.some(wp => wp.entity.verticalLine === entity) &&
-          takeoffPoint?.entity.verticalLine !== entity) { // 添加这个条件
+        !waypoints.some(wp => wp.entity.verticalLine === entity) &&
+        takeoffPoint?.entity.verticalLine !== entity) { // 添加这个条件
         entitiesToRemove.push(entity);
       }
     });
@@ -789,7 +792,7 @@ const CreateWayLine = () => {
     console.log(formValue);
     console.log("waypoints");
     console.log(waypoints);
-    /*try {
+    try {
       const res: any = await post(`wayline/api/v1/common/buildKmzFile`, formValue);
       if (res.data.code === 0) {
         toast({
@@ -802,14 +805,14 @@ const CreateWayLine = () => {
         description: error.data.message,
         variant: "destructive"
       });
-    }*/
-    if (waypoints.length === 0) {
+    }
+    /*if (waypoints.length === 0) {
       toast({
         variant: "destructive",
         description: "请至少添加一个航点"
       });
       return;
-    }
+    }*/
   };
 
   const onSaveWayPointSetting = () => {
@@ -929,6 +932,168 @@ const CreateWayLine = () => {
       }
     };
   }, [waypoints, handleWaypointClick]); // 添加 handleWaypointClick 作为依赖项
+
+  // 在 useEffect 中添加初始化逻辑
+  useEffect(() => {
+    if (!currentWaylineData || !viewer) return;
+    console.log("currentWaylineData====");
+    console.log(currentWaylineData);
+    const data = currentWaylineData;
+
+    // 初始化航点
+    const initialWaypoints = data.route_point_list.map((point, index) => {
+      // 创建航点图标
+      const waypointEntity = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(
+          point.longitude,
+          point.latitude,
+          point.height || data.global_height
+        ),
+        billboard: {
+          image: (() => {
+            const canvas = document.createElement("canvas");
+            canvas.width = 32;
+            canvas.height = 32;
+            const context = canvas.getContext("2d");
+            if (context) {
+              context.beginPath();
+              context.moveTo(16, 28);
+              context.lineTo(4, 4);
+              context.lineTo(28, 4);
+              context.closePath();
+              context.fillStyle = "#4CAF50";
+              context.fill();
+
+              context.font = "bold 16px Arial";
+              context.fillStyle = "white";
+              context.textAlign = "center";
+              context.textBaseline = "middle";
+              context.fillText((index + 1).toString(), 16, 14);
+            }
+            return canvas;
+          })(),
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+          width: 32,
+          height: 32,
+          color: Cesium.Color.WHITE
+        }
+      });
+
+      // 创建垂直虚线
+      const verticalLineEntity = viewer.entities.add({
+        polyline: {
+          positions: [
+            Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, 0),
+            Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, point.height || data.global_height)
+          ],
+          width: 2,
+          material: new Cesium.PolylineDashMaterialProperty({
+            color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
+            dashLength: 8.0
+          })
+        }
+      });
+
+      // 转换动作数据
+      const actions = point.actions?.map(action => {
+        switch (action.action_actuator_func) {
+          case "rotateYaw":
+            return {
+              name: "飞行器偏航角",
+              func: "rotateYaw",
+              param: action.aircraft_heading
+            };
+          case "gimbalRotate":
+            return action.gimbal_pitch_rotate_angle ? {
+              name: "云台俯仰角",
+              func: "gimbalRotate",
+              type: "gimbal_pitch_rotate_angle",
+              param: action.gimbal_pitch_rotate_angle
+            } : {
+              name: "云台偏航角",
+              func: "gimbalRotate",
+              type: "gimbal_yaw_rotate_angle",
+              param: action.gimbal_yaw_rotate_angle
+            };
+          case "zoom":
+            return {
+              name: "变焦",
+              func: "zoom",
+              param: action.zoom / 24
+            };
+          case "hover":
+            return {
+              name: "悬停",
+              func: "hover",
+              param: action.hover_time
+            };
+          case "takePhoto":
+            return {
+              name: "拍照",
+              func: "takePhoto",
+              isGlobal: action.use_global_image_format === 1,
+              param: action.use_global_image_format === 1 ? data.image_format?.split(",") : action.image_format?.split(",")
+            };
+          case "startRecord":
+            return {
+              name: "开始录像",
+              func: "startRecord",
+              isGlobal: action.use_global_image_format === 1,
+              param: action.use_global_image_format === 1 ? data.image_format.split(",") : action.image_format.split(",")
+            };
+          case "stopRecord":
+            return {
+              name: "停止录像",
+              func: "stopRecord",
+            };
+          default:
+            return null;
+        }
+      }).filter(Boolean);
+
+      return {
+        id: index + 1,
+        longitude: point.longitude,
+        latitude: point.latitude,
+        height: point.height || data.global_height,
+        speed: point.speed || data.auto_flight_speed,
+        useGlobalHeight: !point.height,
+        useGlobalSpeed: !point.speed,
+        actions,
+        entity: {
+          point: waypointEntity,
+          verticalLine: verticalLineEntity,
+          connectLine: null
+        }
+      };
+    });
+
+    console.log("initialWaypoints===");
+    console.log(initialWaypoints);
+
+    setWaypoints(initialWaypoints);
+
+    // 更新航线路径
+    updateWaylinePath(initialWaypoints);
+
+    // 初始化表单数据
+    form.reset({
+      ...data,
+      device: {
+        drone_type: data.drone_type,
+        sub_drone_type: data.sub_drone_type,
+        payload_type: data.payload_type,
+        payload_position: data.payload_position,
+      },
+      take_off_ref_point: data.take_off_ref_point || "",
+      waypoint_heading_mode: data.waypoint_heading_req.waypoint_heading_mode,
+      global_waypoint_turn_mode: data.waypoint_turn_req.waypoint_turn_mode,
+    });
+
+    console.log("reset==");
+
+  }, [currentWaylineData, form]);
 
   return (
     <Form {...form}>
@@ -1539,7 +1704,7 @@ const CreateWayLine = () => {
                     </h3>
                   </div>
                   <div className={"space-y-2 h-[calc(100vh-500px)] overflow-y-auto"}>
-                    {currentWayPoint?.actions.map((action, index) => {
+                    {currentWayPoint?.actions?.map((action, index) => {
                       switch (action.name) {
                         case "飞行器偏航角":
                           return <div key={index} className={"space-y-4"}>
@@ -1688,6 +1853,26 @@ const CreateWayLine = () => {
                                 }}
                               />
                             </div>
+                            <Slider
+                              value={[action.param as number]}
+                              onValueChange={(value) => {
+                                // 更新当前航点的 actions 中对应 index 的 param 值
+                                setCurrentWayPoint({
+                                  ...currentWayPoint!,
+                                  actions: currentWayPoint!.actions.map((item, idx) => {
+                                    if (idx === index) {
+                                      return {
+                                        ...item,
+                                        param: value[0]  // 更新 param 值
+                                      };
+                                    }
+                                    return item;
+                                  })
+                                });
+                              }}
+                              min={1}
+                              max={900}
+                            />
                           </div>;
                         case "开始录像":
                           return <div key={index} className={"space-y-4"}>
