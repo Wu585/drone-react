@@ -390,12 +390,22 @@ const CreateWayLine = () => {
       if (waypoint.entity.verticalLine) viewer.entities.remove(waypoint.entity.verticalLine);
     }
 
-    // 2. 过滤掉要删除的航点
+    // 2. 如果删除的是当前选中的航点，清除选中状态
+    if (selectedWaypointId === waypoint.id) {
+      setSelectedWaypointId(null);
+    }
+
+    // 3. 过滤掉要删除的航点
     const newWaypoints = waypoints.filter(wp => wp.id !== waypoint.id);
 
-    // 3. 更新剩余航点的编号和图标
+    // 4. 更新剩余航点的编号和图标
     const updatedWaypoints = newWaypoints.map((wp, index) => {
       const newId = index + 1;
+
+      // 如果这个航点是被选中的，更新 selectedWaypointId
+      if (selectedWaypointId === wp.id) {
+        setSelectedWaypointId(newId);
+      }
 
       // 更新航点图标
       const canvas = document.createElement("canvas");
@@ -432,15 +442,27 @@ const CreateWayLine = () => {
       };
     });
 
-    // 4. 更新状态
+    // 5. 更新状态
     setWaypoints(updatedWaypoints);
 
-    // 5. 重新绘制航线路径
+    // 6. 重新绘制航线路径
     updateWaylinePath(updatedWaypoints);
   };
 
   const addWaypointAfter = (afterId: number) => {
     if (!rightClickPosition) return;
+
+    // 先取消当前选中航点的高亮
+    if (selectedWaypointId) {
+      const prevWaypoint = waypoints.find(wp => wp.id === selectedWaypointId);
+      if (prevWaypoint?.entity?.point) {
+        prevWaypoint.entity.point.billboard.color = Cesium.Color.WHITE;
+        prevWaypoint.entity.verticalLine.material = new Cesium.PolylineDashMaterialProperty({
+          color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
+          dashLength: 8.0
+        });
+      }
+    }
 
     const {longitude, latitude} = rightClickPosition;
     const globalHeight = form.getValues("global_height");
@@ -563,13 +585,19 @@ const CreateWayLine = () => {
     updateWaylinePath(newWaypoints);
     setRightClickPosition(null);  // 清除右键点击位置
 
-    // 7. 选中新添加的航点
-    handleWaypointClick(newWaypoint);
+    // 7. 直接设置新航点为选中状态，而不是调用 handleWaypointClick
+    setSelectedWaypointId(newId);
+    waypointEntity.billboard.color = Cesium.Color.YELLOW;
+    verticalLineEntity.material = new Cesium.PolylineDashMaterialProperty({
+      color: Cesium.Color.YELLOW.withAlpha(0.8),
+      dashLength: 8.0
+    });
   };
 
   const {RightClickPanel, MenuItem} = useRightClickPanel({
     containerId: "cesiumContainer",
     onRightClick: (movement) => {
+      // 获取点击位置的坐标
       const cartesian = viewer.scene.pickPosition(movement.position);
       if (cartesian) {
         const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
@@ -578,7 +606,7 @@ const CreateWayLine = () => {
         const height = cartographic.height;
 
         setRightClickPosition({longitude, latitude, height});
-        return true;
+        return true; // 返回 true 表示显示右键菜单
       }
       return false;
     }
@@ -1320,16 +1348,11 @@ const CreateWayLine = () => {
                       <button
                         className="w-6 h-6 bg-[#3c3c3c] rounded-full flex items-center justify-center hover:bg-[#4c4c4c]">-
                       </button>
-                      <Slider
-                        onValueChange={(value) => setCurrentWayPoint({
-                          ...currentWayPoint!,
-                          speed: value[0]
-                        })}
-                        min={1}
-                        max={15}
-                        value={[currentWayPoint?.speed || 0]}
-                        disabled={currentWayPoint?.useGlobalSpeed}
-                      />
+                      <Slider onValueChange={(value) => setCurrentWayPoint({
+                        ...currentWayPoint!,
+                        speed: value[0]
+                      })} min={1} max={15} value={[currentWayPoint?.speed || 0]}
+                              disabled={currentWayPoint?.useGlobalSpeed}/>
                       <button
                         className="w-6 h-6 bg-[#3c3c3c] rounded-full flex items-center justify-center hover:bg-[#4c4c4c]">+
                       </button>
@@ -1824,7 +1847,11 @@ const CreateWayLine = () => {
         <div className={"border-2 flex-1 relative"}>
           <Scene/>
           <RightClickPanel>
-            {selectedWaypointId ? (
+            {waypoints.length === 0 ? (
+              <MenuItem onClick={() => addWaypointAfter(0)}>
+                新增航点
+              </MenuItem>
+            ) : selectedWaypointId ? (
               <>
                 <MenuItem onClick={() => addWaypointAfter(0)}>
                   在最前添加航点
@@ -1840,9 +1867,14 @@ const CreateWayLine = () => {
                 </MenuItem>
               </>
             ) : (
-              <MenuItem onClick={() => addWaypointAfter(waypoints.length)}>
-                添加航点
-              </MenuItem>
+              <>
+                <MenuItem onClick={() => addWaypointAfter(0)}>
+                  在最前添加航点
+                </MenuItem>
+                <MenuItem onClick={() => addWaypointAfter(waypoints.length)}>
+                  在最后添加航点
+                </MenuItem>
+              </>
             )}
           </RightClickPanel>
         </div>
