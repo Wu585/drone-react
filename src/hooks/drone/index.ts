@@ -531,22 +531,32 @@ export const useMembers = (workspaceId: string, body: Pagination) => {
   })).data.data);
 };*/
 
+type OrderStatus = 0 | 1 | 2 | 3 | 4;
+
 export interface WorkOrder {
   id: number;
   name: string;
   workspaceId: string;
-  uuKey: string;
+  uu_key: string;
   wayline: number;
-  waylineName: string;
+  wayline_name: string;
+  found_time: number;
+  street: string;
+  street_code: string;
   address: string;
   contact: string;
-  status: number;
-  operator: number;
-  operatorName: string;
-  createTime: string;
-  updateTime: string;
-  found_time: number;
+  contact_phone: string;
   order_type: number;
+  pic_list: string[];
+  longitude: number;
+  latitude: number;
+  description: string;
+  status: OrderStatus; // Represents the order status (0-待分配, 1-已分配, etc.)
+  operator: number;
+  operator_name: string;
+  warning_level: number;
+  create_time: string; // ISO 8601 date string
+  update_time: string; // ISO 8601 date string
 }
 
 // 查询工单列表
@@ -570,6 +580,13 @@ export const useWorkOrderList = (body: {
   }>>(path, {
     ...body
   })).data.data);
+};
+
+// 根据id查询工单详情
+export const useWorkOrderById = (id?: number) => {
+  const {get} = useAjax();
+  const key = id ? [`${OPERATION_HTTP_PREFIX}/order/get?id=${id}`] : null;
+  return useSWR(key, async ([path]) => (await get<Resource<WorkOrder>>(path)).data.data);
 };
 
 // 查看图片url

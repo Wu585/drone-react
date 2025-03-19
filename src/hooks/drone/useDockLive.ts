@@ -4,7 +4,7 @@ import {toast} from "@/components/ui/use-toast.ts";
 import {useCapacity} from "@/hooks/drone/index.ts";
 import {useAjax} from "@/lib/http.ts";
 
-export const AGORA_APP_ID = "0a9ee9243e674e72a1ae22b19b7984d0";
+export const AGORA_APP_ID = "066e9b3262924e5680048ed3472c3070";
 const MANAGE_HTTP_PREFIX = "/manage/api/v1";
 
 export const useDockLive = (ele: string, dockSn: string, cameraIndex?: string) => {

@@ -1,6 +1,6 @@
 import {Aperture, ArrowUpDown, Camera, CloudFog, RefreshCcw, Settings, Video, Maximize2} from "lucide-react";
 import {useSceneStore} from "@/store/useSceneStore.ts";
-import {FC, useState} from "react";
+import {FC, useEffect, useState} from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,14 +70,6 @@ const PayloadControl: FC<Props> = ({
 
   const videoModeList = cameraList[1]?.videos_list?.[0]?.switch_video_types || [];
 
-  const getPayloadControl = async () => {
-    await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/authority/payload`, {
-      payload_index: currentDeviceCamera
-    });
-    toast({
-      description: "获取云端控制权成功！"
-    });
-  };
 
   const onCameraModeSwitch = async () => {
     await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
@@ -101,11 +93,21 @@ const PayloadControl: FC<Props> = ({
   console.log("currentCameraMode===");
   console.log(currentCameraMode);
 
-  const onTakePhoto = async () => {
+  const getPayloadControl = async () => {
     const payloadIndex = osdVisible.payloads?.[0].payload_index;
     await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/authority/payload`, {
       payload_index: payloadIndex
     });
+    toast({
+      description: "获取云端控制权成功！"
+    });
+  };
+
+  const onTakePhoto = async () => {
+    const payloadIndex = osdVisible.payloads?.[0].payload_index;
+    // await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/authority/payload`, {
+    //   payload_index: payloadIndex
+    // });
     try {
       if (currentCameraMode !== CameraMode.Photo) {
         await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
@@ -137,9 +139,9 @@ const PayloadControl: FC<Props> = ({
 
   const onRecording = async () => {
     const payloadIndex = osdVisible.payloads?.[0].payload_index;
-    await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/authority/payload`, {
-      payload_index: payloadIndex
-    });
+    // await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/authority/payload`, {
+    //   payload_index: payloadIndex
+    // });
     try {
       if (currentCameraMode !== CameraMode.Video) {
         await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
@@ -225,6 +227,7 @@ const PayloadControl: FC<Props> = ({
       <ArrowUpDown onClick={onCameraModeSwitch} size={16}/>
       <Camera onClick={onTakePhoto} size={16}/>
       <Video onClick={onRecording} size={16}/>*/}
+      <CloudFog className={"cursor-pointer"} size={16} onClick={getPayloadControl}/>
       <Camera className={"cursor-pointer"} onClick={onTakePhoto} size={16}/>
       <Video className={"cursor-pointer"} onClick={onRecording} size={16}/>
     </div>

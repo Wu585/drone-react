@@ -5,13 +5,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 interface TimePickerProps {
   date: Date
   setDate: (date: Date) => void
+  disabled?: boolean
 }
 
-export function TimePickerDemo({ date, setDate }: TimePickerProps) {
+export function TimePickerDemo({ date, setDate, disabled = false }: TimePickerProps) {
   const minuteOptions = Array.from({ length: 60 }, (_, i) => i)
   const hourOptions = Array.from({ length: 24 }, (_, i) => i)
   const secondOptions = Array.from({ length: 60 }, (_, i) => i)
@@ -20,14 +22,20 @@ export function TimePickerDemo({ date, setDate }: TimePickerProps) {
     <div className="flex items-end gap-2">
       <div className="grid gap-1 text-center">
         <Select
+          disabled={disabled}
           defaultValue={date.getHours().toString()}
           onValueChange={(value) => {
-            const newDate = new Date(date)
-            newDate.setHours(parseInt(value))
-            setDate(newDate)
+            if (!disabled) {
+              const newDate = new Date(date)
+              newDate.setHours(parseInt(value))
+              setDate(newDate)
+            }
           }}
         >
-          <SelectTrigger className="w-[80px]">
+          <SelectTrigger className={cn(
+            "w-[80px]",
+            disabled && "opacity-50"
+          )}>
             <SelectValue placeholder="H" />
           </SelectTrigger>
           <SelectContent>
@@ -38,18 +46,27 @@ export function TimePickerDemo({ date, setDate }: TimePickerProps) {
             ))}
           </SelectContent>
         </Select>
-        <span className="text-xs text-muted-foreground">时</span>
+        <span className={cn(
+          "text-xs text-muted-foreground",
+          disabled && "opacity-50"
+        )}>时</span>
       </div>
       <div className="grid gap-1 text-center">
         <Select
+          disabled={disabled}
           defaultValue={date.getMinutes().toString()}
           onValueChange={(value) => {
-            const newDate = new Date(date)
-            newDate.setMinutes(parseInt(value))
-            setDate(newDate)
+            if (!disabled) {
+              const newDate = new Date(date)
+              newDate.setMinutes(parseInt(value))
+              setDate(newDate)
+            }
           }}
         >
-          <SelectTrigger className="w-[80px]">
+          <SelectTrigger className={cn(
+            "w-[80px]",
+            disabled && "opacity-50"
+          )}>
             <SelectValue placeholder="M" />
           </SelectTrigger>
           <SelectContent>
@@ -60,18 +77,27 @@ export function TimePickerDemo({ date, setDate }: TimePickerProps) {
             ))}
           </SelectContent>
         </Select>
-        <span className="text-xs text-muted-foreground">分</span>
+        <span className={cn(
+          "text-xs text-muted-foreground",
+          disabled && "opacity-50"
+        )}>分</span>
       </div>
       <div className="grid gap-1 text-center">
         <Select
+          disabled={disabled}
           defaultValue={date.getSeconds().toString()}
           onValueChange={(value) => {
-            const newDate = new Date(date)
-            newDate.setSeconds(parseInt(value))
-            setDate(newDate)
+            if (!disabled) {
+              const newDate = new Date(date)
+              newDate.setSeconds(parseInt(value))
+              setDate(newDate)
+            }
           }}
         >
-          <SelectTrigger className="w-[80px]">
+          <SelectTrigger className={cn(
+            "w-[80px]",
+            disabled && "opacity-50"
+          )}>
             <SelectValue placeholder="S" />
           </SelectTrigger>
           <SelectContent>
@@ -82,7 +108,10 @@ export function TimePickerDemo({ date, setDate }: TimePickerProps) {
             ))}
           </SelectContent>
         </Select>
-        <span className="text-xs text-muted-foreground">秒</span>
+        <span className={cn(
+          "text-xs text-muted-foreground",
+          disabled && "opacity-50"
+        )}>秒</span>
       </div>
     </div>
   )

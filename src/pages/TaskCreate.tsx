@@ -64,7 +64,7 @@ const formSchema = z.object({
   min_battery_capacity: z.coerce.number()
     .min(50, {message: "电量不能小于50%"})
     .max(100, {message: "电量不能大于100%"}),
-  min_storage_capacity: z.coerce.number()
+  min_storage_capacity: z.coerce.number().optional()
 }).refine(
   (data) => {
     // 如果是定时或连续任务，必须选择日期
@@ -128,6 +128,11 @@ const TaskCreate = () => {
     console.log("bindingDevices");
     console.log(bindingDevices);
   }, [bindingDevices]);
+
+  const onerr = (err) => {
+    console.log('err===');
+    console.log(err);
+  }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("values");
@@ -335,7 +340,7 @@ const TaskCreate = () => {
     <div className={"w-full h-full flex text-[16px]"}>
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(onSubmit,onerr)}
           className={cn("w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0", selectPanelVisible ? "" : "rounded-tr-lg rounded-br-lg")}>
           <div
             className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-[14px] justify-between text-[14px]"}>

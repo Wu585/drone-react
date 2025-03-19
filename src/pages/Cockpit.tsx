@@ -57,6 +57,7 @@ import {
 import {useDockLive} from "@/hooks/drone/useDockLive.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
 import TsaScene from "@/components/drone/public/TsaScene.tsx";
+import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -198,8 +199,69 @@ const Cockpit = () => {
     setShowDockLive(!showDockLive);
   };
 
+  // 修改为双击事件处理函数
+  const handleVideoDoubleClick = async (event: React.MouseEvent<HTMLDivElement>) => {
+    const div = event.currentTarget;
+    const rect = div.getBoundingClientRect();
+
+    // 获取视频元素
+    const videoElement = div.querySelector('video');
+    if (!videoElement) return;
+
+    const videoRect = videoElement.getBoundingClientRect();
+
+    // 使用视频元素的实际显示区域计算坐标
+    const x = (event.clientX - videoRect.left) / videoRect.width;
+    const y = (event.clientY - videoRect.top) / videoRect.height;
+
+    // 限制坐标范围在 0-1 之间
+    const normalizedX = Math.max(0, Math.min(1, x));
+    const normalizedY = Math.max(0, Math.min(1, y));
+
+    // 调试信息
+    console.log("点击事件信息:", {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      videoRect: {
+        left: videoRect.left,
+        top: videoRect.top,
+        width: videoRect.width,
+        height: videoRect.height
+      },
+      计算结果: {
+        x: normalizedX,
+        y: normalizedY
+      }
+    });
+
+    // 如果点击在视频区域外，则不处理
+    if (x < 0 || x > 1 || y < 0 || y > 1) {
+      console.log("点击在视频区域外");
+      return;
+    }
+
+    try {
+      const payloadIndex = deviceInfo?.device?.cameras?.[0]?.payload_index;
+      await post(`${DRC_API_PREFIX}/devices/${dockSn}/payload/commands`, {
+        cmd: PayloadCommandsEnum.CameraAim,
+        data: {
+          payload_index: payloadIndex,
+          camera_type: currentMode,
+          locked: false,
+          x: normalizedX,
+          y: normalizedY,
+        },
+      });
+    } catch (error) {
+      toast({
+        description: "云台控制失败",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
-    <FitScreen width={1920} height={1080} mode="full">
+    <FitScreen width={1920} height={1080} mode="fit">
       <Form {...form}>
         <form className={"h-full bg-cockpit bg-full-size relative grid grid-cols-5"}
               onSubmit={form.handleSubmit(onSubmit)}>
@@ -473,9 +535,25 @@ const Cockpit = () => {
             <div className={"h-[596px] bg-center-video mt-[52px] bg-full-size content-center relative"}>
               {deviceStatus !== EModeCode[EModeCode.Disconnected] ? (
                 <div
-                  className={"h-[480px] w-[930px] rounded-[80px] overflow-hidden"}
+                  className={"w-[930px] aspect-video rounded-[80px] overflow-hidden cursor-crosshair"}
                   id={"player2"}
-                />
+                  onDoubleClick={handleVideoDoubleClick}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#000',
+                    position: 'relative'
+                  }}
+                >
+                  <div className="absolute inset-0 pointer-events-none" style={{
+                    backgroundImage: `
+                      linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)
+                    `,
+                    backgroundSize: '10% 10%'
+                  }} />
+                </div>
               ) : (
                 <div className={"text-[#d0d0d0]"}>
                   当前设备已关机，无法进行直播

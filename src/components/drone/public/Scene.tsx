@@ -40,9 +40,9 @@ const Scene = () => {
 
   useEffect(() => {
     window.viewer = new Cesium.Viewer("cesiumContainer", {
-      shadows: true,
+      shadows: false,
       infoBox: false,
-      navigation: true, //指南针
+      navigation: false, //指南针
       selectionIndicator: false, //绿色选择框
     });
 
@@ -68,6 +68,7 @@ const Scene = () => {
 
   useEntityCustomSource("dock");
   useEntityCustomSource("waylines-preview");
+  useEntityCustomSource("waylines-create");
 
   useEffect(() => {
     if (!viewer) return;
