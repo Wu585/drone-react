@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {useDockLive} from "@/hooks/drone/useDockLive.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
+import TsaScene from "@/components/drone/public/TsaScene.tsx";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -250,7 +251,7 @@ const Cockpit = () => {
               "w-[360px] ml-[30px] rounded-lg",
               showDockLive ? "h-[244px] mt-[10px]" : "h-[430px]"
             )}>
-              <GMap/>
+              <TsaScene/>
             </div>
             <div className={"ml-[53px] py-[30px]"}>
               <CockpitTitle title={"飞行器基本参数"}/>
@@ -470,12 +471,17 @@ const Cockpit = () => {
           </div>
           <div className={"col-span-3 z-50"}>
             <div className={"h-[596px] bg-center-video mt-[52px] bg-full-size content-center relative"}>
-              {deviceStatus !== EModeCode[EModeCode.Disconnected] ? <div
-                  className={"h-[450px] w-[930px] rounded-[80px] overflow-hidden"} id={"player2"}/> :
+              {deviceStatus !== EModeCode[EModeCode.Disconnected] ? (
+                <div
+                  className={"h-[480px] w-[930px] rounded-[80px] overflow-hidden"}
+                  id={"player2"}
+                />
+              ) : (
                 <div className={"text-[#d0d0d0]"}>
                   当前设备已关机，无法进行直播
-                </div>}
-              <div className={"absolute right-40 top-10 z-50"}>
+                </div>
+              )}
+              <div className={"absolute right-40 top-16 z-50"}>
                 <PayloadControl
                   onRefreshVideo={onRefreshDeviceVideo}
                   updateVideo={updateDroneVideo}

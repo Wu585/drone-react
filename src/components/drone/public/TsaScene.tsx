@@ -8,6 +8,7 @@ import {getImageUrl} from "@/lib/utils.ts";
 import {selfFacilityList} from "@/components/facilities/FacilityProperty.tsx";
 import bmssPoint from "@/assets/images/bmss-point.png";
 import dockPng from "@/assets/images/drone/dock.png";
+import dronePng from "@/assets/images/drone/drone.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
 import {useConnectMqtt} from "@/hooks/drone/useConnectMqtt.ts";
 
@@ -27,7 +28,7 @@ const mapLayerList = [
 ];
 
 
-const Scene = () => {
+const TsaScene = () => {
   const deviceState = useSceneStore(state => state.deviceState);
   const addMapLayer = () => {
     mapLayerList.forEach(item => {
@@ -37,6 +38,7 @@ const Scene = () => {
   };
   useInitialConnectWebSocket();
   useConnectMqtt();
+  const realTimeDeviceInfo = useRealTimeDeviceInfo();
 
   useEffect(() => {
     window.viewer = new Cesium.Viewer("cesiumContainer", {
@@ -67,7 +69,8 @@ const Scene = () => {
   }, []);
 
   useEntityCustomSource("dock");
-  useEntityCustomSource("waylines-preview");
+  useEntityCustomSource("drone");
+  useEntityCustomSource("drone-wayline");
 
   useEffect(() => {
     if (!viewer) return;
@@ -92,10 +95,41 @@ const Scene = () => {
     });
   }, [deviceState]);
 
+  console.log("realTimeDeviceInfo");
+  console.log(realTimeDeviceInfo);
+  useEffect(() => {
+    if (realTimeDeviceInfo.device && realTimeDeviceInfo.device.longitude && realTimeDeviceInfo.device.latitude && realTimeDeviceInfo.device.height) {
+      getCustomSource("drone")?.entities.removeAll();
+      const longitude = +realTimeDeviceInfo.device.longitude;
+      const latitude = +realTimeDeviceInfo.device.latitude;
+      const height = +realTimeDeviceInfo.device.height;
+      getCustomSource("drone")?.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
+        billboard: {
+          image: dronePng,
+          width: 48,
+          height: 48,
+        },
+        polyline: {
+          positions: [
+            Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
+            Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
+          ],
+          width: 2,
+          material: new Cesium.PolylineDashMaterialProperty({
+            color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
+            dashLength: 8.0
+          })
+        }
+      });
+    }
+  }, [realTimeDeviceInfo]);
+
+
   return (
     <div id="cesiumContainer" className={"h-full"}></div>
   );
 };
 
-export default Scene;
+export default TsaScene;
 

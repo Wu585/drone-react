@@ -8,6 +8,8 @@ import {useSceneStore} from "@/store/useSceneStore.ts";
 import {EDockModeCode, EModeCode} from "@/types/device.ts";
 import {OnlineDevice} from "@/hooks/drone/device.ts";
 import _DronePanel from "@/components/drone/public/_DronePanel.tsx";
+import Scene from "@/components/drone/public/Scene.tsx";
+import TsaScene from "@/components/drone/public/TsaScene.tsx";
 
 const Tsa = () => {
   const {
@@ -111,7 +113,8 @@ const Tsa = () => {
         </Accordion>
       </div>
       <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative"}>
-        <GMap/>
+        {/*<GMap/>*/}
+        <TsaScene/>
         <div className={"absolute left-2 top-2"}>
           {osdVisible.visible && <DronePanel/>}
         </div>

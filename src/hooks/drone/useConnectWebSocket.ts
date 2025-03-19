@@ -11,6 +11,7 @@ export const useInitialConnectWebSocket = () => {
     setDeviceOffline,
     setDeviceOnline,
     setHmsInfo,
+    setDevicesCmdExecuteInfo
   } = useSceneStore();
 
   useConnectWebSocket(async (payload: any) => {
@@ -44,6 +45,24 @@ export const useInitialConnectWebSocket = () => {
       }
       case EBizCode.FlightAreasUpdate: {
         EventBus.emit("flightAreasUpdateWs", payload.data);
+        break;
+      }
+      case EBizCode.DeviceReboot:
+      case EBizCode.DroneOpen:
+      case EBizCode.DroneClose:
+      case EBizCode.CoverOpen:
+      case EBizCode.CoverClose:
+      case EBizCode.PutterOpen:
+      case EBizCode.PutterClose:
+      case EBizCode.ChargeOpen:
+      case EBizCode.ChargeClose:
+      case EBizCode.DeviceFormat:
+      case EBizCode.DroneFormat: {
+        setDevicesCmdExecuteInfo({
+          biz_code: payload.biz_code,
+          timestamp: payload.timestamp,
+          ...payload.data,
+        });
         break;
       }
     }

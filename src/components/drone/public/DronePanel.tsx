@@ -37,16 +37,11 @@ import {GeojsonCoordinate} from "@/types/map.ts";
 import {wgs84togcj02} from "@/vendor/coordtransform.ts";
 import {useDockLive} from "@/hooks/drone/useDockLive.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
+import {flyToView} from "@/lib/view.ts";
+import DebugPanel from "@/components/drone/public/DebugPanel.tsx";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
-
-const getGcj02 = <T extends GeojsonCoordinate | GeojsonCoordinate[]>(coordinate: T): T => {
-  if (coordinate[0] instanceof Array) {
-    return (coordinate as GeojsonCoordinate[]).map(c => wgs84togcj02(c[0], c[1])) as T;
-  }
-  return wgs84togcj02(coordinate[0], coordinate[1]);
-};
 
 const DronePanel = () => {
   const osdVisible = useSceneStore(state => state.osdVisible);
@@ -54,6 +49,7 @@ const DronePanel = () => {
   console.log(osdVisible);
   const setOsdVisible = useSceneStore(state => state.setOsdVisible);
   const {visible, hide, show} = useVisible();
+  const {visible: debugPanelvisible, hide: hideDebugPanel, show: showDebugPanel} = useVisible();
   const navigate = useNavigate();
   const deviceInfo = useRealTimeDeviceInfo();
   const [takeOffType, setTakeOffType] = useState<"take-off" | "fly-to">("take-off");
@@ -178,20 +174,32 @@ const DronePanel = () => {
     });
   };
 
-  const [deviceVideoSrc, setDeviceVideoSrc] = useState("");
 
   const dockStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
   const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
 
-  const useMapToolHook = useMapTool();
   const onPintoDock = () => {
-    const coordinate = getGcj02([deviceInfo.dock.basic_osd.longitude, deviceInfo.dock.basic_osd.latitude]);
-    useMapToolHook.panTo(coordinate);
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(deviceInfo.dock.basic_osd.longitude, deviceInfo.dock.basic_osd.latitude, 100),
+      duration: 1
+    });
   };
 
   // 使用全屏 hooks - 分别为机场和飞行器视频创建实例
-  const {isFullscreen: isDockFullscreen, toggleFullscreen: toggleDockFullscreen, exitFullscreen: exitDockFullscreen} = useFullscreen("player");
-  const {isFullscreen: isDroneFullscreen, toggleFullscreen: toggleDroneFullscreen, exitFullscreen: exitDroneFullscreen} = useFullscreen("player2");
+  const {
+    isFullscreen: isDockFullscreen,
+    toggleFullscreen: toggleDockFullscreen,
+    exitFullscreen: exitDockFullscreen
+  } = useFullscreen("player");
+  const {
+    isFullscreen: isDroneFullscreen,
+    toggleFullscreen: toggleDroneFullscreen,
+    exitFullscreen: exitDroneFullscreen
+  } = useFullscreen("player2");
+
+  const onPointDrone = () => {
+
+  };
 
   return (
     <div className={"flex relative"}>
@@ -281,7 +289,10 @@ const DronePanel = () => {
                     onClick={toggleDockFullscreen}
                   />
                 )}
-                {/*<Settings size={17}/>*/}
+                <Settings onClick={() => {
+                  hide();
+                  showDebugPanel();
+                }} className={"cursor-pointer"} size={17}/>
               </span>
             </div>
             <div
@@ -303,7 +314,8 @@ const DronePanel = () => {
           </div>
         </div>
         <div className={"flex text-[12px] border-b-[1px] border-[#104992]/[.85] mr-[4px]"}>
-          <div className={"w-[65px] bg-[#2A8DFE]/[.5] content-center text-center"}>
+          <div className={"w-[65px] bg-[#2A8DFE]/[.5] content-center text-center cursor-pointer"}
+               onClick={onPointDrone}>
             {osdVisible.model}
           </div>
           <div className={"flex-1 p-[12px] space-y-2 bg-[#001E37]/[.9]"}>
@@ -536,6 +548,7 @@ const DronePanel = () => {
               <img src={yjqfPng} alt="" className={"cursor-pointer"} onClick={() => {
                 show();
                 setTakeOffType("take-off");
+                hideDebugPanel();
               }}/>}
           </div>
           <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center"}>
@@ -547,6 +560,7 @@ const DronePanel = () => {
               <Button className={"bg-[#104992]/[.85] h-6 w-14"} onClick={() => {
                 show();
                 setTakeOffType("fly-to");
+                hideDebugPanel();
               }}>飞行</Button>
               <Button className={"bg-[#104992]/[.85] h-6 w-14"} onClick={onStopFlyToPoint}>取消</Button>
             </div>
@@ -566,6 +580,7 @@ const DronePanel = () => {
       </div>
       <div className={"absolute left-full"}>
         {visible && <TakeOffFormPanel type={takeOffType} sn={osdVisible.gateway_sn || ""} onClose={hide}/>}
+        {debugPanelvisible && <DebugPanel sn={osdVisible.gateway_sn || ""} onClose={hideDebugPanel}/>}
       </div>
     </div>
   );

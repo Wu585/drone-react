@@ -412,8 +412,8 @@ export function generateCircleContent(pinAMapPosition: pinAMapPosition, radius: 
 }
 
 export function generateRandomString(length: number = 6): string {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; // 可用字符
-  let result = '';
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; // 可用字符
+  let result = "";
 
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * characters.length); // 生成随机索引
@@ -421,5 +421,41 @@ export function generateRandomString(length: number = 6): string {
   }
 
   return result;
+}
+
+/**
+ * 使用 Haversine 公式计算两个经纬度点之间的距离（以千米为单位）
+ * 输入起点和终点
+ * @param {*} point1 经纬度数组 [纬度, 经度]
+ * @param {*} point2 经纬度数组 [纬度, 经度]
+ * @returns {number} 起点到终点的距离（以千米为单位）
+ */
+export function calculateHaversineDistance(point1: number[], point2: number[]) {
+  // 提取起点和终点的纬度和经度
+  const lat1 = point1[0];
+  const lon1 = point1[1];
+  const lat2 = point2[0];
+  const lon2 = point2[1];
+
+  // 地球半径（米）
+  const earthRadius = 6371000;
+
+  // 将角度转换为弧度
+  const radLat1 = (Math.PI * lat1) / 180;
+  const radLat2 = (Math.PI * lat2) / 180;
+  const deltaLat = (Math.PI * (lat2 - lat1)) / 180;
+  const deltaLon = (Math.PI * (lon2 - lon1)) / 180;
+
+  // Haversine 公式计算
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(radLat1) *
+    Math.cos(radLat2) *
+    Math.sin(deltaLon / 2) *
+    Math.sin(deltaLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  // 返回距离（以千米为单位）
+  return earthRadius * c;
 }
 

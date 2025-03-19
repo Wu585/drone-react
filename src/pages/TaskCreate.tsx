@@ -11,7 +11,7 @@ import {
   Device, HTTP_PREFIX_Wayline,
   useBindingDevice,
   useDeleteWalineFile,
-  useDownloadWayline,
+  useDownloadWayline, useWaylineById,
   useWaylines,
   WaylineItem
 } from "@/hooks/drone";
@@ -38,6 +38,10 @@ import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePick
 import {DateRange} from "react-day-picker";
 import {TimePickerDemo} from "@/components/public/TimePickerDemo.tsx";
 import {useAjax} from "@/lib/http.ts";
+import Scene from "@/components/drone/public/Scene.tsx";
+import {getCustomSource} from "@/hooks/public/custom-source.ts";
+import {waylinePointConfig} from "@/lib/wayline.ts";
+import {toast} from "@/components/ui/use-toast.ts";
 
 const formSchema = z.object({
   name: z.string()
@@ -52,11 +56,15 @@ const formSchema = z.object({
   ]),
   select_time: z.array(z.array(z.date())).min(1, {message: "请至少选择一个时间"}),
   select_time_number: z.number(),
-  rth_altitude: z.string().regex(/^[0-9]+$/, {message: "RTH高度需要为数字"}),
+  // rth_altitude: z.string().regex(/^[0-9]+$/, {message: "RTH高度需要为数字"}),
+  rth_altitude: z.coerce.number()
+    .min(2, {message: "返航高度不能低于20米"})
+    .max(200, {message: "安全起飞高度不能超过200米"}),
   out_of_control_action: z.nativeEnum(OutOfControlAction, {message: "请选择失控动作"}),
-  min_battery_capacity: z.number()
-    .min(0, {message: "电量不能小于0%"})
-    .max(100, {message: "电量不能大于100%"})
+  min_battery_capacity: z.coerce.number()
+    .min(50, {message: "电量不能小于50%"})
+    .max(100, {message: "电量不能大于100%"}),
+  min_storage_capacity: z.coerce.number()
 }).refine(
   (data) => {
     // 如果是定时或连续任务，必须选择日期
@@ -80,7 +88,7 @@ const defaultValue = {
   select_execute_date: [new Date(), new Date()],
   select_time_number: 1,
   select_time: [[]],
-  rth_altitude: "",
+  rth_altitude: 100,
   out_of_control_action: OutOfControlAction.ReturnToHome,
   min_battery_capacity: 90,
   min_storage_capacity: undefined,
@@ -101,13 +109,13 @@ const TaskCreate = () => {
   const {data: waylines, mutate} = useWaylines(workspaceId, {
     order_by: "update_time desc",
     page: 1,
-    page_size: 10
+    page_size: 1000
   });
 
   const {data: bindingDevices} = useBindingDevice(workspaceId, {
     page: 1,
     total: -1,
-    page_size: 10,
+    page_size: 100,
     domain: EDeviceTypeName.Dock
   });
 
@@ -152,9 +160,6 @@ const TaskCreate = () => {
       }
     }
 
-    // 转换 RTH 高度为数字
-    createPlanBody.rth_altitude = Number(createPlanBody.rth_altitude);
-
     // 如果有航线模板类型，添加到请求体
     if (selectedWayline?.template_types && selectedWayline.template_types.length > 0) {
       createPlanBody.wayline_type = selectedWayline.template_types[0];
@@ -165,8 +170,12 @@ const TaskCreate = () => {
 
     try {
       await post(`${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/flight-tasks`, createPlanBody as any);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Create plan failed:", error);
+      toast({
+        description: error.data.message,
+        variant: "destructive"
+      });
     } finally {
       navigate("/task-list");
     }
@@ -195,15 +204,60 @@ const TaskCreate = () => {
     }
   };
 
+  const {data: currentWaylineData} = useWaylineById(selectedWayline?.id || "");
+
+  useEffect(() => {
+    console.log("currentWaylineData");
+    console.log(currentWaylineData);
+    if (currentWaylineData && currentWaylineData.route_point_list && currentWaylineData.route_point_list.length > 0) {
+      getCustomSource("waylines-preview")?.entities.removeAll();
+      currentWaylineData.route_point_list.forEach((point, index) => {
+        getCustomSource("waylines-preview")?.entities.add(waylinePointConfig({
+          longitude: point.longitude,
+          latitude: point.latitude,
+          height: point.height || currentWaylineData.global_height,
+          text: (index + 1).toString()
+        }));
+        getCustomSource("waylines-preview")?.entities.add({
+          polyline: currentWaylineData.route_point_list[index + 1] ? {
+            positions: [
+              Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, point.height || currentWaylineData.global_height),
+              Cesium.Cartesian3.fromDegrees(currentWaylineData.route_point_list[index + 1].longitude,
+                currentWaylineData.route_point_list[index + 1].latitude,
+                currentWaylineData.route_point_list[index + 1].height || currentWaylineData.global_height)
+            ],
+            width: 2,
+            material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8)
+          } : {}
+        });
+        getCustomSource("waylines-preview")?.entities.add({
+          polyline: {
+            positions: [
+              Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, 0),
+              Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, point.height || currentWaylineData.global_height)
+            ],
+            width: 2,
+            material: new Cesium.PolylineDashMaterialProperty({
+              color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
+              dashLength: 8.0
+            })
+          }
+        });
+      });
+    }
+  }, [currentWaylineData]);
+
+  const onSelectWayline = (line: WaylineItem) => {
+    form.setValue("file_id", line.id);
+    setSelectedWayline(line);
+  };
+
   const WaylineList = () => (
     <>
       {!waylines || waylines.list.length === 0 ? <div className={"content-center py-8 text-[#d0d0d0]"}>
         暂无数据
       </div> : waylines.list.map(line =>
-        <div onClick={() => {
-          form.setValue("file_id", line.id);
-          setSelectedWayline(line);
-        }}
+        <div onClick={() => onSelectWayline(line)}
              className={"bg-panel-item bg-full-size text-[14px] p-4 cursor-pointer"}
              key={line.id}>
           <div className={"grid grid-cols-6 space-x-8 relative"}>
@@ -271,6 +325,12 @@ const TaskCreate = () => {
         <div>{device.children.nickname ?? "No Drone"}</div>
       </div>)}
   </>);
+
+  // 在 TaskCreate 组件中添加时间验证函数
+  const validateTimeRange = (startDate: Date, endDate: Date) => {
+    return startDate.getTime() < endDate.getTime();
+  };
+
   return (
     <div className={"w-full h-full flex text-[16px]"}>
       <Form {...form}>
@@ -437,8 +497,21 @@ const TaskCreate = () => {
                               <TimePickerDemo
                                 date={timeGroup[0]}
                                 setDate={(newDate) => {
+                                  if (!newDate) return;
+
                                   const times = form.getValues("select_time");
-                                  times[index][0] = newDate!;
+                                  // 如果是连续任务且已有结束时间，验证时间范围
+                                  if (form.watch("task_type") === TaskType.Condition && times[index][1]) {
+                                    if (!validateTimeRange(newDate, times[index][1])) {
+                                      toast({
+                                        description: "开始时间必须早于结束时间",
+                                        variant: "destructive"
+                                      });
+                                      // 不要直接返回，而是重置为原来的值
+                                      newDate = times[index][0];
+                                    }
+                                  }
+                                  times[index][0] = newDate;
                                   form.setValue("select_time", times);
                                 }}
                               />
@@ -448,8 +521,19 @@ const TaskCreate = () => {
                                   <TimePickerDemo
                                     date={timeGroup[1]}
                                     setDate={(newDate) => {
+                                      if (!newDate) return;
+
                                       const times = form.getValues("select_time");
-                                      times[index][1] = newDate!;
+                                      times[index][1] = newDate; // 先设置新值
+
+                                      // 如果时间范围无效，显示提示但不阻止设置
+                                      if (!validateTimeRange(times[index][0], newDate)) {
+                                        toast({
+                                          description: "结束时间必须晚于开始时间",
+                                          variant: "destructive"
+                                        });
+                                      }
+
                                       form.setValue("select_time", times);
                                     }}
                                   />
@@ -463,6 +547,36 @@ const TaskCreate = () => {
                     </FormItem>
                   )}
                 />
+              }
+              {form.getValues("task_type") === TaskType.Condition && <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"space-y-4"}>
+                    <FormLabel>当存储级别达到时启动任务（MB）:</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder={""}
+                             className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                    </FormControl>
+                    <FormMessage/>
+                  </FormItem>
+                )}
+                name={"min_storage_capacity"}
+              />
+              }
+              {form.getValues("task_type") === TaskType.Condition && <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"space-y-4"}>
+                    <FormLabel>任务开始执行的电量（%）：</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder={""}
+                             className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                    </FormControl>
+                    <FormMessage/>
+                  </FormItem>
+                )}
+                name={"min_battery_capacity"}
+              />
               }
               <FormField
                 control={form.control}
@@ -518,13 +632,13 @@ const TaskCreate = () => {
         "from-[#074578]/[.5] to-[#0B142E]/[.9] rounded-tr-lg rounded-br-lg border-l-0 relative text-sm"}>
         <X className={"absolute right-2 top-2 cursor-pointer"} onClick={hide}/>
         <div className={"border-b-[#265C9A] border-b-[1px] p-4"}>{title}</div>
-        <div className={"p-4 space-y-2"}>
+        <div className={"p-4 space-y-2 h-[calc(100vh-180px)] overflow-y-auto"}>
           {title === "航线库" ? <WaylineList/> : <BindDeviceList/>}
         </div>
       </div>}
       <div
         className={cn("flex-1 border-[2px] rounded-lg border-[#43ABFF] relative ml-[20px]")}>
-        <GMap/>
+        <Scene/>
       </div>
     </div>
   );

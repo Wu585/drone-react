@@ -18,17 +18,15 @@ import {Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVal
 import {FC} from "react";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
+import {pickPosition} from "@/components/toolbar/tools";
+import {getCustomSource} from "@/hooks/public/custom-source.ts";
+import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
+import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
 
 export const formSchema = z.object({
-  target_latitude: z.string().min(1, {
-    message: ""
-  }),
-  target_longitude: z.string().min(1, {
-    message: ""
-  }),
-  target_height: z.string().min(1, {
-    message: ""
-  }),
+  target_latitude: z.coerce.number(),
+  target_longitude: z.coerce.number(),
+  target_height: z.coerce.number(),
   security_takeoff_height: z.string().min(1, {
     message: ""
   }),
@@ -59,9 +57,9 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      target_latitude: "30.891961",
-      target_longitude: "121.44556",
-      target_height: "120",
+      target_latitude: 30.891961,
+      target_longitude: 121.44556,
+      target_height: 120,
       security_takeoff_height: "120",
       rth_altitude: "120",
       commander_flight_height: "120",
@@ -73,14 +71,28 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
     },
   });
 
+  const realtimeDeviceInfo = useRealTimeDeviceInfo();
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!sn) return;
+    getCustomSource("drone-wayline")?.entities.removeAll();
+    const longitude = realtimeDeviceInfo.device.longitude;
+    const latitude = realtimeDeviceInfo.device.latitude;
+    if (realtimeDeviceInfo.device && longitude && latitude) {
+      getCustomSource("drone-wayline")?.entities.add({
+        polyline: {
+          positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realtimeDeviceInfo.device.height, values.target_longitude, values.target_latitude, realtimeDeviceInfo.device.height]),
+          width: 3,  // 设置折线的宽度
+          material: Cesium.Color.BLUE,  // 折线的颜色
+        }
+      });
+    }
     if (type === "take-off") {
       const body = {
         ...values,
-        target_latitude: parseFloat(values.target_latitude),
-        target_longitude: parseFloat(values.target_longitude),
-        target_height: parseFloat(values.target_height),
+        target_latitude: values.target_latitude,
+        target_longitude: values.target_longitude,
+        target_height: values.target_height,
         security_takeoff_height: parseFloat(values.security_takeoff_height),
         rth_altitude: parseFloat(values.rth_altitude),
         commanderFlightHeight: parseFloat(values.commander_flight_height),
@@ -105,9 +117,9 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
         max_speed: 14,
         points: [
           {
-            latitude: parseFloat(values.target_latitude),
-            longitude: parseFloat(values.target_longitude),
-            height: parseFloat(values.target_height)
+            latitude: values.target_latitude,
+            longitude: values.target_longitude,
+            height: values.target_height
           }
         ]
       });
@@ -118,208 +130,240 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
     }
   };
 
+  const onPickPosition = () => {
+    pickPosition(({longitude, latitude}) => {
+      form.setValue("target_longitude", longitude);
+      form.setValue("target_latitude", latitude);
+    });
+  };
+
+  const {RightClickPanel, MenuItem} = useRightClickPanel({
+    containerId: "cesiumContainer",
+    onRightClick: (movement) => {
+      // 获取点击位置的坐标
+      const cartesian = viewer.scene.pickPosition(movement.position);
+      if (cartesian) {
+        const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+        const longitude = Cesium.Math.toDegrees(cartographic.longitude);
+        const latitude = Cesium.Math.toDegrees(cartographic.latitude);
+        const height = cartographic.height;
+        console.log("longitude");
+        console.log(longitude);
+        return true; // 返回 true 表示显示右键菜单
+      }
+      return false;
+    }
+  });
+
   return (
-    <Form {...form}>
-      <form className={"w-[393px] bg-full-size"} onSubmit={form.handleSubmit(onSubmit)}>
-        <div className={"bg-[#001E37]/[.85]"}>
-          <div
-            className={"w-[393px] h-[44px] bg-take-off-panel-header bg-full-size flex items-center justify-between px-2"}>
-            <h1 className={"pl-6"}>飞行前检查</h1>
-            <X onClick={() => onClose?.()} className={"cursor-pointer"}/>
-          </div>
-          <div className={"text-[14px] py-4"}>
-            <FormField
-              control={form.control}
-              render={({field}) => (
-                <FormItem className={"grid grid-cols-6 px-4"}>
-                  <FormLabel className={"col-span-3 flex items-center"}>目标纬度</FormLabel>
-                  <FormControl className={"col-span-3"}>
-                    <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
-                  </FormControl>
-                </FormItem>
-              )}
-              name={"target_latitude"}
-            />
-            <FormField
-              control={form.control}
-              render={({field}) => (
-                <FormItem className={"grid grid-cols-6 px-4"}>
-                  <FormLabel className={"col-span-3 flex items-center"}>目标经度</FormLabel>
-                  <FormControl className={"col-span-3"}>
-                    <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
-                  </FormControl>
-                </FormItem>
-              )}
-              name={"target_longitude"}
-            />
-            <FormField
-              control={form.control}
-              render={({field}) => (
-                <FormItem className={"grid grid-cols-6 px-4"}>
-                  <FormLabel className={"col-span-3 flex items-center"}>目标高度</FormLabel>
-                  <FormControl className={"col-span-3"}>
-                    <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
-                  </FormControl>
-                </FormItem>
-              )}
-              name={"target_height"}
-            />
-            {type === "take-off" && <>
+    <>
+      <Form {...form}>
+        <form className={"w-[393px] bg-full-size"} onSubmit={form.handleSubmit(onSubmit)}>
+          <div className={"bg-[#001E37]/[.85]"}>
+            <div
+              className={"w-[393px] h-[44px] bg-take-off-panel-header bg-full-size flex items-center justify-between px-2"}>
+              <h1 className={"pl-6"}>飞行前检查</h1>
+              <X onClick={() => onClose?.()} className={"cursor-pointer"}/>
+            </div>
+            <div className={"text-[14px] py-4"}>
               <FormField
                 control={form.control}
                 render={({field}) => (
                   <FormItem className={"grid grid-cols-6 px-4"}>
-                    <FormLabel className={"col-span-3 flex items-center"}>安全起飞高度</FormLabel>
+                    <FormLabel className={"col-span-3 flex items-center"}>目标纬度</FormLabel>
                     <FormControl className={"col-span-3"}>
                       <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
                     </FormControl>
                   </FormItem>
                 )}
-                name={"security_takeoff_height"}
+                name={"target_latitude"}
               />
               <FormField
                 control={form.control}
                 render={({field}) => (
                   <FormItem className={"grid grid-cols-6 px-4"}>
-                    <FormLabel className={"col-span-3 flex items-center"}>返航高度</FormLabel>
+                    <FormLabel className={"col-span-3 flex items-center"}>目标经度</FormLabel>
                     <FormControl className={"col-span-3"}>
                       <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
                     </FormControl>
                   </FormItem>
                 )}
-                name={"rth_altitude"}
-              />
-              <FormField
-                control={form.control}
-                name={"rc_lost_action"}
-                render={({field}) => (
-                  <FormItem className={"grid grid-cols-6 px-4 items-center"}>
-                    <FormLabel className={"col-span-3"}>失联动作</FormLabel>
-                    <Select value={field.value.toString()} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
-                          <SelectValue placeholder=""/>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className={""}>
-                        <SelectGroup>
-                          {LostControlActionInCommandFLightOptions.map(item =>
-                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>)}
-              />
-              <FormField
-                control={form.control}
-                name={"exit_wayline_when_rc_lost"}
-                render={({field}) => (
-                  <FormItem className={"grid grid-cols-6 px-4 items-center"}>
-                    <FormLabel className={"col-span-3"}>失控动作</FormLabel>
-                    <Select value={field.value.toString()} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
-                          <SelectValue placeholder=""/>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className={""}>
-                        <SelectGroup>
-                          {WaylineLostControlActionInCommandFlightOptions.map(item =>
-                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>)}
-              />
-              <FormField
-                control={form.control}
-                name={"rth_mode"}
-                render={({field}) => (
-                  <FormItem className={"grid grid-cols-6 px-4 items-center"}>
-                    <FormLabel className={"col-span-3"}>返航模式</FormLabel>
-                    <Select value={field.value.toString()} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
-                          <SelectValue placeholder=""/>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className={""}>
-                        <SelectGroup>
-                          {RthModeInCommandFlightOptions.map(item =>
-                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>)}
-              />
-              <FormField
-                control={form.control}
-                name={"commander_mode_lost_action"}
-                render={({field}) => (
-                  <FormItem className={"grid grid-cols-6 px-4 items-center"}>
-                    <FormLabel className={"col-span-3"}>指令失联动作</FormLabel>
-                    <Select value={field.value.toString()} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
-                          <SelectValue placeholder=""/>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className={""}>
-                        <SelectGroup>
-                          {CommanderModeLostActionInCommandFlightOptions.map(item =>
-                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>)}
-              />
-              <FormField
-                control={form.control}
-                name={"commander_flight_mode"}
-                render={({field}) => (
-                  <FormItem className={"grid grid-cols-6 px-4 items-center"}>
-                    <FormLabel className={"col-span-3"}>指令飞行模式</FormLabel>
-                    <Select value={field.value.toString()} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
-                          <SelectValue placeholder=""/>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className={""}>
-                        <SelectGroup>
-                          {CommanderFlightModeInCommandFlightOptions.map(item =>
-                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>)}
+                name={"target_longitude"}
               />
               <FormField
                 control={form.control}
                 render={({field}) => (
                   <FormItem className={"grid grid-cols-6 px-4"}>
-                    <FormLabel className={"col-span-3 flex items-center"}>指令飞行高度</FormLabel>
+                    <FormLabel className={"col-span-3 flex items-center"}>目标高度</FormLabel>
                     <FormControl className={"col-span-3"}>
                       <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
                     </FormControl>
                   </FormItem>
                 )}
-                name={"commander_flight_height"}
+                name={"target_height"}
               />
-            </>}
-            <div className={"text-right mt-2 px-4"}>
-              <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]"} type={"submit"}>立即执行</Button>
+              {type === "take-off" && <>
+                <FormField
+                  control={form.control}
+                  render={({field}) => (
+                    <FormItem className={"grid grid-cols-6 px-4"}>
+                      <FormLabel className={"col-span-3 flex items-center"}>安全起飞高度</FormLabel>
+                      <FormControl className={"col-span-3"}>
+                        <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                  name={"security_takeoff_height"}
+                />
+                <FormField
+                  control={form.control}
+                  render={({field}) => (
+                    <FormItem className={"grid grid-cols-6 px-4"}>
+                      <FormLabel className={"col-span-3 flex items-center"}>返航高度</FormLabel>
+                      <FormControl className={"col-span-3"}>
+                        <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                  name={"rth_altitude"}
+                />
+                <FormField
+                  control={form.control}
+                  name={"rc_lost_action"}
+                  render={({field}) => (
+                    <FormItem className={"grid grid-cols-6 px-4 items-center"}>
+                      <FormLabel className={"col-span-3"}>失联动作</FormLabel>
+                      <Select value={field.value.toString()} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
+                            <SelectValue placeholder=""/>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className={""}>
+                          <SelectGroup>
+                            {LostControlActionInCommandFLightOptions.map(item =>
+                              <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>)}
+                />
+                <FormField
+                  control={form.control}
+                  name={"exit_wayline_when_rc_lost"}
+                  render={({field}) => (
+                    <FormItem className={"grid grid-cols-6 px-4 items-center"}>
+                      <FormLabel className={"col-span-3"}>失控动作</FormLabel>
+                      <Select value={field.value.toString()} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
+                            <SelectValue placeholder=""/>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className={""}>
+                          <SelectGroup>
+                            {WaylineLostControlActionInCommandFlightOptions.map(item =>
+                              <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>)}
+                />
+                <FormField
+                  control={form.control}
+                  name={"rth_mode"}
+                  render={({field}) => (
+                    <FormItem className={"grid grid-cols-6 px-4 items-center"}>
+                      <FormLabel className={"col-span-3"}>返航模式</FormLabel>
+                      <Select value={field.value.toString()} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
+                            <SelectValue placeholder=""/>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className={""}>
+                          <SelectGroup>
+                            {RthModeInCommandFlightOptions.map(item =>
+                              <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>)}
+                />
+                <FormField
+                  control={form.control}
+                  name={"commander_mode_lost_action"}
+                  render={({field}) => (
+                    <FormItem className={"grid grid-cols-6 px-4 items-center"}>
+                      <FormLabel className={"col-span-3"}>指令失联动作</FormLabel>
+                      <Select value={field.value.toString()} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
+                            <SelectValue placeholder=""/>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className={""}>
+                          <SelectGroup>
+                            {CommanderModeLostActionInCommandFlightOptions.map(item =>
+                              <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>)}
+                />
+                <FormField
+                  control={form.control}
+                  name={"commander_flight_mode"}
+                  render={({field}) => (
+                    <FormItem className={"grid grid-cols-6 px-4 items-center"}>
+                      <FormLabel className={"col-span-3"}>指令飞行模式</FormLabel>
+                      <Select value={field.value.toString()} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="col-span-3 bg-[#0C66BF]/[.85] rounded-none border-none">
+                            <SelectValue placeholder=""/>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className={""}>
+                          <SelectGroup>
+                            {CommanderFlightModeInCommandFlightOptions.map(item =>
+                              <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>)}
+                />
+                <FormField
+                  control={form.control}
+                  render={({field}) => (
+                    <FormItem className={"grid grid-cols-6 px-4"}>
+                      <FormLabel className={"col-span-3 flex items-center"}>指令飞行高度</FormLabel>
+                      <FormControl className={"col-span-3"}>
+                        <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                  name={"commander_flight_height"}
+                />
+              </>}
+              <div className={"flex justify-between mt-2 pl-2 pr-4"}>
+                <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]"} type={"button"}
+                        onClick={onPickPosition}>坐标拾取</Button>
+                <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]"} type={"submit"}>立即执行</Button>
+              </div>
             </div>
           </div>
-        </div>
-        {/*<Button type={"submit"} style={{
+          {/*<Button type={"submit"} style={{
           background: "rgba(11,59,125,0.7)",
           boxShadow: "inset 8px -5px 19px 0px #1283FF, inset 15px 5px 25px 0px #2BA1D7, inset 3px -5px 19px 0px #12B0FF",
           borderRadius: "2px",
           borderImage: "linear-gradient(270deg, rgba(103, 187, 246, 1), rgba(97, 190, 245, 1), rgba(108, 233, 254, 1)) 1 1"
         }} className={"border w-full mt-[30px]"}>登录</Button>*/}
-      </form>
-    </Form>
+        </form>
+      </Form>
+      <RightClickPanel>
+        <MenuItem>飞向此处</MenuItem>
+      </RightClickPanel>
+    </>
   );
 };
 

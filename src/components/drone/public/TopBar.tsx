@@ -16,6 +16,10 @@ const TopBar = () => {
   const {data: currentUser, mutate: mutateCurrentUser} = useCurrentUser();
   const {data: workSpaceList, mutate: mutateWorkspaceList} = useWorkspaceList();
 
+  const currentWorkSpace = workSpaceList?.find(item =>
+    item.workspace_id === localStorage.getItem(ELocalStorageKey.WorkspaceId)
+  )?.workspace_name || "未选择组织"
+
   const handleSwitchWorkspace = useCallback(async (workspaceId: string) => {
     localStorage.setItem(ELocalStorageKey.WorkspaceId, workspaceId);
     await Promise.all([
@@ -33,16 +37,14 @@ const TopBar = () => {
   return (
     <div className={"h-[70px] bg-gradient-to-b from-[#1D3A7A]/[.82] to-[#1157B4]/[.82] " +
       "flex justify-between items-center px-[66px] py-[18px]"}>
-      <div className={"text-[24px] font-semibold"}>翼枭航空科技有限公司</div>
+      <div className={"text-[24px] font-semibold"}>{currentWorkSpace}无人机管理平台</div>
       <div className={"flex space-x-4"}>
         <CircleUser/>
         <span>{currentUser?.username || "未登录"} |</span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <span className="cursor-pointer">
-              {"当前组织: " + workSpaceList?.find(item =>
-                item.workspace_id === localStorage.getItem(ELocalStorageKey.WorkspaceId)
-              )?.workspace_name || "未选择组织"}
+              {"当前组织: " + currentWorkSpace}
             </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent>

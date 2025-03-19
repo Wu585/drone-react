@@ -83,7 +83,7 @@ export const useRightClickPanel = ({containerId, onRightClick}: UseRightClickPan
     children: React.ReactNode;
   }) => (
     <button
-      className="w-full px-4 py-2 text-left hover:bg-[#43ABFF]/20 transition-colors"
+      className="px-4 py-2 text-left hover:bg-[#43ABFF]/20 transition-colors flex flex-col"
       onClick={() => {
         onClick();
         setContextMenu(prev => ({...prev, show: false}));

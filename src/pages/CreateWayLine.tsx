@@ -710,7 +710,7 @@ const CreateWayLine = () => {
           action_trigger_type: "reach_point",
           // action_trigger_param: 5
         },
-        actions: waypoint.actions.map((action, index) => {
+        actions: waypoint.actions?.map((action, index) => {
           const base = {
             action_index: index,
             action_actuator_func: action.func
@@ -792,20 +792,41 @@ const CreateWayLine = () => {
     console.log(formValue);
     console.log("waypoints");
     console.log(waypoints);
-    try {
-      const res: any = await post(`wayline/api/v1/common/buildKmzFile`, formValue);
-      if (res.data.code === 0) {
-        toast({
-          description: "创建航线成功！"
+    if (currentWaylineData) {
+      try {
+        const res: any = await post(`wayline/api/v1/common/updateKmzFile`, {
+          ...formValue,
+          id
         });
-        navigate("/wayline");
+        if (res.data.code === 0) {
+          toast({
+            description: "更新航线成功！"
+          });
+          navigate("/wayline");
+        }
+      } catch (error: any) {
+        toast({
+          description: error.data.message,
+          variant: "destructive"
+        });
       }
-    } catch (error: any) {
-      toast({
-        description: error.data.message,
-        variant: "destructive"
-      });
+    } else {
+      try {
+        const res: any = await post(`wayline/api/v1/common/buildKmzFile`, formValue);
+        if (res.data.code === 0) {
+          toast({
+            description: "创建航线成功！"
+          });
+          navigate("/wayline");
+        }
+      } catch (error: any) {
+        toast({
+          description: error.data.message,
+          variant: "destructive"
+        });
+      }
     }
+
     /*if (waypoints.length === 0) {
       toast({
         variant: "destructive",
@@ -936,9 +957,93 @@ const CreateWayLine = () => {
   // 在 useEffect 中添加初始化逻辑
   useEffect(() => {
     if (!currentWaylineData || !viewer) return;
-    console.log("currentWaylineData====");
-    console.log(currentWaylineData);
+
     const data = currentWaylineData;
+
+    // 如果有起飞点数据，初始化起飞点
+    if (data.take_off_ref_point) {
+      const [latitude, longitude, height] = data.take_off_ref_point.split(",").map(Number);
+
+      // 添加起飞点标记
+      const takeoffEntity = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
+        billboard: {
+          image: takeOffPng,
+          width: 48,
+          height: 48,
+        },
+      });
+
+      // 添加垂直虚线
+      const verticalLineEntity = viewer.entities.add({
+        polyline: {
+          positions: [
+            Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
+            Cesium.Cartesian3.fromDegrees(longitude, latitude, height + data.global_height)
+          ],
+          width: 2,
+          material: new Cesium.PolylineDashMaterialProperty({
+            color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
+            dashLength: 8.0
+          })
+        }
+      });
+
+      // 添加无人机图标
+      const droneEntity = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height + data.global_height),
+        billboard: {
+          image: dronePng,
+          verticalOrigin: Cesium.VerticalOrigin.CENTER,
+          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+          width: 64,
+          height: 64,
+          alignedAxis: new Cesium.Cartesian3(0, 0, 1),
+          rotation: Cesium.Math.toRadians(0),
+        },
+      });
+
+      // 添加事件监听器来保持图标朝北
+      viewer.scene.postRender.addEventListener(() => {
+        if (droneEntity) {
+          const heading = viewer.camera.heading;
+          droneEntity.billboard.rotation = -heading;
+        }
+      });
+
+      // 如果有航点，添加到第一个航点的连接线
+      let connectLineEntity = null;
+      if (data.route_point_list.length > 0) {
+        const firstWaypoint = data.route_point_list[0];
+        connectLineEntity = viewer.entities.add({
+          polyline: {
+            positions: [
+              Cesium.Cartesian3.fromDegrees(longitude, latitude, height + data.global_height),
+              Cesium.Cartesian3.fromDegrees(
+                firstWaypoint.longitude,
+                firstWaypoint.latitude,
+                data.global_height
+              )
+            ],
+            width: 2,
+            material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8)
+          }
+        });
+      }
+
+      // 设置起飞点状态
+      setTakeoffPoint({
+        longitude,
+        latitude,
+        height,
+        entity: {
+          takeoff: takeoffEntity,
+          drone: droneEntity,
+          verticalLine: verticalLineEntity,
+          connectLine: connectLineEntity
+        }
+      });
+    }
 
     // 初始化航点
     const initialWaypoints = data.route_point_list.map((point, index) => {
@@ -1086,6 +1191,7 @@ const CreateWayLine = () => {
         payload_type: data.payload_type,
         payload_position: data.payload_position,
       },
+      image_format: data.image_format.split(","),
       take_off_ref_point: data.take_off_ref_point || "",
       waypoint_heading_mode: data.waypoint_heading_req.waypoint_heading_mode,
       global_waypoint_turn_mode: data.waypoint_turn_req.waypoint_turn_mode,
@@ -1713,10 +1819,61 @@ const CreateWayLine = () => {
                                 <AlignJustify size={16}/>
                                 <span>飞行器偏航角</span>
                               </div>
-                              <span
-                                className={"rounded-sm col-span-2 mx-4 bg-[#3c3c3c] content-center"}>{action.param || 0} °</span>
+                             <div className={"col-span-2 flex items-center space-x-2"}>
+                               <Input
+                                 className={"bg-[#3c3c3c] rounded-sm col-span-2 h-8 content-center"}
+                                 value={action.param?.toString() || ""}
+                                 onChange={(e) => {
+                                   const inputValue = e.target.value;
+
+                                   // 允许空值（用于删除）
+                                   if (inputValue === "") {
+                                     setCurrentWayPoint({
+                                       ...currentWayPoint!,
+                                       actions: currentWayPoint!.actions.map((item, idx) => {
+                                         if (idx === index) {
+                                           return {
+                                             ...item,
+                                             param: 0
+                                           };
+                                         }
+                                         return item;
+                                       })
+                                     });
+                                     return;
+                                   }
+
+                                   // 转换为数字并验证
+                                   const value = Number(inputValue);
+                                   if (!isNaN(value) && value >= -180 && value <= 180) {
+                                     setCurrentWayPoint({
+                                       ...currentWayPoint!,
+                                       actions: currentWayPoint!.actions.map((item, idx) => {
+                                         if (idx === index) {
+                                           return {
+                                             ...item,
+                                             param: value
+                                           };
+                                         }
+                                         return item;
+                                       })
+                                     });
+                                   }
+                                 }}
+                                 onKeyDown={(e) => {
+                                   // 阻止 e.key === 'e' 或 'E'，因为这在number类型输入框中会触发科学计数法
+                                   if (e.key === 'e' || e.key === 'E') {
+                                     e.preventDefault();
+                                   }
+                                 }}
+                                 type="number"
+                                 min={-180}
+                                 max={180}
+                               />
+                               <span>°</span>
+                             </div>
                               <Trash2
-                                className={"cursor-pointer text-right"}
+                                className={"cursor-pointer text-right ml-2"}
                                 size={16}
                                 onClick={() => {
                                   // 删除当前航点的指定动作
@@ -1755,10 +1912,58 @@ const CreateWayLine = () => {
                                 <AlignJustify size={16}/>
                                 <span>云台偏航角</span>
                               </div>
-                              <span
-                                className={"rounded-sm col-span-2 mx-4 bg-[#3c3c3c] content-center"}>{action.param || 0} °</span>
+                             <div className={"col-span-2 flex items-center space-x-2"}>
+                               <Input
+                                 className={"bg-[#3c3c3c] rounded-sm pr-2 h-8 content-center"}
+                                 value={action.param?.toString() || ""}
+                                 onChange={(e) => {
+                                   const inputValue = e.target.value;
+
+                                   if (inputValue === "") {
+                                     setCurrentWayPoint({
+                                       ...currentWayPoint!,
+                                       actions: currentWayPoint!.actions.map((item, idx) => {
+                                         if (idx === index) {
+                                           return {
+                                             ...item,
+                                             param: 0
+                                           };
+                                         }
+                                         return item;
+                                       })
+                                     });
+                                     return;
+                                   }
+
+                                   const value = Number(inputValue);
+                                   if (!isNaN(value) && value >= -180 && value <= 180) {
+                                     setCurrentWayPoint({
+                                       ...currentWayPoint!,
+                                       actions: currentWayPoint!.actions.map((item, idx) => {
+                                         if (idx === index) {
+                                           return {
+                                             ...item,
+                                             param: value
+                                           };
+                                         }
+                                         return item;
+                                       })
+                                     });
+                                   }
+                                 }}
+                                 onKeyDown={(e) => {
+                                   if (e.key === 'e' || e.key === 'E') {
+                                     e.preventDefault();
+                                   }
+                                 }}
+                                 type="number"
+                                 min={-180}
+                                 max={180}
+                               />
+                               <span>°</span>
+                             </div>
                               <Trash2
-                                className={"cursor-pointer text-right"}
+                                className={"cursor-pointer text-right ml-2"}
                                 size={16}
                                 onClick={() => {
                                   // 删除当前航点的指定动作
@@ -1797,10 +2002,58 @@ const CreateWayLine = () => {
                                 <AlignJustify size={16}/>
                                 <span>云台俯仰角</span>
                               </div>
-                              <span
-                                className={"rounded-sm col-span-2 mx-4 bg-[#3c3c3c] content-center"}>{action.param || 0} °</span>
+                              <div className={"col-span-2 flex items-center space-x-2"}>
+                                <Input
+                                  className={"bg-[#3c3c3c] rounded-sm pr-2 h-8 content-center"}
+                                  value={action.param?.toString() || ""}
+                                  onChange={(e) => {
+                                    const inputValue = e.target.value;
+
+                                    if (inputValue === "") {
+                                      setCurrentWayPoint({
+                                        ...currentWayPoint!,
+                                        actions: currentWayPoint!.actions.map((item, idx) => {
+                                          if (idx === index) {
+                                            return {
+                                              ...item,
+                                              param: 0
+                                            };
+                                          }
+                                          return item;
+                                        })
+                                      });
+                                      return;
+                                    }
+
+                                    const value = Number(inputValue);
+                                    if (!isNaN(value) && value >= -120 && value <= 45) {
+                                      setCurrentWayPoint({
+                                        ...currentWayPoint!,
+                                        actions: currentWayPoint!.actions.map((item, idx) => {
+                                          if (idx === index) {
+                                            return {
+                                              ...item,
+                                              param: value
+                                            };
+                                          }
+                                          return item;
+                                        })
+                                      });
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'e' || e.key === 'E') {
+                                      e.preventDefault();
+                                    }
+                                  }}
+                                  type="number"
+                                  min={-120}
+                                  max={45}
+                                />
+                                <span>°</span>
+                              </div>
                               <Trash2
-                                className={"cursor-pointer text-right"}
+                                className={"cursor-pointer text-right ml-2"}
                                 size={16}
                                 onClick={() => {
                                   // 删除当前航点的指定动作
@@ -1839,10 +2092,53 @@ const CreateWayLine = () => {
                                 <AlignJustify size={16}/>
                                 <span>悬停</span>
                               </div>
-                              <span
-                                className={"rounded-sm col-span-2 mx-4 bg-[#3c3c3c] content-center"}>{action.param || 0} s</span>
+                              <div className={"col-span-2 flex items-center space-x-2"}>
+                                <Input
+                                  className={"bg-[#3c3c3c] rounded-sm pr-2 h-8 content-center"}
+                                  value={action.param?.toString() || ""}
+                                  onChange={(e) => {
+                                    const inputValue = e.target.value;
+
+                                    if (inputValue === "") {
+                                      setCurrentWayPoint({
+                                        ...currentWayPoint!,
+                                        actions: currentWayPoint!.actions.map((item, idx) => {
+                                          if (idx === index) {
+                                            return {
+                                              ...item,
+                                              param: 0
+                                            };
+                                          }
+                                          return item;
+                                        })
+                                      });
+                                      return;
+                                    }
+
+                                    const value = Number(inputValue);
+                                    if (!isNaN(value) && value >= 1 && value <= 900) {
+                                      setCurrentWayPoint({
+                                        ...currentWayPoint!,
+                                        actions: currentWayPoint!.actions.map((item, idx) => {
+                                          if (idx === index) {
+                                            return {
+                                              ...item,
+                                              param: value
+                                            };
+                                          }
+                                          return item;
+                                        })
+                                      });
+                                    }
+                                  }}
+                                  type="number"
+                                  min={1}
+                                  max={900}
+                                />
+                                <span>秒</span>
+                              </div>
                               <Trash2
-                                className={"cursor-pointer text-right"}
+                                className={"cursor-pointer text-right ml-2"}
                                 size={16}
                                 onClick={() => {
                                   // 删除当前航点的指定动作
@@ -1907,7 +2203,7 @@ const CreateWayLine = () => {
                                 </label>
                               </div>
                               <Trash2
-                                className={"cursor-pointer text-right"}
+                                className={"cursor-pointer text-right ml-2"}
                                 size={16}
                                 onClick={() => {
                                   // 删除当前航点的指定动作
@@ -1980,7 +2276,7 @@ const CreateWayLine = () => {
                                 </label>
                               </div>
                               <Trash2
-                                className={"cursor-pointer text-right"}
+                                className={"cursor-pointer text-right ml-2"}
                                 size={16}
                                 onClick={() => {
                                   // 删除当前航点的指定动作
@@ -2030,7 +2326,7 @@ const CreateWayLine = () => {
                               <div className={"content-center space-x-2 col-span-2"}>
                               </div>
                               <Trash2
-                                className={"cursor-pointer text-right"}
+                                className={"cursor-pointer text-right ml-2"}
                                 size={16}
                                 onClick={() => {
                                   // 删除当前航点的指定动作
@@ -2049,10 +2345,58 @@ const CreateWayLine = () => {
                                 <AlignJustify size={16}/>
                                 <span>变焦</span>
                               </div>
-                              <span
-                                className={"rounded-sm col-span-2 mx-4 bg-[#3c3c3c] content-center"}>{action.param || 0} X</span>
+                              <div className={"col-span-2 flex items-center space-x-2"}>
+                                <Input
+                                  className={"bg-[#3c3c3c] rounded-sm pr-2 h-8 content-center"}
+                                  value={action.param?.toString() || ""}
+                                  onChange={(e) => {
+                                    const inputValue = e.target.value;
+
+                                    if (inputValue === "") {
+                                      setCurrentWayPoint({
+                                        ...currentWayPoint!,
+                                        actions: currentWayPoint!.actions.map((item, idx) => {
+                                          if (idx === index) {
+                                            return {
+                                              ...item,
+                                              param: 2
+                                            };
+                                          }
+                                          return item;
+                                        })
+                                      });
+                                      return;
+                                    }
+
+                                    const value = Number(inputValue);
+                                    if (!isNaN(value) && value >= 2 && value <= 200) {
+                                      setCurrentWayPoint({
+                                        ...currentWayPoint!,
+                                        actions: currentWayPoint!.actions.map((item, idx) => {
+                                          if (idx === index) {
+                                            return {
+                                              ...item,
+                                              param: value
+                                            };
+                                          }
+                                          return item;
+                                        })
+                                      });
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'e' || e.key === 'E') {
+                                      e.preventDefault();
+                                    }
+                                  }}
+                                  type="number"
+                                  min={2}
+                                  max={200}
+                                />
+                                <span>X</span>
+                              </div>
                               <Trash2
-                                className={"cursor-pointer text-right"}
+                                className={"cursor-pointer text-right ml-2"}
                                 size={16}
                                 onClick={() => {
                                   // 删除当前航点的指定动作

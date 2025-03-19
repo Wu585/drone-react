@@ -10,7 +10,7 @@ window.getPosition = function () {
   const {position, heading, pitch, roll} = viewer.camera;
   const {x, y, z} = position;
   // return `${x},${y},${z},${heading},${pitch},${roll}`;
-  return `"x":${x},"y":${y},"z":${z},"heading":${heading},"pitch":${pitch},"roll":${roll}`;
+  return {x, y, z, heading, pitch, roll};
 };
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

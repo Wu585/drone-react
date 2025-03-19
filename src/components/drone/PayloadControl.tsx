@@ -13,6 +13,8 @@ import {useCapacity} from "@/hooks/drone";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
+import {CameraMode} from "@/types/live-stream.ts";
+import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 
 interface Props {
   onRefreshVideo: () => void;
@@ -47,7 +49,8 @@ const PayloadControl: FC<Props> = ({
   const [isRecording, setIsRecording] = useState(false);
   console.log("payloadsOptions");
   console.log(payloadsOptions);
-
+  console.log("osdVisible");
+  console.log(osdVisible);
   const {data: capacityData} = useCapacity();
   const {post} = useAjax();
 
@@ -59,7 +62,8 @@ const PayloadControl: FC<Props> = ({
   };
 
   const cameraList = capacityData?.find(item => item.sn === deviceSn)?.cameras_list || [];
-
+  console.log("cameraList=====");
+  console.log(cameraList);
   const onChangeCurrentCamera = async (value: string) => {
     await onChangeCamera(value);
   };
@@ -89,29 +93,91 @@ const PayloadControl: FC<Props> = ({
     });
   };
 
+  const realTimeDeviceInfo = useRealTimeDeviceInfo();
+
+  const currentCameraMode = realTimeDeviceInfo?.device?.cameras?.[0]?.camera_mode;
+  const recordState = realTimeDeviceInfo?.device?.cameras?.[0]?.recording_state;
+
+  console.log("currentCameraMode===");
+  console.log(currentCameraMode);
+
   const onTakePhoto = async () => {
-    await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
-      cmd: "camera_photo_take",
-      data: {
-        payload_index: currentDeviceCamera,
+    const payloadIndex = osdVisible.payloads?.[0].payload_index;
+    await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/authority/payload`, {
+      payload_index: payloadIndex
+    });
+    try {
+      if (currentCameraMode !== CameraMode.Photo) {
+        await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
+          cmd: "camera_mode_switch",
+          data: {
+            payload_index: payloadIndex,
+            camera_mode: CameraMode.Photo
+          }
+        });
       }
-    });
-    toast({
-      description: "拍照成功！"
-    });
+      setTimeout(async () => {
+        await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
+          cmd: "camera_photo_take",
+          data: {
+            payload_index: payloadIndex,
+          }
+        });
+        toast({
+          description: "拍照成功！"
+        });
+      }, 1000);
+    } catch (err) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const onRecording = async () => {
-    await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
-      cmd: isRecording ? "camera_recording_stop" : "camera_recording_start",
-      data: {
-        payload_index: currentDeviceCamera,
+    const payloadIndex = osdVisible.payloads?.[0].payload_index;
+    await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/authority/payload`, {
+      payload_index: payloadIndex
+    });
+    try {
+      if (currentCameraMode !== CameraMode.Video) {
+        await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
+          cmd: "camera_mode_switch",
+          data: {
+            payload_index: payloadIndex,
+            camera_mode: CameraMode.Video
+          }
+        });
       }
-    });
-    toast({
-      description: isRecording ? "停止录像" : "开始录像"
-    });
-    setIsRecording(!isRecording);
+      setTimeout(async () => {
+        await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
+          cmd: recordState ? "camera_recording_stop" : "camera_recording_start",
+          data: {
+            payload_index: payloadIndex,
+          }
+        });
+        toast({
+          description: recordState ? "停止录像" : "开始录像"
+        });
+      }, 1000);
+    } catch (err) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
+      });
+    }
+    /*
+        await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
+          cmd: isRecording ? "camera_recording_stop" : "camera_recording_start",
+          data: {
+            payload_index: currentDeviceCamera,
+          }
+        });
+        toast({
+          description: isRecording ? "停止录像" : "开始录像"
+        });
+        setIsRecording(!isRecording);*/
   };
 
   return (
@@ -159,6 +225,8 @@ const PayloadControl: FC<Props> = ({
       <ArrowUpDown onClick={onCameraModeSwitch} size={16}/>
       <Camera onClick={onTakePhoto} size={16}/>
       <Video onClick={onRecording} size={16}/>*/}
+      <Camera className={"cursor-pointer"} onClick={onTakePhoto} size={16}/>
+      <Video className={"cursor-pointer"} onClick={onRecording} size={16}/>
     </div>
   );
 };

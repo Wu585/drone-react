@@ -88,7 +88,7 @@ export const useAjax = () => {
     get: <T>(url: string, query?: Record<string, string | number>, config?: Omit<AxiosRequestConfig, "params" | "url" | "method">) => {
       return client.get<T>(url, query, config).catch(onError);
     },
-    post: <T>(url: string, data?: Record<string, JSONValue> | string[], config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
+    post: <T>(url: string, data?: Record<string, JSONValue> | string[] | undefined, config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
       return client.post<T>(url, data, config).catch(onError);
     },
     patch: <T>(url: string, data?: Record<string, JSONValue>, config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {

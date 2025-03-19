@@ -9,8 +9,8 @@ export enum TaskType {
 
 export const TaskTypeMap = {
   [TaskType.Immediate]: "立即",
-  [TaskType.Timed]: "单次定时",
-  [TaskType.Condition]: "连续定时",
+  [TaskType.Timed]: "重复定时",
+  [TaskType.Condition]: "连续执行",
 };
 
 export const TaskTypeOptions = [

@@ -2,6 +2,7 @@ import {create} from "zustand";
 import {DeviceHms, DeviceOsd, DeviceStatus, DockOsd, GatewayOsd, OSDVisible} from "@/types/device.ts";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import {immer} from "zustand/middleware/immer";
+import {DevicesCmdExecuteInfo} from "@/types/device-cmd.ts";
 
 interface User {
   username: string;
@@ -68,6 +69,7 @@ interface SceneState {
       [sn: string]: any[]
     }
   };
+  devicesCmdExecuteInfo: DevicesCmdExecuteInfo;
 }
 
 interface SceneActions {
@@ -89,6 +91,7 @@ interface SceneActions {
   setMarkerInfoCoverMap: (key: string, value: any) => void;
   deleteMarkerInfoCoverMap: (key: string) => void;
   deleteMarkerInfoPathMap: (key: string) => void;
+  setDevicesCmdExecuteInfo: (info: any) => void;
 }
 
 export const useSceneStore = create<SceneState & SceneActions>()(
@@ -134,7 +137,7 @@ export const useSceneStore = create<SceneState & SceneActions>()(
       pathMap: {},
       coverMap: {}
     },
-
+    devicesCmdExecuteInfo: {},
     // Actions
     setKeyAreas: (keyAreas) => set((state) => {
       state.keyAreas = keyAreas;
@@ -230,6 +233,25 @@ export const useSceneStore = create<SceneState & SceneActions>()(
     }),
     deleteMarkerInfoPathMap: (key: string) => set((state) => {
       delete state.markerInfo.pathMap[key];
+    }),
+    setDevicesCmdExecuteInfo: (info) => set(state => {
+      if (!info.sn) {
+        return;
+      }
+      if (state.devicesCmdExecuteInfo[info.sn]) {
+        const index = state.devicesCmdExecuteInfo[info.sn].findIndex(cmdExecuteInfo => cmdExecuteInfo.biz_code === info.biz_code);
+        if (index >= 0) {
+          // 丢弃前面的消息
+          if (state.devicesCmdExecuteInfo[info.sn][index].timestamp > info.timestamp) {
+            return;
+          }
+          state.devicesCmdExecuteInfo[info.sn][index] = info;
+        } else {
+          state.devicesCmdExecuteInfo[info.sn].push(info);
+        }
+      } else {
+        state.devicesCmdExecuteInfo[info.sn] = [info];
+      }
     })
   }))
 );
