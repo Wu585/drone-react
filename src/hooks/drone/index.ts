@@ -596,7 +596,7 @@ export const useGetImageUrl = (file: string) => {
   return useSWR(key, async ([path]) => (await post<Resource<any>>(path)).data.data);
 };
 
-interface OrderOperation {
+export interface OrderOperation {
   id: number;
   uu_key: string;
   status: number;
@@ -611,7 +611,7 @@ interface OrderOperation {
 }
 
 // 查看工单操作记录
-export const useOperationList = (orderId: number) => {
+export const useOperationList = (orderId?: number) => {
   const {post} = useAjax();
   const url = `${OPERATION_HTTP_PREFIX}/orderOperation/pageByOrder`;
 

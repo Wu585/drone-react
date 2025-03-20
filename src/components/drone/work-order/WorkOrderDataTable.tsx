@@ -5,23 +5,19 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {
-  downloadFile,
-  FileItem,
-  MEDIA_HTTP_PREFIX, useCurrentUser, useDepartList,
-  useGetImageUrl,
-  useMediaList, useMembers, useOperationList, UserItem, useWorkOrderById,
-  useWorkOrderList, useWorkspaceList,
+  useCurrentUser,
+  useWorkOrderById,
+  useWorkOrderList,
   WorkOrder
 } from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
-import {CircleCheckBig, Download, Edit, Eye, Forward, Loader, Trash} from "lucide-react";
-import {getAuthToken, useAjax} from "@/lib/http.ts";
-import {toast} from "@/components/ui/use-toast.ts";
+import {Edit, Eye, Trash} from "lucide-react";
+import {getAuthToken} from "@/lib/http.ts";
 import {
   Dialog,
   DialogContent,
@@ -33,38 +29,24 @@ import {
 import {defineStepper} from "@stepperize/react";
 import {Separator} from "@/components/ui/separator.tsx";
 import {cn} from "@/lib/utils.ts";
-import {Input} from "@/components/ui/input.tsx";
-import {Textarea} from "@/components/ui/textarea.tsx";
-import {z} from "zod";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import {DateTimePicker} from "@/components/ui/date-time-picker";
-import {format} from "date-fns";
-import Uploady, {useItemFinishListener} from "@rpldy/uploady";
-import {UploadButton} from "@rpldy/upload-button";
-import {UploadCloud, X} from "lucide-react";
+import Uploady from "@rpldy/uploady";
 import {CURRENT_CONFIG} from "@/lib/config.ts";
 import dayjs from "dayjs";
-import Scene from "@/components/drone/public/Scene.tsx";
-import {pickPosition} from "@/components/toolbar/tools";
 import CreateOrder from "@/components/drone/work-order/CreateOrder.tsx";
 import DistributeDialog from "@/components/drone/work-order/DistributeDialog.tsx";
 import Feedback from "@/components/drone/work-order/Feedback.tsx";
+import Audit from "@/components/drone/work-order/Audit.tsx";
+import Complete from "@/components/drone/work-order/Complete.tsx";
 
-const warnLevelMap = {
+// 定义告警等级类型
+type WarnLevel = 1 | 2 | 3 | 4;
+
+const warnLevelMap: Record<WarnLevel, string> = {
   1: "一般告警",
   2: "次要告警",
   3: "主要告警",
   4: "紧急告警",
-};
+} as const;
 
 const eventMap = {
   0: "公共设施",
@@ -84,126 +66,7 @@ const eventMap = {
   14: "其他事件",
 } as const;
 
-const createOrderSchema = z.object({
-  name: z.string().min(1, "请输入事件名称"),
-  found_time: z.string()
-    .min(1, "请选择发现时间")
-    .refine((value) => {
-      // 检查是否符合格式
-      const regex = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]) ([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
-      if (!regex.test(value)) return false;
-
-      // 检查是否是有效日期
-      const date = new Date(value);
-      return !isNaN(date.getTime());
-    }, "请输入有效的时间格式（YYYY-MM-DD HH:mm:ss）"),
-  order_type: z.coerce.number({
-    required_error: "请选择事件类型",
-    invalid_type_error: "事件类型必须是数字"
-  }).refine(
-    (val) => Object.keys(eventMap).map(Number).includes(val),
-    "请选择有效的事件类型"
-  ),
-  address: z.string().min(1, "请输入发生地址"),
-  contact: z.string().min(1, "请输入联系人"),
-  contact_phone: z.string().min(1, "请输入联系电话"),
-  longitude: z.coerce.number({
-    invalid_type_error: "经度必须是数字"
-  }),
-  latitude: z.coerce.number({
-    invalid_type_error: "纬度必须是数字"
-  }),
-  pic_list: z.array(z.string()).default([]),
-  description: z.string().min(3, "请输入事件内容描述"),
-  warn_level: z.coerce.number({
-    required_error: "请选择告警类型",
-    invalid_type_error: "告警类型必须是数字"
-  })
-});
-
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
-const MANAGE_HTTP_PREFIX = "/manage/api/v1";
-
-type CreateOrderFormValues = z.infer<typeof createOrderSchema>;
-
-const ImageUploader = ({field}: { field: any }) => {
-  const {post} = useAjax();
-  const [imageUrls, setImageUrls] = useState<{ [key: string]: string }>({});
-
-  useItemFinishListener(({uploadResponse}) => {
-    if (uploadResponse?.data?.data) {
-      field.onChange([...field.value, uploadResponse.data.data]);
-    }
-  });
-
-  // 获取图片URL
-  const getImageUrl = async (path: string) => {
-    try {
-      const res: any = await post(`${OPERATION_HTTP_PREFIX}/file/getUrl?key=${path}`);
-      if (res.data?.data) {
-        setImageUrls(prev => ({
-          ...prev,
-          [path]: res.data.data
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to get image URL:", error);
-    }
-  };
-
-  // 当 field.value 改变时获取新图片的 URL
-  useEffect(() => {
-    field.value.forEach((path: string) => {
-      if (!imageUrls[path]) {
-        getImageUrl(path);
-      }
-    });
-  }, [field.value]);
-
-  return (
-    <div className="grid gap-4">
-      {/* 预览区域 */}
-      {field.value.length > 0 && (
-        <div className="grid grid-cols-4 gap-4">
-          {field.value.map((path: string, index: number) => (
-            <div key={index} className="relative group aspect-video">
-              <img
-                src={imageUrls[path] || ""}  // 使用获取到的URL
-                alt={`上传图片 ${index + 1}`}
-                className="w-full h-full object-cover rounded-sm"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  const newPaths = [...field.value];
-                  newPaths.splice(index, 1);
-                  field.onChange(newPaths);
-                }}
-                className="absolute top-1 right-1 p-1 bg-red-500 rounded-full
-                         text-white opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-4 h-4"/>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 上传按钮 */}
-      <UploadButton onClick={(e) => e.preventDefault()}>
-        <div className="border-2 border-dashed border-[#43ABFF] rounded-sm p-4
-                      text-center hover:bg-[#072E62] transition-colors cursor-pointer">
-          <UploadCloud className="w-8 h-8 mx-auto mb-2 text-[#43ABFF]"/>
-          <div className="text-sm text-[#43ABFF]">
-            点击上传
-            <br/>
-            支持图片格式：JPG、PNG、JPEG
-          </div>
-        </div>
-      </UploadButton>
-    </div>
-  );
-};
 
 const {useStepper, steps, utils} = defineStepper(
   {
@@ -258,12 +121,15 @@ const WorkOrderDataTable = () => {
     {
       accessorKey: "name",
       header: "事件名称",
+      cell: ({row}) => (
+        <div className={"w-[150px] whitespace-nowrap overflow-hidden text-ellipsis"}>{row.original.name}</div>
+      )
     },
     {
       accessorKey: "warning_level",
       header: "告警等级",
       cell: ({row}) => (
-        <span>{warnLevelMap[row.original.warning_level]}</span>
+        <span>{warnLevelMap[row.original.warning_level as WarnLevel]}</span>
       )
     },
     {
@@ -323,7 +189,8 @@ const WorkOrderDataTable = () => {
                 setOrderType("edit");
               }}
             />}
-            {isGly && <DistributeDialog onConfirm={mutate} currentWorkOrderId={row.original.id}/>}
+            {(isGly && row.original.status === 0) &&
+              <DistributeDialog onConfirm={mutate} currentWorkOrderId={row.original.id}/>}
             <Eye className={"w-4"} onClick={() => {
               isGly ? setOrderHandleType("preview") : setOrderHandleType("handle");
               setOrderType("preview");
@@ -331,7 +198,7 @@ const WorkOrderDataTable = () => {
               stepper.goTo(getStepByStatus(row.original.status));
               setOpen(true);
             }}/>
-            <Trash className={"w-4"}/>
+            {/*<Trash className={"w-4"}/>*/}
           </span>
         );
       }
@@ -353,11 +220,6 @@ const WorkOrderDataTable = () => {
     page_size: pagination.pageSize,
     tab: 0,
   }, urlFix);
-
-  useEffect(() => {
-    console.log("data==");
-    console.log(data);
-  }, [data]);
 
   const table = useReactTable({
     data: data?.list || [],
@@ -383,7 +245,7 @@ const WorkOrderDataTable = () => {
 
   const currentIndex = utils.getIndex(stepper.current.id);
 
-  const {data: currentOrderData} = useWorkOrderById(currentOrder?.id);
+  const {data: currentOrderData, mutate: mutateCurrentOrder} = useWorkOrderById(currentOrder?.id);
 
   const [orderType, setOrderType] = useState<"create" | "edit" | "preview">("create");
   const [orderHandleType, setOrderHandleType] = useState<"handle" | "preview">("handle");
@@ -421,7 +283,7 @@ const WorkOrderDataTable = () => {
           </DialogTrigger>
           <DialogContent className="max-w-screen-lg bg-[#0A4088]/[.7] text-white border-none">
             <DialogHeader className={""}>
-              <DialogTitle>工单创建</DialogTitle>
+              <DialogTitle>工单管理</DialogTitle>
             </DialogHeader>
             <div className={"border-[2px] border-[#43ABFF] flex p-8"}>
               <ol className="flex flex-col gap-2" aria-orientation="vertical">
@@ -488,6 +350,7 @@ const WorkOrderDataTable = () => {
                       onSuccess={() => {
                         setOpen(false);
                         mutate();
+                        mutateCurrentOrder();
                       }}
                       currentOrder={currentOrderData}/>,
                   "2": () => isGly && (currentOrder?.status === 1 || currentOrder?.status === 4) ?
@@ -500,9 +363,23 @@ const WorkOrderDataTable = () => {
                       onSuccess={() => {
                         setOpen(false);
                         mutate();
+                        mutateCurrentOrder();
                       }}
                       currentOrder={currentOrderData}
                     />,
+                  "3": () => isGly || currentOrderData?.status === 3 ?
+                    <Audit
+                      currentOrder={currentOrderData}
+                      onSuccess={() => {
+                        setOpen(false);
+                        mutate();
+                        mutateCurrentOrder();
+                      }}
+                    /> : <div
+                      className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
+                      <span className={"text-[32px]"}>审核中...</span>
+                    </div>,
+                  "4": () => <Complete/>
                 })}
               </div>
             </div>

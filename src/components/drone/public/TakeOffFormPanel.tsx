@@ -76,8 +76,8 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!sn) return;
     getCustomSource("drone-wayline")?.entities.removeAll();
-    const longitude = realtimeDeviceInfo.device.longitude;
-    const latitude = realtimeDeviceInfo.device.latitude;
+    const longitude = realtimeDeviceInfo.device?.longitude;
+    const latitude = realtimeDeviceInfo.device?.latitude;
     if (realtimeDeviceInfo.device && longitude && latitude) {
       getCustomSource("drone-wayline")?.entities.add({
         polyline: {

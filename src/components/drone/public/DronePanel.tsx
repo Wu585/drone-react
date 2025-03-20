@@ -23,7 +23,7 @@ import KeyboardControl from "@/components/drone/public/KeyboardControl.tsx";
 import {useNavigate} from "react-router-dom";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
-import {memo, useEffect, useState} from "react";
+import {memo, useState} from "react";
 import {useMqtt} from "@/hooks/drone/use-mqtt.ts";
 import {KeyCode, useManualControl} from "@/hooks/drone/useManualControl.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
@@ -32,12 +32,8 @@ import {Button} from "@/components/ui/button.tsx";
 import {useDockControl} from "@/hooks/drone/useDockControl.ts";
 import {DeviceCmdItem, noDebugCmdList} from "@/types/device-cmd.ts";
 import {useFlightControl} from "@/hooks/drone/useFlightControl.ts";
-import {useMapTool} from "@/hooks/drone/map/useMapTool.ts";
-import {GeojsonCoordinate} from "@/types/map.ts";
-import {wgs84togcj02} from "@/vendor/coordtransform.ts";
 import {useDockLive} from "@/hooks/drone/useDockLive.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
-import {flyToView} from "@/lib/view.ts";
 import DebugPanel from "@/components/drone/public/DebugPanel.tsx";
 
 // DRC 链路
