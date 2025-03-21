@@ -18,7 +18,7 @@ const DeviceManage = () => {
 
   return (
     <div className={"w-full h-full flex"}>
-      <div className={"flex-1 border-[#43ABFF] border-[1px] border-l-0 flex flex-col rounded-br-lg"}>
+      <div className={"flex-1 border-[#43ABFF] border-[1px] border-l-0 flex flex-col rounded-r-lg"}>
         <h1 className={"flex justify-between items-center"}>
           <div className={"py-4 px-4 flex space-x-4"}>
             <img src={titleArrowPng} alt=""/>
@@ -31,7 +31,7 @@ const DeviceManage = () => {
         </h1>
         <div className={"flex space-x-8 px-4"}>
           {deviceList.map(item =>
-            <div style={{
+            <div key={item.name} style={{
               backgroundSize: "100% 100%"
             }} className={cn("bg-device w-[193px] h-[34px] text-[16px] flex content-center cursor-pointer",
               currentDevice === item.name ? "text-[#A1F4FA]" : "")} onClick={() => setCurrentDevice(item.name)}>

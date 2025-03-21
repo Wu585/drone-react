@@ -68,9 +68,9 @@ const Cockpit = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      target_latitude: "30.891961",
-      target_longitude: "121.44556",
-      target_height: "120",
+      target_latitude: 30.891961,
+      target_longitude: 121.44556,
+      target_height: 120,
       security_takeoff_height: "120",
       rth_altitude: "120",
       commander_flight_height: "120",
@@ -295,13 +295,13 @@ const Cockpit = () => {
         cmd: PayloadCommandsEnum.CameraLookAt,
         data: {
           payload_index: payloadIndex,
-          locked: false,
+          locked: true,
           longitude: contextMenu.longitude,
           latitude: contextMenu.latitude,
           height: 100,
         }
       });
-    } catch (err) {
+    } catch (err: any) {
       toast({
         description: err.data.message,
         variant: "destructive"
@@ -309,8 +309,82 @@ const Cockpit = () => {
     }
   };
 
+  // 添加状态记录鼠标按下的位置和是否正在拖动
+  const [isDragging, setIsDragging] = useState(false);
+  const [startPos, setStartPos] = useState({x: 0, y: 0});
+  const [dragTimer, setDragTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // 处理鼠标按下事件
+  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    const div = event.currentTarget;
+    const rect = div.getBoundingClientRect();
+
+    // 记录起始位置
+    setStartPos({
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    });
+
+    // 设置定时器，长按 200ms 后才开始拖动
+    const timer = setTimeout(() => {
+      setIsDragging(true);
+    }, 200);
+    setDragTimer(timer);
+  };
+
+  // 处理鼠标移动事件
+  const handleMouseMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+
+    const div = event.currentTarget;
+    const rect = div.getBoundingClientRect();
+    const currentX = event.clientX - rect.left;
+    const currentY = event.clientY - rect.top;
+
+    // 计算相对于中心点的偏移
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    // 计算拖动距离相对于div一半高度/宽度的比例，转换为角度，并限制在 -180 到 180 度之间
+    const yawAngle = Math.max(-180, Math.min(180, ((currentX - startPos.x) / centerX) * 180));
+    const pitchAngle = Math.max(-180, Math.min(180, ((startPos.y - currentY) / centerY) * 180));
+
+    console.log("yawAngle pitchAngle");
+    console.log(yawAngle, pitchAngle);
+
+    // 发送云台控制命令
+    const payloadIndex = deviceInfo?.device?.cameras?.[0]?.payload_index;
+    post(`${DRC_API_PREFIX}/devices/${dockSn}/payload/commands`, {
+      cmd: PayloadCommandsEnum.CameraScreenDrag,
+      data: {
+        payload_index: payloadIndex,
+        yaw_speed: yawAngle,
+        pitch_speed: pitchAngle,
+        locked: false
+      }
+    });
+  }, [isDragging, startPos, deviceInfo, dockSn]);
+
+  // 处理鼠标松开事件
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    if (dragTimer) {
+      clearTimeout(dragTimer);
+      setDragTimer(null);
+    }
+  }, [dragTimer]);
+
+  // 组件卸载时清理
+  useEffect(() => {
+    return () => {
+      if (dragTimer) {
+        clearTimeout(dragTimer);
+      }
+    };
+  }, [dragTimer]);
+
   return (
-    <FitScreen width={1920} height={1080} mode="full">
+    <FitScreen width={1920} height={1080} mode="fit">
       <Form {...form}>
         <form className={"h-full bg-cockpit bg-full-size relative grid grid-cols-5"}
               onSubmit={form.handleSubmit(onSubmit)}>
@@ -591,12 +665,17 @@ const Cockpit = () => {
                   id={"player2"}
                   onDoubleClick={handleVideoDoubleClick}
                   onWheel={handleWheel}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}  // 鼠标离开也要停止拖动
                   style={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     background: "#000",
-                    position: "relative"
+                    position: "relative",
+                    userSelect: "none"  // 防止拖动时选中文本
                   }}
                 />) : (
                 <div className={"text-[#d0d0d0]"}>

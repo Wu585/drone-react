@@ -120,7 +120,7 @@ export interface Device {
   id: number;
 }
 
-interface ChildDevice {
+export interface ChildDevice {
   device_sn: string;
   device_name: string;
   workspace_id: string;
