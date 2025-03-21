@@ -41,8 +41,6 @@ const DRC_API_PREFIX = "/control/api/v1";
 
 const DronePanel = () => {
   const osdVisible = useSceneStore(state => state.osdVisible);
-  console.log("osdVisible");
-  console.log(osdVisible);
   const setOsdVisible = useSceneStore(state => state.setOsdVisible);
   const {visible, hide, show} = useVisible();
   const {visible: debugPanelvisible, hide: hideDebugPanel, show: showDebugPanel} = useVisible();

@@ -21,7 +21,6 @@ import {useAjax} from "@/lib/http.ts";
 import {pickPosition} from "@/components/toolbar/tools";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
-import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
 
 export const formSchema = z.object({
   target_latitude: z.coerce.number(),
@@ -75,18 +74,6 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!sn) return;
-    getCustomSource("drone-wayline")?.entities.removeAll();
-    const longitude = realtimeDeviceInfo.device?.longitude;
-    const latitude = realtimeDeviceInfo.device?.latitude;
-    if (realtimeDeviceInfo.device && longitude && latitude) {
-      getCustomSource("drone-wayline")?.entities.add({
-        polyline: {
-          positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realtimeDeviceInfo.device.height, values.target_longitude, values.target_latitude, realtimeDeviceInfo.device.height]),
-          width: 3,  // 设置折线的宽度
-          material: Cesium.Color.BLUE,  // 折线的颜色
-        }
-      });
-    }
     if (type === "take-off") {
       const body = {
         ...values,
@@ -110,6 +97,18 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
         toast({
           description: <span>起飞成功</span>
         });
+        getCustomSource("drone-wayline")?.entities.removeAll();
+        const longitude = realtimeDeviceInfo.device?.longitude;
+        const latitude = realtimeDeviceInfo.device?.latitude;
+        if (realtimeDeviceInfo.device && longitude && latitude) {
+          getCustomSource("drone-wayline")?.entities.add({
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realtimeDeviceInfo.device.height, values.target_longitude, values.target_latitude, realtimeDeviceInfo.device.height]),
+              width: 3,  // 设置折线的宽度
+              material: Cesium.Color.BLUE,  // 折线的颜色
+            }
+          });
+        }
       }
       onClose?.();
     } else {
@@ -126,6 +125,18 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
       toast({
         description: "飞行成功！"
       });
+      getCustomSource("drone-wayline")?.entities.removeAll();
+      const longitude = realtimeDeviceInfo.device?.longitude;
+      const latitude = realtimeDeviceInfo.device?.latitude;
+      if (realtimeDeviceInfo.device && longitude && latitude) {
+        getCustomSource("drone-wayline")?.entities.add({
+          polyline: {
+            positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realtimeDeviceInfo.device.height, values.target_longitude, values.target_latitude, realtimeDeviceInfo.device.height]),
+            width: 3,  // 设置折线的宽度
+            material: Cesium.Color.BLUE,  // 折线的颜色
+          }
+        });
+      }
       onClose?.();
     }
   };
@@ -136,24 +147,6 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
       form.setValue("target_latitude", latitude);
     });
   };
-
-  const {RightClickPanel, MenuItem} = useRightClickPanel({
-    containerId: "cesiumContainer",
-    onRightClick: (movement) => {
-      // 获取点击位置的坐标
-      const cartesian = viewer.scene.pickPosition(movement.position);
-      if (cartesian) {
-        const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
-        const longitude = Cesium.Math.toDegrees(cartographic.longitude);
-        const latitude = Cesium.Math.toDegrees(cartographic.latitude);
-        const height = cartographic.height;
-        console.log("longitude");
-        console.log(longitude);
-        return true; // 返回 true 表示显示右键菜单
-      }
-      return false;
-    }
-  });
 
   return (
     <>
@@ -360,9 +353,6 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
         }} className={"border w-full mt-[30px]"}>登录</Button>*/}
         </form>
       </Form>
-      <RightClickPanel>
-        <MenuItem>飞向此处</MenuItem>
-      </RightClickPanel>
     </>
   );
 };

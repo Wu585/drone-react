@@ -105,8 +105,6 @@ const WorkOrderDataTable = () => {
   const {data: currentUser} = useCurrentUser();
   const isGly = currentUser?.role === 3;
   const urlFix = isGly ? "page" : "pageByOperator";
-  console.log("urlFix");
-  console.log(urlFix);
   const [currentOrder, setCurrentOrder] = useState<WorkOrder | null>(null);
 
   const columns: ColumnDef<WorkOrder>[] = [

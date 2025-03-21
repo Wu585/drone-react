@@ -4,9 +4,6 @@ import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-source.ts";
-import {getImageUrl} from "@/lib/utils.ts";
-import {selfFacilityList} from "@/components/facilities/FacilityProperty.tsx";
-import bmssPoint from "@/assets/images/bmss-point.png";
 import dockPng from "@/assets/images/drone/dock.png";
 import dronePng from "@/assets/images/drone/drone.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
@@ -75,8 +72,6 @@ const TsaScene = () => {
   useEffect(() => {
     if (!viewer) return;
     getCustomSource("dock")?.entities.removeAll();
-    // console.log("Object.keys(deviceState.deviceInfo)");
-    // console.log(Object.keys(deviceState.deviceInfo));
     Object.keys(deviceState.dockInfo).forEach(dockSn => {
       const dockInfo = deviceState.dockInfo[dockSn];
       // console.log("dockInfo");
@@ -95,8 +90,6 @@ const TsaScene = () => {
     });
   }, [deviceState]);
 
-  console.log("realTimeDeviceInfo");
-  console.log(realTimeDeviceInfo);
   useEffect(() => {
     if (realTimeDeviceInfo.device && realTimeDeviceInfo.device.longitude && realTimeDeviceInfo.device.latitude && realTimeDeviceInfo.device.height) {
       getCustomSource("drone")?.entities.removeAll();

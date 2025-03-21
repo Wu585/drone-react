@@ -69,10 +69,7 @@ const PayloadControl: FC<Props> = ({
   const payloadsOptions = osdVisible.payloads;
   const [cameraMode, setCameraMode] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
-  console.log("payloadsOptions");
-  console.log(payloadsOptions);
-  console.log("osdVisible");
-  console.log(osdVisible);
+
   const {data: capacityData} = useCapacity();
   const {post} = useAjax();
 
@@ -84,8 +81,7 @@ const PayloadControl: FC<Props> = ({
   };
 
   const cameraList = capacityData?.find(item => item.sn === deviceSn)?.cameras_list || [];
-  console.log("cameraList=====");
-  console.log(cameraList);
+
   const onChangeCurrentCamera = async (value: string) => {
     await onChangeCamera(value);
   };
@@ -108,14 +104,10 @@ const PayloadControl: FC<Props> = ({
   };
 
   const realTimeDeviceInfo = useRealTimeDeviceInfo();
-  console.log("realTimeDeviceInfo");
-  console.log(realTimeDeviceInfo);
+
   const currentCameraMode = realTimeDeviceInfo?.device?.cameras?.[0]?.camera_mode;
   const recordState = realTimeDeviceInfo?.device?.cameras?.[0]?.recording_state;
   const payload_index = realTimeDeviceInfo?.device?.cameras?.[0]?.payload_index;
-
-  console.log("currentCameraMode===");
-  console.log(currentCameraMode);
 
   const getPayloadControl = async () => {
     await post(`${API_PREFIX}/devices/${dockSn}/authority/payload`, {

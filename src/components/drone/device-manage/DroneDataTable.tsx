@@ -12,8 +12,36 @@ import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
+import {Edit} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog.tsx";
+import {Input} from "@/components/ui/input.tsx";
+import {z} from "zod";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+
+const HTTP_PREFIX = "/manage/api/v1";
+
+const formSchema = z.object({
+  name: z.string().min(1, "请输入设备名称")
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 const DroneDataTable = () => {
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: ""
+    }
+  });
+
   const columns: ColumnDef<Device>[] = [
     {
       accessorKey: "device_name",
@@ -35,15 +63,38 @@ const DroneDataTable = () => {
       accessorKey: "status",
       header: "状态",
       cell: ({row}) =>
-        <span className={row.original.status ? "text-green-500" : "text-red-500"}>{row.original.status ? "在线" : "离线"}</span>
+        <span
+          className={row.original.status ? "text-green-500" : "text-red-500"}>{row.original.status ? "在线" : "离线"}</span>
     },
     {
       accessorKey: "workspace_name",
-      header: "工作空间",
+      header: "组织",
     },
     {
       accessorKey: "login_time",
       header: "最后在线时间",
+    },
+    {
+      header: "操作",
+      cell: () => {
+        return <Dialog>
+          <DialogTrigger>
+            <Edit size={16} className={"cursor-pointer"}/>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>设备编辑</DialogTitle>
+            </DialogHeader>
+            <div className={"grid grid-cols-4 items-center gap-4"}>
+              <span className={"text-right"}>设备名称：</span>
+              <Input className={"col-span-3"}/>
+            </div>
+            <DialogFooter>
+              <Button>确认</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>;
+      }
     },
   ];
 

@@ -57,7 +57,6 @@ import {useDockLive} from "@/hooks/drone/useDockLive.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
 import TsaScene from "@/components/drone/public/TsaScene.tsx";
 import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
-import {useWheelZoom} from "@/hooks/useWheelZoom";
 import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
 
 // DRC 链路
@@ -110,8 +109,7 @@ const Cockpit = () => {
   const deviceSn = searchParams.get("sn") || "";
   const deviceInfo = useRealTimeDeviceInfo();
   const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
-  console.log("deviceInfo=====");
-  console.log(deviceInfo);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!dockSn) return;
     const body = {
@@ -260,9 +258,6 @@ const Cockpit = () => {
     }
   };
 
-  console.log("currentMode");
-  console.log(currentMode);
-
   const [zoomValue, setZoomValue] = useState(2);
 
   // 处理滚轮事件
@@ -293,20 +288,25 @@ const Cockpit = () => {
     containerId: "cesiumContainer",
   });
 
-  console.log("contextMenu==", contextMenu);
-
   const onLookAt = async () => {
     const payloadIndex = deviceInfo?.device?.cameras?.[0]?.payload_index;
-    await post(`${DRC_API_PREFIX}/devices/${dockSn}/payload/commands`, {
-      cmd: PayloadCommandsEnum.CameraLookAt,
-      data: {
-        payload_index: payloadIndex,
-        locked: false,
-        longitude: contextMenu.longitude,
-        latitude: contextMenu.latitude,
-        height: 100,
-      }
-    });
+    try {
+      await post(`${DRC_API_PREFIX}/devices/${dockSn}/payload/commands`, {
+        cmd: PayloadCommandsEnum.CameraLookAt,
+        data: {
+          payload_index: payloadIndex,
+          locked: false,
+          longitude: contextMenu.longitude,
+          latitude: contextMenu.latitude,
+          height: 100,
+        }
+      });
+    } catch (err) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
+      });
+    }
   };
 
   return (

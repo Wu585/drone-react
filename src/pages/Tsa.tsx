@@ -6,10 +6,16 @@ import GMap from "@/components/drone/public/GMap.tsx";
 import DronePanel from "@/components/drone/public/DronePanel.tsx";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {EDockModeCode, EModeCode} from "@/types/device.ts";
-import {OnlineDevice} from "@/hooks/drone/device.ts";
+import {OnlineDevice, useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import _DronePanel from "@/components/drone/public/_DronePanel.tsx";
 import Scene from "@/components/drone/public/Scene.tsx";
 import TsaScene from "@/components/drone/public/TsaScene.tsx";
+import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
+import {toast} from "@/components/ui/use-toast.ts";
+import {useAjax} from "@/lib/http.ts";
+import {getCustomSource} from "@/hooks/public/custom-source.ts";
+
+const DRC_API_PREFIX = "/control/api/v1";
 
 const Tsa = () => {
   const {
@@ -19,12 +25,9 @@ const Tsa = () => {
     setOsdVisible
   } = useSceneStore();
 
-  console.log('deviceState');
-  console.log(deviceState);
-
+  const {post} = useAjax();
   const {onlineDocks} = useOnlineDocks();
-  console.log('onlineDocks');
-  console.log(onlineDocks);
+  const realTime = useRealTimeDeviceInfo();
 
   const switchVisible = (dock: OnlineDevice) => {
     if (dock.sn === osdVisible.sn) {
@@ -49,6 +52,46 @@ const Tsa = () => {
         gateway_callsign: dock.gateway.callsign,
         payloads: dock.payload,
         is_dock: true
+      });
+    }
+  };
+
+  const {RightClickPanel, MenuItem, contextMenu} = useRightClickPanel({
+    containerId: "cesiumContainer",
+  });
+
+  const onFlyTo = async () => {
+    try {
+      await post(`${DRC_API_PREFIX}/devices/${osdVisible.gateway_sn}/jobs/fly-to-point`, {
+        max_speed: 14,
+        points: [
+          {
+            latitude: contextMenu.latitude,
+            longitude: contextMenu.longitude,
+            height: realTime.device.height
+          }
+        ]
+      });
+      toast({
+        description: "飞行成功！"
+      });
+      getCustomSource("drone-wayline")?.entities.removeAll();
+      const longitude = realTime.device?.longitude;
+      const latitude = realTime.device?.latitude;
+      if (realTime.device && longitude && latitude) {
+        getCustomSource("drone-wayline")?.entities.add({
+          polyline: {
+            positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realTime.device.height,
+              contextMenu.longitude, contextMenu.latitude, realTime.device.height]),
+            width: 3,  // 设置折线的宽度
+            material: Cesium.Color.BLUE,  // 折线的颜色
+          }
+        });
+      }
+    } catch (err: any) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
       });
     }
   };
@@ -115,6 +158,9 @@ const Tsa = () => {
       <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative"}>
         {/*<GMap/>*/}
         <TsaScene/>
+        <RightClickPanel>
+          <MenuItem onClick={onFlyTo}>飞向此处</MenuItem>
+        </RightClickPanel>
         <div className={"absolute left-2 top-2"}>
           {osdVisible.visible && <DronePanel/>}
         </div>

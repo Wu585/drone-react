@@ -39,7 +39,7 @@ const DockDataTable = () => {
     },
     {
       accessorKey: "workspace_name",
-      header: "工作空间",
+      header: "组织",
     },
     {
       accessorKey: "login_time",
