@@ -1,7 +1,6 @@
 import {Camera, Plus, Rocket, Upload, User} from "lucide-react";
 import UploadButton from "@rpldy/upload-button";
 import Uploady from "@rpldy/uploady";
-import GMap from "@/components/drone/public/GMap.tsx";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {useDeleteWalineFile, useDownloadWayline, useWaylineById, useWaylines, WaylineItem} from "@/hooks/drone";
 import {useEffect, useState} from "react";
@@ -115,7 +114,6 @@ const WayLine = () => {
       const takeoffPoint = currentWaylineData.take_off_ref_point.split(",");
       if (takeoffPoint.length > 1) {
         const [takeoffLat, takeoffLon, takeoffHei] = takeoffPoint;
-        console.log(takeoffLon, takeoffLat, takeoffHei);
         getCustomSource("waylines-preview")?.entities.add({
           position: Cesium.Cartesian3.fromDegrees(+takeoffLon, +takeoffLat, +takeoffHei),
           billboard: {

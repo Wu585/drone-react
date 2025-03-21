@@ -16,9 +16,8 @@ import windyPng from "@/assets/images/drone/cockpit/windy.png";
 import windPowerPng from "@/assets/images/drone/cockpit/wind-power.png";
 import CockpitFlyControl from "@/components/drone/public/CockpitFlyControl.tsx";
 import {Input} from "@/components/ui/input.tsx";
-import GMap from "@/components/drone/public/GMap.tsx";
 import {clarityList, useDeviceVideo} from "@/hooks/drone/useDeviceVideo.ts";
-import {useEffect, useState} from "react";
+import {useEffect, useState, useCallback, useRef} from "react";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 import {useSearchParams} from "react-router-dom";
 import {useCapacity, useOnlineDocks} from "@/hooks/drone";
@@ -58,6 +57,8 @@ import {useDockLive} from "@/hooks/drone/useDockLive.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
 import TsaScene from "@/components/drone/public/TsaScene.tsx";
 import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
+import {useWheelZoom} from "@/hooks/useWheelZoom";
+import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -99,8 +100,7 @@ const Cockpit = () => {
     stopDockVideo,
     currentDeviceCamera,
   } = useDeviceVideo();
-  console.log("deviceVideoSrc");
-  console.log(deviceVideoSrc);
+
   const {post} = useAjax();
   const {data: capacityData} = useCapacity();
   const {onlineDocks} = useOnlineDocks();
@@ -205,7 +205,7 @@ const Cockpit = () => {
     const rect = div.getBoundingClientRect();
 
     // 获取视频元素
-    const videoElement = div.querySelector('video');
+    const videoElement = div.querySelector("video");
     if (!videoElement) return;
 
     const videoRect = videoElement.getBoundingClientRect();
@@ -260,8 +260,57 @@ const Cockpit = () => {
     }
   };
 
+  console.log("currentMode");
+  console.log(currentMode);
+
+  const [zoomValue, setZoomValue] = useState(2);
+
+  // 处理滚轮事件
+  const handleWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+    event.preventDefault();
+
+    // 根据滚动方向决定增加或减少
+    const direction = event.deltaY > 0 ? -1 : 1;
+
+    setZoomValue(prev => Math.min(currentMode === "ir" ? 20 : 200, Math.max(2, prev + direction)));
+  }, []);
+
+  useEffect(() => {
+    const payloadIndex = deviceInfo?.device?.cameras?.[0]?.payload_index;
+    console.log("zoom value", zoomValue);
+    if (currentMode !== "zoom" && currentMode !== "ir") return;
+    post(`${DRC_API_PREFIX}/devices/${dockSn}/payload/commands`, {
+      cmd: PayloadCommandsEnum.CameraFocalLengthSet,
+      data: {
+        payload_index: payloadIndex,
+        camera_type: currentMode,
+        zoom_factor: zoomValue
+      }
+    });
+  }, [zoomValue]);
+
+  const {RightClickPanel, MenuItem, contextMenu} = useRightClickPanel({
+    containerId: "cesiumContainer",
+  });
+
+  console.log("contextMenu==", contextMenu);
+
+  const onLookAt = async () => {
+    const payloadIndex = deviceInfo?.device?.cameras?.[0]?.payload_index;
+    await post(`${DRC_API_PREFIX}/devices/${dockSn}/payload/commands`, {
+      cmd: PayloadCommandsEnum.CameraLookAt,
+      data: {
+        payload_index: payloadIndex,
+        locked: false,
+        longitude: contextMenu.longitude,
+        latitude: contextMenu.latitude,
+        height: 100,
+      }
+    });
+  };
+
   return (
-    <FitScreen width={1920} height={1080} mode="fit">
+    <FitScreen width={1920} height={1080} mode="full">
       <Form {...form}>
         <form className={"h-full bg-cockpit bg-full-size relative grid grid-cols-5"}
               onSubmit={form.handleSubmit(onSubmit)}>
@@ -314,6 +363,9 @@ const Cockpit = () => {
               showDockLive ? "h-[244px] mt-[10px]" : "h-[430px]"
             )}>
               <TsaScene/>
+              <RightClickPanel>
+                <MenuItem onClick={onLookAt}>看向这里</MenuItem>
+              </RightClickPanel>
             </div>
             <div className={"ml-[53px] py-[30px]"}>
               <CockpitTitle title={"飞行器基本参数"}/>
@@ -538,29 +590,22 @@ const Cockpit = () => {
                   className={"w-[930px] aspect-video rounded-[80px] overflow-hidden cursor-crosshair"}
                   id={"player2"}
                   onDoubleClick={handleVideoDoubleClick}
+                  onWheel={handleWheel}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: '#000',
-                    position: 'relative'
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#000",
+                    position: "relative"
                   }}
-                >
-                  <div className="absolute inset-0 pointer-events-none" style={{
-                    backgroundImage: `
-                      linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
-                      linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)
-                    `,
-                    backgroundSize: '10% 10%'
-                  }} />
-                </div>
-              ) : (
+                />) : (
                 <div className={"text-[#d0d0d0]"}>
                   当前设备已关机，无法进行直播
                 </div>
               )}
               <div className={"absolute right-40 top-16 z-50"}>
                 <PayloadControl
+                  dockSn={dockSn}
                   onRefreshVideo={onRefreshDeviceVideo}
                   updateVideo={updateDroneVideo}
                   devicePosition={dronePosition}

@@ -44,7 +44,7 @@ const TsaScene = () => {
     window.viewer = new Cesium.Viewer("cesiumContainer", {
       shadows: true,
       infoBox: false,
-      navigation: true, //指南针
+      navigation: false, //指南针
       selectionIndicator: false, //绿色选择框
     });
 
@@ -124,7 +124,6 @@ const TsaScene = () => {
       });
     }
   }, [realTimeDeviceInfo]);
-
 
   return (
     <div id="cesiumContainer" className={"h-full"}></div>

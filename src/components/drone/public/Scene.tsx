@@ -42,7 +42,7 @@ const Scene = () => {
     window.viewer = new Cesium.Viewer("cesiumContainer", {
       shadows: false,
       infoBox: false,
-      navigation: false, //指南针
+      navigation: true, //指南针
       selectionIndicator: false, //绿色选择框
     });
 
@@ -66,19 +66,17 @@ const Scene = () => {
 
   }, []);
 
+  // 机场图标的集合
   useEntityCustomSource("dock");
+  // 航线列表的集合
   useEntityCustomSource("waylines-preview");
+  // 航线创建的集合
   useEntityCustomSource("waylines-create");
 
   useEffect(() => {
-    if (!viewer) return;
     getCustomSource("dock")?.entities.removeAll();
-    // console.log("Object.keys(deviceState.deviceInfo)");
-    // console.log(Object.keys(deviceState.deviceInfo));
     Object.keys(deviceState.dockInfo).forEach(dockSn => {
       const dockInfo = deviceState.dockInfo[dockSn];
-      // console.log("dockInfo");
-      // console.log(dockInfo);
       if (dockInfo.basic_osd && dockInfo.basic_osd.longitude && dockInfo.basic_osd.latitude) {
         getCustomSource("dock")?.entities.add({
           id: `dock-${dockSn}`,

@@ -39,6 +39,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog.tsx";
 import {useWaylineById} from "@/hooks/drone";
+import {useAddEventListener, useManuallySetTakeOffPoint, useSetTakeOffPoint} from "@/hooks/drone/wayline";
 
 interface WayPoint {
   id: number;
@@ -266,6 +267,8 @@ const CreateWayLine = () => {
     height: number;
   } | null>(null);
   const [selectedWaypointId, setSelectedWaypointId] = useState<number | null>(null);
+
+  const {onSetTakeoffPoint} = useManuallySetTakeOffPoint(form.getValues("global_height"))
 
   const onSetPoint = () => {
     // 只删除起飞点相关的实体，而不是所有实体
@@ -688,6 +691,9 @@ const CreateWayLine = () => {
       });
     }
   };
+
+
+  // useSetTakeOffPoint()
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("提交的表单数据:", values);
@@ -1296,7 +1302,7 @@ const CreateWayLine = () => {
                 />
                 <div className={"rounded-md flex justify-between bg-[#3c3c3c] px-2 py-2"}>
                   <span>参考起飞点</span>
-                  <span className={"cursor-pointer"} onClick={onSetPoint}>设置起飞点</span>
+                  <span className={"cursor-pointer"} onClick={onSetTakeoffPoint}>设置起飞点</span>
                 </div>
                 <FormField
                   control={form.control}
@@ -1819,59 +1825,59 @@ const CreateWayLine = () => {
                                 <AlignJustify size={16}/>
                                 <span>飞行器偏航角</span>
                               </div>
-                             <div className={"col-span-2 flex items-center space-x-2"}>
-                               <Input
-                                 className={"bg-[#3c3c3c] rounded-sm col-span-2 h-8 content-center"}
-                                 value={action.param?.toString() || ""}
-                                 onChange={(e) => {
-                                   const inputValue = e.target.value;
+                              <div className={"col-span-2 flex items-center space-x-2"}>
+                                <Input
+                                  className={"bg-[#3c3c3c] rounded-sm col-span-2 h-8 content-center"}
+                                  value={action.param?.toString() || ""}
+                                  onChange={(e) => {
+                                    const inputValue = e.target.value;
 
-                                   // 允许空值（用于删除）
-                                   if (inputValue === "") {
-                                     setCurrentWayPoint({
-                                       ...currentWayPoint!,
-                                       actions: currentWayPoint!.actions.map((item, idx) => {
-                                         if (idx === index) {
-                                           return {
-                                             ...item,
-                                             param: 0
-                                           };
-                                         }
-                                         return item;
-                                       })
-                                     });
-                                     return;
-                                   }
+                                    // 允许空值（用于删除）
+                                    if (inputValue === "") {
+                                      setCurrentWayPoint({
+                                        ...currentWayPoint!,
+                                        actions: currentWayPoint!.actions.map((item, idx) => {
+                                          if (idx === index) {
+                                            return {
+                                              ...item,
+                                              param: 0
+                                            };
+                                          }
+                                          return item;
+                                        })
+                                      });
+                                      return;
+                                    }
 
-                                   // 转换为数字并验证
-                                   const value = Number(inputValue);
-                                   if (!isNaN(value) && value >= -180 && value <= 180) {
-                                     setCurrentWayPoint({
-                                       ...currentWayPoint!,
-                                       actions: currentWayPoint!.actions.map((item, idx) => {
-                                         if (idx === index) {
-                                           return {
-                                             ...item,
-                                             param: value
-                                           };
-                                         }
-                                         return item;
-                                       })
-                                     });
-                                   }
-                                 }}
-                                 onKeyDown={(e) => {
-                                   // 阻止 e.key === 'e' 或 'E'，因为这在number类型输入框中会触发科学计数法
-                                   if (e.key === 'e' || e.key === 'E') {
-                                     e.preventDefault();
-                                   }
-                                 }}
-                                 type="number"
-                                 min={-180}
-                                 max={180}
-                               />
-                               <span>°</span>
-                             </div>
+                                    // 转换为数字并验证
+                                    const value = Number(inputValue);
+                                    if (!isNaN(value) && value >= -180 && value <= 180) {
+                                      setCurrentWayPoint({
+                                        ...currentWayPoint!,
+                                        actions: currentWayPoint!.actions.map((item, idx) => {
+                                          if (idx === index) {
+                                            return {
+                                              ...item,
+                                              param: value
+                                            };
+                                          }
+                                          return item;
+                                        })
+                                      });
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    // 阻止 e.key === 'e' 或 'E'，因为这在number类型输入框中会触发科学计数法
+                                    if (e.key === "e" || e.key === "E") {
+                                      e.preventDefault();
+                                    }
+                                  }}
+                                  type="number"
+                                  min={-180}
+                                  max={180}
+                                />
+                                <span>°</span>
+                              </div>
                               <Trash2
                                 className={"cursor-pointer text-right ml-2"}
                                 size={16}
@@ -1912,56 +1918,56 @@ const CreateWayLine = () => {
                                 <AlignJustify size={16}/>
                                 <span>云台偏航角</span>
                               </div>
-                             <div className={"col-span-2 flex items-center space-x-2"}>
-                               <Input
-                                 className={"bg-[#3c3c3c] rounded-sm pr-2 h-8 content-center"}
-                                 value={action.param?.toString() || ""}
-                                 onChange={(e) => {
-                                   const inputValue = e.target.value;
+                              <div className={"col-span-2 flex items-center space-x-2"}>
+                                <Input
+                                  className={"bg-[#3c3c3c] rounded-sm pr-2 h-8 content-center"}
+                                  value={action.param?.toString() || ""}
+                                  onChange={(e) => {
+                                    const inputValue = e.target.value;
 
-                                   if (inputValue === "") {
-                                     setCurrentWayPoint({
-                                       ...currentWayPoint!,
-                                       actions: currentWayPoint!.actions.map((item, idx) => {
-                                         if (idx === index) {
-                                           return {
-                                             ...item,
-                                             param: 0
-                                           };
-                                         }
-                                         return item;
-                                       })
-                                     });
-                                     return;
-                                   }
+                                    if (inputValue === "") {
+                                      setCurrentWayPoint({
+                                        ...currentWayPoint!,
+                                        actions: currentWayPoint!.actions.map((item, idx) => {
+                                          if (idx === index) {
+                                            return {
+                                              ...item,
+                                              param: 0
+                                            };
+                                          }
+                                          return item;
+                                        })
+                                      });
+                                      return;
+                                    }
 
-                                   const value = Number(inputValue);
-                                   if (!isNaN(value) && value >= -180 && value <= 180) {
-                                     setCurrentWayPoint({
-                                       ...currentWayPoint!,
-                                       actions: currentWayPoint!.actions.map((item, idx) => {
-                                         if (idx === index) {
-                                           return {
-                                             ...item,
-                                             param: value
-                                           };
-                                         }
-                                         return item;
-                                       })
-                                     });
-                                   }
-                                 }}
-                                 onKeyDown={(e) => {
-                                   if (e.key === 'e' || e.key === 'E') {
-                                     e.preventDefault();
-                                   }
-                                 }}
-                                 type="number"
-                                 min={-180}
-                                 max={180}
-                               />
-                               <span>°</span>
-                             </div>
+                                    const value = Number(inputValue);
+                                    if (!isNaN(value) && value >= -180 && value <= 180) {
+                                      setCurrentWayPoint({
+                                        ...currentWayPoint!,
+                                        actions: currentWayPoint!.actions.map((item, idx) => {
+                                          if (idx === index) {
+                                            return {
+                                              ...item,
+                                              param: value
+                                            };
+                                          }
+                                          return item;
+                                        })
+                                      });
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "e" || e.key === "E") {
+                                      e.preventDefault();
+                                    }
+                                  }}
+                                  type="number"
+                                  min={-180}
+                                  max={180}
+                                />
+                                <span>°</span>
+                              </div>
                               <Trash2
                                 className={"cursor-pointer text-right ml-2"}
                                 size={16}
@@ -2042,7 +2048,7 @@ const CreateWayLine = () => {
                                     }
                                   }}
                                   onKeyDown={(e) => {
-                                    if (e.key === 'e' || e.key === 'E') {
+                                    if (e.key === "e" || e.key === "E") {
                                       e.preventDefault();
                                     }
                                   }}
@@ -2385,7 +2391,7 @@ const CreateWayLine = () => {
                                     }
                                   }}
                                   onKeyDown={(e) => {
-                                    if (e.key === 'e' || e.key === 'E') {
+                                    if (e.key === "e" || e.key === "E") {
                                       e.preventDefault();
                                     }
                                   }}
@@ -2437,7 +2443,7 @@ const CreateWayLine = () => {
             </Popover>
           </div>
         </header>
-        <div className={"border-2 flex-1 relative"}>
+        <div className={"flex-1 relative"}>
           <Scene/>
           <RightClickPanel>
             {waypoints.length === 0 ? (

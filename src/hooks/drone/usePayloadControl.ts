@@ -13,7 +13,8 @@ export enum PayloadCommandsEnum {
   CameraRecordingStop = "camera_recording_stop",
   CameraFocalLengthSet = "camera_focal_length_set",
   GimbalReset = "gimbal_reset",
-  CameraAim = "camera_aim"
+  CameraAim = "camera_aim",
+  CameraLookAt = "camera_look_at"
 }
 
 export interface PostCameraModeBody {

@@ -1,9 +1,9 @@
-import {Aperture, ArrowUpDown, Camera, CloudFog, RefreshCcw, Settings, Video, Maximize2} from "lucide-react";
+import {Aperture, ArrowUpDown, Camera, CloudFog, RefreshCcw, Settings, Video, Maximize2, RotateCw} from "lucide-react";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {FC, useEffect, useState} from "react";
 import {
   DropdownMenu,
-  DropdownMenuContent,
+  DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup, DropdownMenuRadioItem,
   DropdownMenuTrigger
@@ -15,6 +15,7 @@ import {toast} from "@/components/ui/use-toast.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
 import {CameraMode} from "@/types/live-stream.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
+import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
 
 interface Props {
   onRefreshVideo: () => void;
@@ -22,6 +23,7 @@ interface Props {
   devicePosition: string;
   setDevicePosition: (value: string) => void;
   deviceSn: string;
+  dockSn: string;
   currentDeviceCamera: string;
   onChangeCamera: (value: string) => Promise<void>;
   currentMode: "ir" | "wide" | "zoom";
@@ -31,12 +33,32 @@ interface Props {
 
 const API_PREFIX = "/control/api/v1";
 
+const gimbalResetMode = [
+  {
+    name: "回中",
+    value: 0
+  },
+  {
+    name: "向下",
+    value: 1
+  },
+  {
+    name: "偏航回中",
+    value: 2
+  },
+  {
+    name: "俯仰向下",
+    value: 3
+  }
+];
+
 const PayloadControl: FC<Props> = ({
                                      onRefreshVideo,
                                      updateVideo,
                                      devicePosition,
                                      setDevicePosition,
                                      deviceSn,
+                                     dockSn,
                                      currentDeviceCamera,
                                      onChangeCamera,
                                      currentMode,
@@ -72,7 +94,7 @@ const PayloadControl: FC<Props> = ({
 
 
   const onCameraModeSwitch = async () => {
-    await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
+    await post(`${API_PREFIX}/devices/${dockSn}/payload/commands`, {
       cmd: "camera_mode_switch",
       data: {
         payload_index: currentDeviceCamera,
@@ -86,17 +108,18 @@ const PayloadControl: FC<Props> = ({
   };
 
   const realTimeDeviceInfo = useRealTimeDeviceInfo();
-
+  console.log("realTimeDeviceInfo");
+  console.log(realTimeDeviceInfo);
   const currentCameraMode = realTimeDeviceInfo?.device?.cameras?.[0]?.camera_mode;
   const recordState = realTimeDeviceInfo?.device?.cameras?.[0]?.recording_state;
+  const payload_index = realTimeDeviceInfo?.device?.cameras?.[0]?.payload_index;
 
   console.log("currentCameraMode===");
   console.log(currentCameraMode);
 
   const getPayloadControl = async () => {
-    const payloadIndex = osdVisible.payloads?.[0].payload_index;
-    await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/authority/payload`, {
-      payload_index: payloadIndex
+    await post(`${API_PREFIX}/devices/${dockSn}/authority/payload`, {
+      payload_index
     });
     toast({
       description: "获取云端控制权成功！"
@@ -104,25 +127,24 @@ const PayloadControl: FC<Props> = ({
   };
 
   const onTakePhoto = async () => {
-    const payloadIndex = osdVisible.payloads?.[0].payload_index;
     // await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/authority/payload`, {
     //   payload_index: payloadIndex
     // });
     try {
       if (currentCameraMode !== CameraMode.Photo) {
-        await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
+        await post(`${API_PREFIX}/devices/${dockSn}/payload/commands`, {
           cmd: "camera_mode_switch",
           data: {
-            payload_index: payloadIndex,
+            payload_index,
             camera_mode: CameraMode.Photo
           }
         });
       }
       setTimeout(async () => {
-        await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
+        await post(`${API_PREFIX}/devices/${dockSn}/payload/commands`, {
           cmd: "camera_photo_take",
           data: {
-            payload_index: payloadIndex,
+            payload_index
           }
         });
         toast({
@@ -138,25 +160,24 @@ const PayloadControl: FC<Props> = ({
   };
 
   const onRecording = async () => {
-    const payloadIndex = osdVisible.payloads?.[0].payload_index;
     // await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/authority/payload`, {
     //   payload_index: payloadIndex
     // });
     try {
       if (currentCameraMode !== CameraMode.Video) {
-        await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
+        await post(`${API_PREFIX}/devices/${dockSn}/payload/commands`, {
           cmd: "camera_mode_switch",
           data: {
-            payload_index: payloadIndex,
+            payload_index,
             camera_mode: CameraMode.Video
           }
         });
       }
       setTimeout(async () => {
-        await post(`${API_PREFIX}/devices/${osdVisible.gateway_sn}/payload/commands`, {
+        await post(`${API_PREFIX}/devices/${dockSn}/payload/commands`, {
           cmd: recordState ? "camera_recording_stop" : "camera_recording_start",
           data: {
-            payload_index: payloadIndex,
+            payload_index,
           }
         });
         toast({
@@ -180,6 +201,28 @@ const PayloadControl: FC<Props> = ({
           description: isRecording ? "停止录像" : "开始录像"
         });
         setIsRecording(!isRecording);*/
+  };
+
+  const onGimbalReset = async (value: number) => {
+    // PayloadCommandsEnum.GimbalReset
+    try {
+      await post(`${API_PREFIX}/devices/${dockSn}/payload/commands`, {
+        cmd: PayloadCommandsEnum.GimbalReset,
+        data: {
+          payload_index,
+          reset_mode: value
+        }
+      });
+      toast({
+        description: "云台重置成功"
+      });
+    } catch (err: any) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
+      });
+    }
+
   };
 
   return (
@@ -230,6 +273,16 @@ const PayloadControl: FC<Props> = ({
       <CloudFog className={"cursor-pointer"} size={16} onClick={getPayloadControl}/>
       <Camera className={"cursor-pointer"} onClick={onTakePhoto} size={16}/>
       <Video className={"cursor-pointer"} onClick={onRecording} size={16}/>
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <RotateCw className={"cursor-pointer"} size={16}/>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-16">
+          {gimbalResetMode.map(item =>
+            <DropdownMenuItem onClick={() => onGimbalReset(item.value)}
+                              key={item.value}>{item.name}</DropdownMenuItem>)}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };

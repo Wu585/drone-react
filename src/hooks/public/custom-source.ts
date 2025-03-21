@@ -16,6 +16,8 @@ export const getCustomSource = (sourceName: string): {
     removeAll: () => void
     add: (option: any) => any
     getById: (id: string) => any
+    removeById: (id: string) => boolean
+    remove: (entity: any) => boolean
   }
   show: boolean
 } | undefined => viewer.dataSources.getByName(sourceName)?.[0];

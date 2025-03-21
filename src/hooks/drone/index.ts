@@ -548,6 +548,7 @@ export interface WorkOrder {
   contact_phone: string;
   order_type: number;
   pic_list: string[];
+  pic_list_origin: string[];
   longitude: number;
   latitude: number;
   description: string;
@@ -608,6 +609,7 @@ export interface OrderOperation {
   operator_name: string;
   create_time: number;
   update_time: number;
+  reason: string;
 }
 
 // 查看工单操作记录

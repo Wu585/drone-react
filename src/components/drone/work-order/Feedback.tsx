@@ -110,6 +110,17 @@ const Feedback = ({currentOrder, onSuccess, type = "handle"}: Props) => {
                   </div>
                 </div>
 
+                {record.status === 2 && <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-400">
+                      未通过原因：
+                    </span>
+                    <span className={"text-sm text-red-500"}>
+                      {record.reason}
+                    </span>
+                  </div>
+                </div>}
+
                 <div className="mb-4">
                   <h4 className="text-sm text-gray-400 mb-2">处理结果：</h4>
                   <p className="text-white">{record.result}</p>
@@ -138,6 +149,11 @@ const Feedback = ({currentOrder, onSuccess, type = "handle"}: Props) => {
       ) : <Form {...form}>
         <form id="feedbackForm" onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-4 ">
+          {operationList && operationList?.list?.length > 0 && operationList?.list[0].reason &&
+            <div className={"flex text-sm space-x-2"}>
+              <span className={"text-red-500"}>未通过原因：</span>
+              <span className={"text-red-500"}>{operationList?.list[0].reason}</span>
+            </div>}
           <FormField
             control={form.control}
             name="result"

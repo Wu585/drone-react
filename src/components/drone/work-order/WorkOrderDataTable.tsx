@@ -184,6 +184,7 @@ const WorkOrderDataTable = () => {
               className={"w-4 cursor-pointer"}
               onClick={() => {
                 // setDistributeOpen(true);
+                stepper.goTo(getStepByStatus(row.original.status));
                 setCurrentOrder(row.original);
                 setOpen(true);
                 setOrderType("edit");

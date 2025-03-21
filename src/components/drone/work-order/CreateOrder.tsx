@@ -119,7 +119,10 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
 
   useEffect(() => {
     if (currentOrder) {
-      form.reset(currentOrder);
+      form.reset({
+        ...currentOrder,
+        pic_list: currentOrder.pic_list_origin
+      });
       setImageUrlList(currentOrder.pic_list || []);
     }
   }, [currentOrder]);
