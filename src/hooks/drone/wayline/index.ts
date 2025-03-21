@@ -2,6 +2,7 @@
 import {useEffect, useState} from "react";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import takeOffPng from "@/assets/images/drone/wayline/takeoff.svg";
+import dronePng from "@/assets/images/drone/wayline/drone.png";
 import {pickPosition} from "@/components/toolbar/tools";
 import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
 
@@ -33,16 +34,16 @@ export const useAddEventListener =
     }, []);
   };
 
-const addTakeOffPoint = ({longitude, latitude, height, take_off_security_height}: {
+const addTakeOffPoint = ({longitude, latitude, height, endHeight}: {
   longitude: number,
   latitude: number,
   height: number,
-  take_off_security_height: number
+  endHeight: number
 }) => {
   // 计算中间点高度
-  const middleHeight = (height + take_off_security_height) / 2;
+  const middleHeight = (height + endHeight) / 2;
 
-  // 创建一个带凹尖的箭头形状
+  /*// 创建一个带凹尖的箭头形状
   const scale = 0.00005; // 缩小整体大小
   const planeHeight = take_off_security_height;
 
@@ -99,7 +100,7 @@ const addTakeOffPoint = ({longitude, latitude, height, take_off_security_height}
   });
 
   viewer.scene.primitives.add(primitive);
-  (getCustomSource("waylines-create") as any).arrowPrimitive = primitive;
+  (getCustomSource("waylines-create") as any).arrowPrimitive = primitive;*/
 
   // 添加起飞点和虚线
   getCustomSource("waylines-create")?.entities.add({
@@ -113,7 +114,7 @@ const addTakeOffPoint = ({longitude, latitude, height, take_off_security_height}
     polyline: {
       positions: [
         Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
-        Cesium.Cartesian3.fromDegrees(longitude, latitude, take_off_security_height)
+        Cesium.Cartesian3.fromDegrees(longitude, latitude, endHeight)
       ],
       width: 2,
       material: new Cesium.PolylineDashMaterialProperty({
@@ -128,7 +129,7 @@ const addTakeOffPoint = ({longitude, latitude, height, take_off_security_height}
     id: "takeoff-label",
     position: Cesium.Cartesian3.fromDegrees(longitude, latitude, middleHeight),
     label: {
-      text: `${take_off_security_height}m`,
+      text: `${endHeight}m`,
       font: "14px sans-serif",
       fillColor: Cesium.Color.BLACK,
       outlineColor: Cesium.Color.WHITE,
@@ -141,23 +142,114 @@ const addTakeOffPoint = ({longitude, latitude, height, take_off_security_height}
     }
   });
 
-  /*// 添加平行于地面的无人机图标
+  // 添加无人机图标
   getCustomSource("waylines-create")?.entities.add({
     id: "takeoff-drone",
-    position: Cesium.Cartesian3.fromDegrees(longitude, latitude, take_off_security_height),
-    billboard: {
-      image: dronePng,
-      width: 64,
-      height: 64,
-      verticalOrigin: Cesium.VerticalOrigin.CENTER,
-      horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-      // // rotation: Cesium.Math.toRadians(-90), // 旋转90度使其指向上方
-      // alignedAxis: Cesium.Cartesian3.UNIT_Z,
-      // disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      color: Cesium.Color.fromCssColorString("#43ABFF"), // 使用蓝色,
-      alignedToGround: true
+    position: Cesium.Cartesian3.fromDegrees(longitude, latitude, endHeight),
+    model: {
+      uri: 'data:application/gltf+json,' + JSON.stringify({
+        "asset": {
+          "version": "2.0",
+          "generator": "Created using the official Cinema 4D glTF Exporter 1.000x290161"
+        },
+        "scenes": [{
+          "nodes": [0]
+        }],
+        "nodes": [{
+          "name": "角锥",
+          "translation": [0, 0, 0],
+          "rotation": [0.0, 0.0, 0.0, -1.0],
+          "scale": [0.1, 0.1, 0.1],
+          "mesh": 0
+        }],
+        "meshes": [{
+          "primitives": [{
+            "attributes": {
+              "POSITION": 1,
+              "NORMAL": 2,
+              "TEXCOORD_0": 3
+            },
+            "indices": 0,
+            "material": 0
+          }]
+        }],
+        "accessors": [{
+          "bufferView": 0,
+          "type": "SCALAR",
+          "componentType": 5123,
+          "count": 18,
+          "byteOffset": 0,
+          "min": [0],
+          "max": [14]
+        },
+        {
+          "bufferView": 1,
+          "type": "VEC3",
+          "componentType": 5126,
+          "count": 15,
+          "byteOffset": 0,
+          "min": [-81.83937072753906, -24.118911743164064, -122.53469848632813],
+          "max": [81.83937072753906, 24.118911743164064, 122.53469848632813]
+        },
+        {
+          "bufferView": 1,
+          "type": "VEC3",
+          "componentType": 5126,
+          "count": 15,
+          "byteOffset": 12,
+          "min": [-0.5999375581741333, -1.0, -0.20496876537799836],
+          "max": [0.6073125004768372, 0.7750312685966492, 0.8280937671661377]
+        },
+        {
+          "bufferView": 1,
+          "type": "VEC2",
+          "componentType": 5126,
+          "count": 15,
+          "byteOffset": 24,
+          "min": [0.0, 0.0],
+          "max": [1.0, 1.0]
+        }],
+        "bufferViews": [{
+          "buffer": 0,
+          "byteOffset": 0,
+          "byteLength": 36,
+          "target": 34963
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 36,
+          "byteLength": 480,
+          "target": 34962,
+          "byteStride": 32
+        }],
+        "buffers": [{
+          "uri": "data:application/octet-stream;base64,DAAOAAsADQAMAAsACgAJAAgABwADAAYAAQACAAUAAAABAAQAwq2jwojzwMHEEfVCx0uLPvp+CT9OYkw/zMxMPwAAAD+M9gS+iPPAwaJevUJCYGU6+n4PP/T9Uz8AAAA/zMxMPsKto0KI88DBxBH1Qn9qir53vgo/LrJLP8zMTD4AAAA/Gmdhv4jzwMHEEfXC1XgbP9Z4RD9V41G+AAAAP8zMTD8A6+s+iPPAQQIfeEJCYGU6+n4PP/T9Uz8AAIA/AAAAAADr6z6I88BBAh94QkJgZTr6fg8/9P1TPwAAAAAAAAAAAOvrPojzwEECH3hC1XgbP9Z4RD9V41G+AAAAAAAAgD/CraNCiPPAwcQR9ULVeBs/1nhEP1XjUb7MzEw+AAAAPwDr6z6I88BBAh94QoKVGb9zaEY/q/FKvgAAgD8AAIA/wq2jwojzwMHEEfVCgpUZv3NoRj+r8Uq+zMxMPwAAAD8aZ2G/iPPAwcQR9cKClRm/c2hGP6vxSr4AAAA/zMxMPxpnYb+I88DBxBH1wgAAAAAAAIC/AAAAAAAAAAAAAAAAjPYEvojzwMGiXr1CAAAAAAAAgL8AAAAAAACAPwAAgD/CraNCiPPAwcQR9UIAAAAAAACAvwAAAAAAAAAAAACAP8Kto8KI88DBxBH1QgAAAAAAAIC/AAAAAAAAgD8AAAAA",
+          "byteLength": 516
+        }],
+        "materials": [{
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [1.0, 1.0, 1.0, 1.0],
+            "metallicFactor": 1.0,
+            "roughnessFactor": 1.0
+          },
+          "emissiveFactor": [0.0, 0.0, 0.0],
+          "alphaMode": "OPAQUE",
+          "doubleSided": false,
+          "name": "default"
+        }]
+      }),
+      scale: 1,
+      minimumPixelSize: 48,
+      maximumScale: 32,
+      color: Cesium.Color.fromCssColorString("#43ABFF").withAlpha(0.9),
+      colorBlendMode: Cesium.ColorBlendMode.REPLACE,
+      heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+      modelMatrix: Cesium.Transforms.headingPitchRollToFixedFrame(
+        Cesium.Cartesian3.fromDegrees(longitude, latitude, endHeight),
+        new Cesium.HeadingPitchRoll(-Math.PI/2, Math.PI/2, 0)
+      )
     }
-  });*/
+  });
 };
 
 // 修改删除逻辑
@@ -187,14 +279,14 @@ export const useSetTakeOffPoint = (height?: number) => {
         longitude,
         latitude,
         height: 0,
-        take_off_security_height: 120
+        endHeight: 120
       });
     }
   });
 };
 
-// 主动设置起飞点
-export const useManuallySetTakeOffPoint = (take_off_security_height: number) => {
+// 主动设置起飞点，参数为垂直线的高度，建议用全局高度
+export const useManuallySetTakeOffPoint = (endHeight: number) => {
   const [takeoffPoint, setTakeOffPoint] = useState<{
     longitude: number,
     latitude: number,
@@ -206,7 +298,7 @@ export const useManuallySetTakeOffPoint = (take_off_security_height: number) => 
       longitude,
       latitude,
       height,
-      take_off_security_height
+      endHeight
     });
     setTakeOffPoint({longitude, latitude, height});
     clearPickPosition();

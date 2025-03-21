@@ -47,7 +47,7 @@ const Scene = () => {
     });
 
     const {scene} = viewer;
-
+    scene.fxaa = false;
     scene.postProcessStages.fxaa.enabled = false;
     // viewer._cesiumWidget._creditContainer.style.display = "none";
     scene.globe.depthTestAgainstTerrain = false; // 图标不埋地下

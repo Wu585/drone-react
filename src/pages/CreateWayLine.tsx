@@ -606,8 +606,8 @@ const CreateWayLine = () => {
         })(),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        width: 32,
-        height: 32,
+          width: 32,
+          height: 32,
         color: Cesium.Color.WHITE
       }
     });
@@ -1211,17 +1211,17 @@ const CreateWayLine = () => {
     <Form {...form}>
       <form className={"w-full h-full flex flex-col"} onSubmit={form.handleSubmit(onSubmit, onError)}>
         <header className={"grid grid-cols-3 py-[6px] bg-[#232323] whitespace-nowrap"}>
-          <div className={"col-span-1 flex space-x-2 items-center"}>
+        <div className={"col-span-1 flex space-x-2 items-center"}>
             <ChevronLeft className={"cursor-pointer"} onClick={() => navigate("/wayline")}/>
             {/*<ChevronLeft className={"cursor-pointer"} onClick={() => onTest()}/>*/}
-            <span>|</span>
+          <span>|</span>
             <Button type={"submit"} className={"bg-transparent"}>
-              <Save/>
+          <Save/>
             </Button>
             <Popover open={true}>
-              <PopoverTrigger asChild>
+            <PopoverTrigger asChild>
                 <span className={"bg-[#3c3c3c] px-4 py-2 rounded-md cursor-pointer"}>航点设置</span>
-              </PopoverTrigger>
+            </PopoverTrigger>
               <PopoverContent
                 className="w-80 bg-[#232323] text-white text-[14px] space-y-2 h-[calc(100vh-60px)] overflow-y-auto">
                 <h3 className={"rounded-md flex justify-between  px-2 py-2"}>航点列表</h3>
@@ -1300,10 +1300,10 @@ const CreateWayLine = () => {
                     </FormItem>
                   )}
                 />
-                <div className={"rounded-md flex justify-between bg-[#3c3c3c] px-2 py-2"}>
-                  <span>参考起飞点</span>
+              <div className={"rounded-md flex justify-between bg-[#3c3c3c] px-2 py-2"}>
+                <span>参考起飞点</span>
                   <span className={"cursor-pointer"} onClick={onSetTakeoffPoint}>设置起飞点</span>
-                </div>
+              </div>
                 <FormField
                   control={form.control}
                   name="device"
@@ -1597,14 +1597,14 @@ const CreateWayLine = () => {
                     </FormItem>
                   )}
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
+            </PopoverContent>
+          </Popover>
+        </div>
           {/*<div className={"col-span-1 grid content-center"}>
-            <div className={"space-x-4 bg-[#3c3c3c] rounded-md px-4 py-2 cursor-pointer"}>
-              <span>新建航点航线</span>
-              <span>经纬M30T</span>
-            </div>
+              <div className={"space-x-4 bg-[#3c3c3c] rounded-md px-4 py-2 cursor-pointer"}>
+                <span>新建航点航线</span>
+                <span>经纬M30T</span>
+              </div>
           </div>*/}
           <div className={"col-span-1"}></div>
           <div className={"text-right"}>
@@ -1707,11 +1707,11 @@ const CreateWayLine = () => {
                         <Dialog>
                           <DialogTrigger asChild>
                             <Copy size={16} className={"cursor-pointer"}/>
-                          </DialogTrigger>
+            </DialogTrigger>
                           <DialogContent>
-                            <DialogHeader>
+              <DialogHeader>
                               <DialogTitle>动作组复制</DialogTitle>
-                            </DialogHeader>
+              </DialogHeader>
                             <div className={"space-y-4"}>
                               <div className={"flex items-center space-x-2"}>
                                 <Checkbox
@@ -1735,7 +1735,7 @@ const CreateWayLine = () => {
                                 >
                                   应用于全部航点
                                 </label>
-                              </div>
+                </div>
                               <div className={"grid grid-cols-4"}>
                                 {waypoints.map(point => (
                                   <div key={point.id} className={"flex items-center space-x-2"}>
@@ -1760,11 +1760,11 @@ const CreateWayLine = () => {
                                     >
                                       航点{point.id}
                                     </label>
-                                  </div>
+                </div>
                                 ))}
                               </div>
-                            </div>
-                            <DialogFooter>
+              </div>
+              <DialogFooter>
                               <Button type="button" onClick={() => {
                                 // 执行动作复制
                                 if (currentWayPoint?.copyToAll) {
@@ -1796,10 +1796,10 @@ const CreateWayLine = () => {
                               }}>
                                 保存
                               </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button className={"bg-[#3c3c3c]"} type={"button"}>添加动作</Button>
@@ -2442,9 +2442,9 @@ const CreateWayLine = () => {
               </PopoverContent>
             </Popover>
           </div>
-        </header>
+      </header>
         <div className={"flex-1 relative"}>
-          <Scene/>
+        <Scene/>
           <RightClickPanel>
             {waypoints.length === 0 ? (
               <MenuItem onClick={() => addWaypointAfter(0)}>
@@ -2476,7 +2476,7 @@ const CreateWayLine = () => {
               </>
             )}
           </RightClickPanel>
-        </div>
+      </div>
       </form>
     </Form>
   );

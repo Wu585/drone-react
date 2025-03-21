@@ -15,7 +15,7 @@ import {Download, Loader} from "lucide-react";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 
-const MeidaDataTable = () => {
+const MediaDataTable = () => {
   const {get} = useAjax();
 
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
@@ -68,7 +68,7 @@ const MeidaDataTable = () => {
       cell: ({row}) => {
         const isDownloading = downloadingIds.has(row.original.file_id);
         return (
-          <span 
+          <span
             className={`flex items-center ${isDownloading ? 'opacity-50' : 'cursor-pointer hover:opacity-80'}`}
             onClick={() => {
               if (!isDownloading) {
@@ -137,7 +137,7 @@ const MeidaDataTable = () => {
       const url = `${MEDIA_HTTP_PREFIX}/files/${workspaceId}/file/${fileId}/url`;
       const result: any = await get(url, {}, {responseType: "blob"});
       if (!result.data) return;
-      
+
       if (result.data.type === "application/json") {
         const reader = new FileReader();
         reader.onload = () => {
@@ -228,5 +228,5 @@ const MeidaDataTable = () => {
   );
 };
 
-export default MeidaDataTable;
+export default MediaDataTable;
 
