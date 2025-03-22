@@ -3,9 +3,8 @@ import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import Scene from "@/components/drone/public/Scene.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
-import {useState, useEffect, useCallback, useRef} from "react";
+import {useState, useEffect} from "react";
 import {pickPosition} from "@/components/toolbar/tools";
-import takeOffPng from "@/assets/images/drone/wayline/takeoff.svg";
 import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
 import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
 import {z} from "zod";
@@ -13,14 +12,13 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group.tsx";
-import {calculateHaversineDistance, cn, uuidv4} from "@/lib/utils";
+import {cn, uuidv4} from "@/lib/utils";
 import {toast} from "@/components/ui/use-toast";
 import pashengImage from "@/assets/images/drone/wayline/pasheng.svg";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {useAjax} from "@/lib/http.ts";
 import {Cascader, CascaderOption} from "@/components/ui/cascader.tsx";
 import {useNavigate, useSearchParams} from "react-router-dom";
-import dronePng from "@/assets/images/drone/wayline/drone.png";
 import {Separator} from "@/components/ui/separator.tsx";
 import {Slider} from "@/components/ui/slider.tsx";
 import {Checkbox} from "@/components/ui/checkbox.tsx";
@@ -41,16 +39,12 @@ import {
 import {useWaylineById} from "@/hooks/drone";
 import {
   addConnectLines,
-  addDroneKeyboardControl, addDroneModel,
+  addDroneModel,
   addLabelWithin, addTakeOffPoint,
   addWayPointWithIndex,
-  calcDistance,
   moveDroneToTarget,
-  pointDroneToTarget, removeDroneModel,
-  removeTakeoffPoint,
-  useAddEventListener,
-  useManuallySetTakeOffPoint,
-  useSetTakeOffPoint
+  removeDroneModel,
+  removeTakeoffPoint, useAddEventListener,
 } from "@/hooks/drone/wayline";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 
@@ -218,8 +212,6 @@ const CreateWayLine = () => {
 
   // 监听数据变化，重置表单值
   useEffect(() => {
-    console.log("currentWaylineData");
-    console.log(currentWaylineData);
     if (currentWaylineData) {
       // 有数据时使用数据初始化
       form.reset({
@@ -289,24 +281,21 @@ const CreateWayLine = () => {
 
   // 设置参考起飞点
   const takeoffPointEndHeight = form.getValues("fly_to_wayline_mode") === "pointToPoint" ?
-    form.getValues("take_off_security_height") : form.getValues("global_height");
+    +form.getValues("take_off_security_height") : +form.getValues("global_height");
+
+  const globalHeight = +form.watch("global_height");
+  const takeOffSecurityHeight = +form.watch("take_off_security_height");
+
+  useEffect(() => {
+    setWaypoints(waypoints.map(point => point.useGlobalHeight ? ({
+      ...point,
+      height: globalHeight
+    }) : point));
+  }, [globalHeight]);
 
   const onSetTakeoffPoint = () => {
     pickPosition(({longitude, latitude, height}) => {
-      removeTakeoffPoint();
-      if (waypoints.length === 0) {
-        removeDroneModel();
-      }
-      addTakeOffPoint({
-        longitude,
-        latitude,
-        height,
-        endHeight: takeoffPointEndHeight
-      });
       setTakeoffPoint({longitude, latitude, height});
-      if (waypoints.length === 0) {
-        addDroneModel(longitude, latitude, takeoffPointEndHeight);
-      }
       clearPickPosition();
     });
   };
@@ -336,42 +325,70 @@ const CreateWayLine = () => {
   };
 
   useEffect(() => {
-    if (waypoints.length === 0) return;
-    getCustomSource("waylines-update")?.entities.removeAll();
-    // 添加起始点到1号点位的图标
-    let distance = 0;
-    const globalHeight = form.getValues("global_height");
-    console.log("takeoffPoint===");
-    console.log(takeoffPoint);
     if (takeoffPoint) {
-      addConnectLines([takeoffPoint.longitude, takeoffPoint.latitude, takeoffPointEndHeight],
-        [waypoints[0].longitude, waypoints[0].latitude, waypoints[0].height || globalHeight]);
-      distance += addLabelWithin([takeoffPoint.longitude, takeoffPoint.latitude, takeoffPointEndHeight],
-        [waypoints[0].longitude, waypoints[0].latitude, waypoints[0].height || globalHeight]);
+      removeTakeoffPoint();
+      addTakeOffPoint({
+        ...takeoffPoint,
+        endHeight: takeOffSecurityHeight
+      });
+      if (waypoints.length === 0) {
+        removeDroneModel();
+        addDroneModel(takeoffPoint.longitude, takeoffPoint.latitude, takeOffSecurityHeight);
+      } else {
+        removeDroneModel();
+        addDroneModel(waypoints[waypoints.length - 1].longitude, waypoints[waypoints.length - 1].latitude,
+          waypoints[waypoints.length - 1].useGlobalHeight ? globalHeight : waypoints[waypoints.length - 1].height!);
+        moveDroneToTarget({
+          longitude: waypoints[waypoints.length - 1].longitude,
+          latitude: waypoints[waypoints.length - 1].latitude,
+          height: waypoints[waypoints.length - 1].useGlobalHeight ? globalHeight : waypoints[waypoints.length - 1].height!,
+        });
+      }
+    }
+  }, [takeoffPoint, takeOffSecurityHeight, globalHeight]);
+
+  useEffect(() => {
+    getCustomSource("waylines-update")?.entities.removeAll();
+    let distance = 0;
+    if (takeoffPoint) {
+      if (waypoints.length > 0) {
+        addConnectLines([takeoffPoint.longitude, takeoffPoint.latitude, takeOffSecurityHeight],
+          [waypoints[0].longitude, waypoints[0].latitude, waypoints[0].height || globalHeight]);
+        distance += addLabelWithin([takeoffPoint.longitude, takeoffPoint.latitude, takeoffPointEndHeight],
+          [waypoints[0].longitude, waypoints[0].latitude, waypoints[0].height || globalHeight]);
+      }
     }
     // 添加航点图标
     waypoints.forEach((item, index) => {
       addWayPointWithIndex({
         longitude: item.longitude,
         latitude: item.latitude,
-        height: item.height || form.getValues("global_height"),
+        height: item.useGlobalHeight ? globalHeight : item.height!,
         text: index + 1,
         id: `${index}`
       });
-      addLabelWithin([item.longitude, item.latitude, 0], [item.longitude, item.latitude, item.height || globalHeight]);
+      addLabelWithin([item.longitude, item.latitude, 0],
+        [item.longitude, item.latitude, item.useGlobalHeight ? globalHeight : item.height!]);
     });
     // 添加连接线
     for (let i = 0; i < waypoints.length - 1; i++) {
-      addConnectLines([waypoints[i].longitude, waypoints[i].latitude, waypoints[i].height || globalHeight],
-        [waypoints[i + 1].longitude, waypoints[i + 1].latitude, waypoints[i + 1].height || globalHeight]);
-      distance += addLabelWithin([waypoints[i].longitude, waypoints[i].latitude, waypoints[i].height || globalHeight],
-        [waypoints[i + 1].longitude, waypoints[i + 1].latitude, waypoints[i + 1].height || globalHeight]);
+      addConnectLines([waypoints[i].longitude, waypoints[i].latitude, waypoints[i].useGlobalHeight ? globalHeight : waypoints[i].height!],
+        [waypoints[i + 1].longitude, waypoints[i + 1].latitude, waypoints[i + 1].useGlobalHeight ? globalHeight : waypoints[i + 1].height!]);
+      distance += addLabelWithin([waypoints[i].longitude, waypoints[i].latitude, waypoints[i].useGlobalHeight ? globalHeight : waypoints[i].height!],
+        [waypoints[i + 1].longitude, waypoints[i + 1].latitude, waypoints[i + 1].useGlobalHeight ? globalHeight : waypoints[i + 1].height!]);
     }
     setWaylineInfo({
       ...waylineInfo,
       distance: +(distance + takeoffPointEndHeight).toFixed(2)
     });
-  }, [waypoints, form, takeoffPoint, takeoffPointEndHeight]);
+    if (waypoints.length > 0) {
+      moveDroneToTarget({
+        longitude: waypoints[waypoints.length - 1].longitude,
+        latitude: waypoints[waypoints.length - 1].latitude,
+        height: waypoints[waypoints.length - 1].useGlobalHeight ? globalHeight : waypoints[waypoints.length - 1].height!
+      });
+    }
+  }, [waypoints, form, takeoffPoint, takeoffPointEndHeight, globalHeight, takeOffSecurityHeight]);
 
   const addWaypointAfter = (currentIndex: number) => {
     if (!takeoffPoint) return toast({
@@ -380,7 +397,6 @@ const CreateWayLine = () => {
     });
 
     if (!rightClickPosition) return;
-    const globalHeight = form.getValues("global_height");
     const globalSpeed = form.getValues("auto_flight_speed");
     const currentPoint: WayPoint = {
       id: uuidv4(),
@@ -401,7 +417,11 @@ const CreateWayLine = () => {
     setSelectedWaypointId(currentIndex + 1);
     const {longitude, latitude} = rightClickPosition;
     if (currentIndex >= waypoints.length) {
-      moveDroneToTarget({longitude, latitude, height: 120});
+      moveDroneToTarget({
+        longitude,
+        latitude,
+        height: globalHeight
+      });
     }
   };
 
@@ -523,8 +543,6 @@ const CreateWayLine = () => {
     };
     console.log("formValue");
     console.log(formValue);
-    console.log("waypoints");
-    console.log(waypoints);
     if (currentWaylineData) {
       try {
         const res: any = await post(`wayline/api/v1/common/updateKmzFile`, {
@@ -645,16 +663,13 @@ const CreateWayLine = () => {
         id: uuidv4(),
         longitude: point.longitude,
         latitude: point.latitude,
-        height: point.height || data.global_height,
+        height: point.height || globalHeight,
         speed: point.speed || data.auto_flight_speed,
         useGlobalHeight: !point.height,
         useGlobalSpeed: !point.speed,
         actions,
       };
     });
-
-    console.log("initialWaypoints===");
-    console.log(initialWaypoints);
 
     setWaypoints(initialWaypoints);
 
@@ -1121,7 +1136,7 @@ const CreateWayLine = () => {
                                     setCurrentWayPoint({
                                       ...currentWayPoint!,
                                       useGlobalHeight: checked as boolean,
-                                      height: checked ? form.getValues("global_height") : currentWayPoint!.height
+                                      height: checked ? globalHeight : currentWayPoint!.height
                                     });
                                   }}/>
                         <label
