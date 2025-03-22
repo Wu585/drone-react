@@ -2,9 +2,9 @@
 import {useEffect, useState} from "react";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import takeOffPng from "@/assets/images/drone/wayline/takeoff.svg";
-import dronePng from "@/assets/images/drone/wayline/drone.png";
 import {pickPosition} from "@/components/toolbar/tools";
 import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
+// import gltfJson from "@/assets/datas/drone-gltf.json";
 
 export const useAddEventListener =
   (func?: (longitude: number, latitude: number, pickedObject?: any) => void,
@@ -34,73 +34,20 @@ export const useAddEventListener =
     }, []);
   };
 
-const addTakeOffPoint = ({longitude, latitude, height, endHeight}: {
+const addTakeOffPoint = ({
+                           longitude,
+                           latitude,
+                           height,
+                           endHeight,
+                         }: {
   longitude: number,
   latitude: number,
   height: number,
-  endHeight: number
+  endHeight: number,
+  heading?: number
 }) => {
   // 计算中间点高度
   const middleHeight = (height + endHeight) / 2;
-
-  /*// 创建一个带凹尖的箭头形状
-  const scale = 0.00005; // 缩小整体大小
-  const planeHeight = take_off_security_height;
-
-  // 定义箭头形状的顶点（带凹尖的五边形）
-  const positions = [
-    // 从左后角开始，顺时针定义顶点
-    longitude - scale * 1.5, latitude - scale, planeHeight,           // 左后角
-    longitude - scale * 0.5, latitude - scale * 0.8, planeHeight,     // 左边中点
-    longitude + scale * 2, latitude, planeHeight + scale * 3,         // 前端（稍微抬高）
-    longitude - scale * 0.5, latitude + scale * 0.8, planeHeight,     // 右边中点
-    longitude - scale * 1.5, latitude + scale, planeHeight,           // 右后角
-    longitude - scale, latitude, planeHeight - scale * 2,             // 后部凹尖（朝内且降低）
-  ];
-
-  // 创建几何实例
-  const geometry = new Cesium.GeometryInstance({
-    geometry: new Cesium.PolygonGeometry({
-      polygonHierarchy: new Cesium.PolygonHierarchy(
-        Cesium.Cartesian3.fromDegreesArrayHeights(positions)
-      ),
-      perPositionHeight: true,
-      extrudedHeight: planeHeight - scale * 8, // 增加厚度
-      vertexFormat: Cesium.VertexFormat.ALL,
-      arcType: Cesium.ArcType.GEODESIC // 使用大地线连接顶点
-    }),
-    id: 'arrow'
-  });
-
-  // 创建primitive
-  const primitive = new Cesium.Primitive({
-    geometryInstances: geometry,
-    appearance: new Cesium.MaterialAppearance({
-      material: new Cesium.Material({
-        fabric: {
-          type: 'Color',
-          uniforms: {
-            color: Cesium.Color.fromCssColorString("#43ABFF").withAlpha(0.9)
-          }
-        }
-      }),
-      flat: false,
-      faceForward: true,
-      translucent: true
-    }),
-    // 确保箭头始终显示在最上层
-    depthTest: true,
-    depthWrite: false,
-    renderState: {
-      cull: {
-        enabled: true,
-        face: Cesium.CullFace.BACK
-      }
-    }
-  });
-
-  viewer.scene.primitives.add(primitive);
-  (getCustomSource("waylines-create") as any).arrowPrimitive = primitive;*/
 
   // 添加起飞点和虚线
   getCustomSource("waylines-create")?.entities.add({
@@ -143,119 +90,31 @@ const addTakeOffPoint = ({longitude, latitude, height, endHeight}: {
   });
 
   // 添加无人机图标
-  getCustomSource("waylines-create")?.entities.add({
+  const droneEntity = getCustomSource("waylines-create")?.entities.add({
     id: "takeoff-drone",
     position: Cesium.Cartesian3.fromDegrees(longitude, latitude, endHeight),
     model: {
-      uri: 'data:application/gltf+json,' + JSON.stringify({
-        "asset": {
-          "version": "2.0",
-          "generator": "Created using the official Cinema 4D glTF Exporter 1.000x290161"
-        },
-        "scenes": [{
-          "nodes": [0]
-        }],
-        "nodes": [{
-          "name": "角锥",
-          "translation": [0, 0, 0],
-          "rotation": [0.0, 0.0, 0.0, -1.0],
-          "scale": [0.1, 0.1, 0.1],
-          "mesh": 0
-        }],
-        "meshes": [{
-          "primitives": [{
-            "attributes": {
-              "POSITION": 1,
-              "NORMAL": 2,
-              "TEXCOORD_0": 3
-            },
-            "indices": 0,
-            "material": 0
-          }]
-        }],
-        "accessors": [{
-          "bufferView": 0,
-          "type": "SCALAR",
-          "componentType": 5123,
-          "count": 18,
-          "byteOffset": 0,
-          "min": [0],
-          "max": [14]
-        },
-        {
-          "bufferView": 1,
-          "type": "VEC3",
-          "componentType": 5126,
-          "count": 15,
-          "byteOffset": 0,
-          "min": [-81.83937072753906, -24.118911743164064, -122.53469848632813],
-          "max": [81.83937072753906, 24.118911743164064, 122.53469848632813]
-        },
-        {
-          "bufferView": 1,
-          "type": "VEC3",
-          "componentType": 5126,
-          "count": 15,
-          "byteOffset": 12,
-          "min": [-0.5999375581741333, -1.0, -0.20496876537799836],
-          "max": [0.6073125004768372, 0.7750312685966492, 0.8280937671661377]
-        },
-        {
-          "bufferView": 1,
-          "type": "VEC2",
-          "componentType": 5126,
-          "count": 15,
-          "byteOffset": 24,
-          "min": [0.0, 0.0],
-          "max": [1.0, 1.0]
-        }],
-        "bufferViews": [{
-          "buffer": 0,
-          "byteOffset": 0,
-          "byteLength": 36,
-          "target": 34963
-        },
-        {
-          "buffer": 0,
-          "byteOffset": 36,
-          "byteLength": 480,
-          "target": 34962,
-          "byteStride": 32
-        }],
-        "buffers": [{
-          "uri": "data:application/octet-stream;base64,DAAOAAsADQAMAAsACgAJAAgABwADAAYAAQACAAUAAAABAAQAwq2jwojzwMHEEfVCx0uLPvp+CT9OYkw/zMxMPwAAAD+M9gS+iPPAwaJevUJCYGU6+n4PP/T9Uz8AAAA/zMxMPsKto0KI88DBxBH1Qn9qir53vgo/LrJLP8zMTD4AAAA/Gmdhv4jzwMHEEfXC1XgbP9Z4RD9V41G+AAAAP8zMTD8A6+s+iPPAQQIfeEJCYGU6+n4PP/T9Uz8AAIA/AAAAAADr6z6I88BBAh94QkJgZTr6fg8/9P1TPwAAAAAAAAAAAOvrPojzwEECH3hC1XgbP9Z4RD9V41G+AAAAAAAAgD/CraNCiPPAwcQR9ULVeBs/1nhEP1XjUb7MzEw+AAAAPwDr6z6I88BBAh94QoKVGb9zaEY/q/FKvgAAgD8AAIA/wq2jwojzwMHEEfVCgpUZv3NoRj+r8Uq+zMxMPwAAAD8aZ2G/iPPAwcQR9cKClRm/c2hGP6vxSr4AAAA/zMxMPxpnYb+I88DBxBH1wgAAAAAAAIC/AAAAAAAAAAAAAAAAjPYEvojzwMGiXr1CAAAAAAAAgL8AAAAAAACAPwAAgD/CraNCiPPAwcQR9UIAAAAAAACAvwAAAAAAAAAAAACAP8Kto8KI88DBxBH1QgAAAAAAAIC/AAAAAAAAgD8AAAAA",
-          "byteLength": 516
-        }],
-        "materials": [{
-          "pbrMetallicRoughness": {
-            "baseColorFactor": [1.0, 1.0, 1.0, 1.0],
-            "metallicFactor": 1.0,
-            "roughnessFactor": 1.0
-          },
-          "emissiveFactor": [0.0, 0.0, 0.0],
-          "alphaMode": "OPAQUE",
-          "doubleSided": false,
-          "name": "default"
-        }]
-      }),
-      scale: 1,
-      minimumPixelSize: 48,
-      maximumScale: 32,
-      color: Cesium.Color.fromCssColorString("#43ABFF").withAlpha(0.9),
-      colorBlendMode: Cesium.ColorBlendMode.REPLACE,
-      heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
-      modelMatrix: Cesium.Transforms.headingPitchRollToFixedFrame(
-        Cesium.Cartesian3.fromDegrees(longitude, latitude, endHeight),
-        new Cesium.HeadingPitchRoll(-Math.PI/2, Math.PI/2, 0)
-      )
+      uri: "/models/uav.glb",
+      scale: 0.1,
+      minimumPixelSize: 64,
+      maximumScale: 64,
+      runAnimations: true,
+      // color: Cesium.Color.fromCssColorString("#43ABFF").withAlpha(0.9),
+      // colorBlendMode: Cesium.ColorBlendMode.REPLACE,
+      // heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+
     }
   });
+  console.log("droneEntity===");
+  console.log(droneEntity);
+  // addDroneKeyboardControl();
 };
 
 // 修改删除逻辑
 const removeTakeoffPoint = () => {
   const takeoffEntity = getCustomSource("waylines-create")?.entities.getById("takeoff");
   const takeoffLabelEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-label");
+  const takeoffDroneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
   const arrowPrimitive = (getCustomSource("waylines-create") as any).arrowPrimitive;
 
   if (takeoffEntity) {
@@ -263,6 +122,9 @@ const removeTakeoffPoint = () => {
   }
   if (takeoffLabelEntity) {
     getCustomSource("waylines-create")?.entities.remove(takeoffLabelEntity);
+  }
+  if (takeoffDroneEntity) {
+    getCustomSource("waylines-create")?.entities.remove(takeoffDroneEntity);
   }
   if (arrowPrimitive) {
     viewer.scene.primitives.remove(arrowPrimitive);
@@ -306,3 +168,285 @@ export const useManuallySetTakeOffPoint = (endHeight: number) => {
 
   return {takeoffPoint, onSetTakeoffPoint};
 };
+
+// 定义方向键映射
+const DIRECTION = {
+  UP: "w",
+  DOWN: "s",
+  LEFT: "a",
+  RIGHT: "d",
+  SPEED_UP: "q",
+  SPEED_DOWN: "e",
+} as const;
+
+// 键盘状态
+const keyboardMap = {
+  [DIRECTION.UP]: false,
+  [DIRECTION.DOWN]: false,
+  [DIRECTION.LEFT]: false,
+  [DIRECTION.RIGHT]: false,
+  [DIRECTION.SPEED_UP]: false,
+  [DIRECTION.SPEED_DOWN]: false,
+};
+
+// 添加键盘控制
+export const addDroneKeyboardControl = () => {
+  const droneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
+  if (!droneEntity?.position) return;
+
+  // 获取无人机当前位置
+  const dronePosition = droneEntity.position.getValue(Cesium.JulianDate.now());
+  if (!dronePosition) return;
+
+  // 转换为经纬度
+  const cartographic = Cesium.Cartographic.fromCartesian(dronePosition);
+  const longitude = Cesium.Math.toDegrees(cartographic.longitude);
+  const latitude = Cesium.Math.toDegrees(cartographic.latitude);
+  const altitude = cartographic.height;
+
+  // 使用无人机当前位置初始化飞行参数
+  const flightParams = {
+    lng: longitude,
+    lat: latitude,
+    altitude: altitude,
+    heading: 0,
+    pitch: 0,
+    roll: 0,
+    correction: 1,
+    speed: 0,
+  };
+
+  // 键盘事件监听
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (Object.keys(keyboardMap).includes(e.key)) {
+      keyboardMap[e.key] = true;
+    }
+  };
+
+  const handleKeyUp = (e: KeyboardEvent) => {
+    if (Object.keys(keyboardMap).includes(e.key)) {
+      keyboardMap[e.key] = false;
+    }
+  };
+
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("keyup", handleKeyUp);
+
+  // 调整飞行参数
+  const adjustParams = () => {
+    // 速度控制
+    if (keyboardMap[DIRECTION.SPEED_UP]) {
+      flightParams.speed += 100;
+    }
+    if (keyboardMap[DIRECTION.SPEED_DOWN] && flightParams.speed >= 500) {
+      flightParams.speed -= 100;
+    }
+
+    // 俯仰控制
+    if (keyboardMap[DIRECTION.UP] && flightParams.pitch <= 0.3) {
+      flightParams.pitch += 0.005;
+      if (flightParams.pitch > 0) {
+        const temp = (flightParams.speed / 60 / 60 / 60) * 110;
+        flightParams.altitude += temp * Math.sin(flightParams.pitch);
+      }
+    }
+    if (keyboardMap[DIRECTION.DOWN] && flightParams.pitch >= -0.3) {
+      flightParams.pitch -= 0.006;
+      if (flightParams.pitch < 0) {
+        const temp = (flightParams.speed / 60 / 60 / 60) * 110;
+        flightParams.altitude += temp * Math.sin(flightParams.pitch);
+      }
+    }
+
+    // 转向控制
+    if (keyboardMap[DIRECTION.LEFT]) {
+      flightParams.heading -= 0.005;
+      if (flightParams.roll > -0.785) {
+        flightParams.roll -= 0.005;
+      }
+    }
+    if (keyboardMap[DIRECTION.RIGHT]) {
+      flightParams.heading += 0.005;
+      if (flightParams.roll < 0.785) {
+        flightParams.roll += 0.005;
+      }
+    }
+
+    // 姿态自动回正
+    const {abs} = Math;
+    flightParams.correction = abs(Math.cos(flightParams.heading) * Math.cos(flightParams.pitch));
+    if (abs(flightParams.heading) < 0.001) flightParams.heading = 0;
+    if (abs(flightParams.roll) < 0.001) flightParams.roll = 0;
+    if (abs(flightParams.pitch) < 0.001) flightParams.pitch = 0;
+
+    if (flightParams.roll > 0) flightParams.roll -= 0.003;
+    if (flightParams.roll < 0) flightParams.roll += 0.003;
+    if (flightParams.pitch < 0) flightParams.pitch += 0.005;
+    if (flightParams.pitch > 0) flightParams.pitch -= 0.003;
+  };
+
+  // 调整飞行姿态
+  const adjustAttitude = () => {
+    const droneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
+    if (!droneEntity) return;
+
+    const temp = flightParams.speed / 60 / 60 / 60 / 110;
+    flightParams.lng += temp * Math.cos(flightParams.heading);
+    flightParams.lat -= temp * Math.sin(flightParams.heading);
+    flightParams.altitude += temp * Math.sin(flightParams.pitch) * 110 * 1000 * 10;
+
+    // 更新无人机位置和姿态
+    const position = Cesium.Cartesian3.fromDegrees(
+      flightParams.lng,
+      flightParams.lat,
+      flightParams.altitude
+    );
+    const hpr = new Cesium.HeadingPitchRoll(
+      flightParams.heading,
+      flightParams.pitch,
+      flightParams.roll
+    );
+    const orientation = Cesium.Transforms.headingPitchRollQuaternion(position, hpr);
+
+    droneEntity.orientation = orientation;
+    droneEntity.position = position;
+  };
+
+  let animationFrameId: number;
+  // 动画循环
+  const animate = () => {
+    adjustParams();
+    adjustAttitude();
+    animationFrameId = requestAnimationFrame(animate);
+  };
+
+  // 开始动画
+  animate();
+
+  // 返回清理函数
+  return () => {
+    document.removeEventListener("keydown", handleKeyDown);
+    document.removeEventListener("keyup", handleKeyUp);
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+    }
+  };
+};
+
+export const pointDroneToTarget = (targetPosition: { longitude: number, latitude: number }) => {
+  const droneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
+  if (!droneEntity?.position) return;
+
+  // 获取无人机当前位置
+  const dronePosition = droneEntity.position.getValue(Cesium.JulianDate.now());
+  if (!dronePosition) return;
+
+  // 转换为经纬度
+  const cartographic = Cesium.Cartographic.fromCartesian(dronePosition);
+  const droneLongitude = Cesium.Math.toDegrees(cartographic.longitude);
+  const droneLatitude = Cesium.Math.toDegrees(cartographic.latitude);
+  const droneAltitude = cartographic.height;
+
+  // 计算目标点相对于无人机的方位角
+  const deltaLon = targetPosition.longitude - droneLongitude;
+  const deltaLat = targetPosition.latitude - droneLatitude;
+
+  // 调整方位角计算，使机头朝向目标点
+  const heading = Math.atan2(deltaLon, deltaLat) - Math.PI / 2; // 头部对准目标点
+
+  // 更新无人机姿态
+  const position = Cesium.Cartesian3.fromDegrees(
+    droneLongitude,
+    droneLatitude,
+    droneAltitude
+  );
+  const hpr = new Cesium.HeadingPitchRoll(
+    heading,  // 朝向角
+    0,       // 俯仰角保持水平
+    0        // 翻滚角保持水平
+  );
+
+  // 应用新的朝向
+  droneEntity.orientation = Cesium.Transforms.headingPitchRollQuaternion(position, hpr);
+};
+
+// 让无人机移动到指定经纬度，并返回直线距离（米）
+export const moveDroneToTarget = (targetPosition: { longitude: number, latitude: number, height: number }): number => {
+  const droneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
+  if (!droneEntity?.position) return 0;
+
+  // 获取无人机当前位置
+  const dronePosition = droneEntity.position.getValue(Cesium.JulianDate.now());
+  if (!dronePosition) return 0;
+
+  // 转换为经纬度
+  const cartographic = Cesium.Cartographic.fromCartesian(dronePosition);
+  const startLongitude = Cesium.Math.toDegrees(cartographic.longitude);
+  const startLatitude = Cesium.Math.toDegrees(cartographic.latitude);
+
+  // 计算总距离
+  const deltaLon = targetPosition.longitude - startLongitude;
+  const deltaLat = targetPosition.latitude - startLatitude;
+  // const deltaHeight = targetPosition.height - cartographic.height;
+
+  // 计算直线距离（使用 Cesium 的 Cartesian3.distance）
+  const startCartesian = Cesium.Cartesian3.fromDegrees(
+    startLongitude,
+    startLatitude,
+    cartographic.height
+  );
+  const endCartesian = Cesium.Cartesian3.fromDegrees(
+    targetPosition.longitude,
+    targetPosition.latitude,
+    targetPosition.height
+  );
+  const distance = Cesium.Cartesian3.distance(startCartesian, endCartesian);
+
+  // 目标高度
+  const targetHeight = targetPosition.height;
+
+  // 动画参数
+  let progress = 0;
+  const duration = 2;
+  const startTime = performance.now();
+
+  // 让无人机朝向目标点
+  pointDroneToTarget(targetPosition);
+
+  // 动画函数
+  const animate = () => {
+    const currentTime = performance.now();
+    progress = (currentTime - startTime) / (duration * 1000);
+
+    if (progress < 1) {
+      const easeProgress = easeInOutQuad(progress);
+      const currentLongitude = startLongitude + deltaLon * easeProgress;
+      const currentLatitude = startLatitude + deltaLat * easeProgress;
+
+      droneEntity.position = Cesium.Cartesian3.fromDegrees(
+        currentLongitude,
+        currentLatitude,
+        targetHeight
+      );
+
+      requestAnimationFrame(animate);
+    } else {
+      droneEntity.position = Cesium.Cartesian3.fromDegrees(
+        targetPosition.longitude,
+        targetPosition.latitude,
+        targetHeight
+      );
+    }
+  };
+
+  // 开始动画
+  animate();
+
+  // 返回距离（米）
+  return distance;
+};
+
+// 缓动函数
+function easeInOutQuad(t: number): number {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
