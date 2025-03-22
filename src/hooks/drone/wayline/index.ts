@@ -7,7 +7,7 @@ import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
 // import gltfJson from "@/assets/datas/drone-gltf.json";
 
 export const useAddEventListener =
-  (func?: (longitude: number, latitude: number, pickedObject?: any) => void,
+  (func?: ({longitude, latitude, pickedObject}: { longitude: number, latitude: number, pickedObject?: any }) => void,
    type = Cesium.ScreenSpaceEventType.LEFT_CLICK) => {
     useEffect(() => {
       if (!viewer) return;
@@ -21,7 +21,7 @@ export const useAddEventListener =
           const latitude = Cesium.Math.toDegrees(cartographic.latitude);
           // 点击的实体，没有则为undefined
           const pickedObject = viewer.scene.pick(movement.position);
-          func?.(longitude, latitude, pickedObject);
+          func?.({longitude, latitude, pickedObject});
         });
       }, type);
 
@@ -34,7 +34,32 @@ export const useAddEventListener =
     }, []);
   };
 
-const addTakeOffPoint = ({
+// 添加无人机图标
+export const addDroneModel = (longitude: number, latitude: number, height: number) => {
+  getCustomSource("waylines-create")?.entities.add({
+    id: "takeoff-drone",
+    position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
+    model: {
+      uri: "/models/uav.glb",
+      scale: 0.1,
+      minimumPixelSize: 64,
+      maximumScale: 64,
+      runAnimations: true,
+      // color: Cesium.Color.fromCssColorString("#43ABFF").withAlpha(0.9),
+      // colorBlendMode: Cesium.ColorBlendMode.REPLACE,
+      // heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+    }
+  });
+};
+
+export const removeDroneModel = () => {
+  const takeoffDroneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
+  if (takeoffDroneEntity) {
+    getCustomSource("waylines-create")?.entities.remove(takeoffDroneEntity);
+  }
+};
+
+export const addTakeOffPoint = ({
                            longitude,
                            latitude,
                            height,
@@ -89,33 +114,14 @@ const addTakeOffPoint = ({
     }
   });
 
-  // 添加无人机图标
-  const droneEntity = getCustomSource("waylines-create")?.entities.add({
-    id: "takeoff-drone",
-    position: Cesium.Cartesian3.fromDegrees(longitude, latitude, endHeight),
-    model: {
-      uri: "/models/uav.glb",
-      scale: 0.1,
-      minimumPixelSize: 64,
-      maximumScale: 64,
-      runAnimations: true,
-      // color: Cesium.Color.fromCssColorString("#43ABFF").withAlpha(0.9),
-      // colorBlendMode: Cesium.ColorBlendMode.REPLACE,
-      // heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
-
-    }
-  });
-  console.log("droneEntity===");
-  console.log(droneEntity);
+  // addDroneModel(longitude, latitude, endHeight);
   // addDroneKeyboardControl();
 };
 
 // 修改删除逻辑
-const removeTakeoffPoint = () => {
+export const removeTakeoffPoint = () => {
   const takeoffEntity = getCustomSource("waylines-create")?.entities.getById("takeoff");
   const takeoffLabelEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-label");
-  const takeoffDroneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
-  const arrowPrimitive = (getCustomSource("waylines-create") as any).arrowPrimitive;
 
   if (takeoffEntity) {
     getCustomSource("waylines-create")?.entities.remove(takeoffEntity);
@@ -123,18 +129,11 @@ const removeTakeoffPoint = () => {
   if (takeoffLabelEntity) {
     getCustomSource("waylines-create")?.entities.remove(takeoffLabelEntity);
   }
-  if (takeoffDroneEntity) {
-    getCustomSource("waylines-create")?.entities.remove(takeoffDroneEntity);
-  }
-  if (arrowPrimitive) {
-    viewer.scene.primitives.remove(arrowPrimitive);
-    (getCustomSource("waylines-create") as any).arrowPrimitive = undefined;
-  }
 };
 
 // 点击机场设置起飞点
 export const useSetTakeOffPoint = (height?: number) => {
-  useAddEventListener((longitude, latitude, pickedObject) => {
+  useAddEventListener(({longitude, latitude, pickedObject}) => {
     if (pickedObject && pickedObject.id._id.includes("dock")) {
       removeTakeoffPoint();
       addTakeOffPoint({
@@ -370,6 +369,27 @@ export const pointDroneToTarget = (targetPosition: { longitude: number, latitude
   droneEntity.orientation = Cesium.Transforms.headingPitchRollQuaternion(position, hpr);
 };
 
+// 计算两点间的直线距离（米）
+export const calcDistance = ({start, end}: {
+  start: { longitude: number, latitude: number, height: number },
+  end: { longitude: number, latitude: number, height: number }
+}): number => {
+  // 将起点和终点转换为笛卡尔坐标
+  const startCartesian = Cesium.Cartesian3.fromDegrees(
+    start.longitude,
+    start.latitude,
+    start.height
+  );
+  const endCartesian = Cesium.Cartesian3.fromDegrees(
+    end.longitude,
+    end.latitude,
+    end.height
+  );
+
+  // 计算两点间的直线距离
+  return Number(Cesium.Cartesian3.distance(startCartesian, endCartesian).toFixed(2));
+};
+
 // 让无人机移动到指定经纬度，并返回直线距离（米）
 export const moveDroneToTarget = (targetPosition: { longitude: number, latitude: number, height: number }): number => {
   const droneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
@@ -387,20 +407,16 @@ export const moveDroneToTarget = (targetPosition: { longitude: number, latitude:
   // 计算总距离
   const deltaLon = targetPosition.longitude - startLongitude;
   const deltaLat = targetPosition.latitude - startLatitude;
-  // const deltaHeight = targetPosition.height - cartographic.height;
 
-  // 计算直线距离（使用 Cesium 的 Cartesian3.distance）
-  const startCartesian = Cesium.Cartesian3.fromDegrees(
-    startLongitude,
-    startLatitude,
-    cartographic.height
-  );
-  const endCartesian = Cesium.Cartesian3.fromDegrees(
-    targetPosition.longitude,
-    targetPosition.latitude,
-    targetPosition.height
-  );
-  const distance = Cesium.Cartesian3.distance(startCartesian, endCartesian);
+  // 计算直线距离
+  const distance = calcDistance({
+    start: {
+      longitude: startLongitude,
+      latitude: startLatitude,
+      height: cartographic.height
+    },
+    end: targetPosition
+  });
 
   // 目标高度
   const targetHeight = targetPosition.height;
@@ -450,3 +466,100 @@ export const moveDroneToTarget = (targetPosition: { longitude: number, latitude:
 function easeInOutQuad(t: number): number {
   return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 }
+
+export const addConnectLines = (
+  poi1: [number, number, number], poi2: [number, number, number]) => {
+  getCustomSource("waylines-update")?.entities.add({
+    polyline: {
+      positions: [
+        Cesium.Cartesian3.fromDegrees(...poi1),
+        Cesium.Cartesian3.fromDegrees(...poi2)
+      ],
+      width: 2,
+      material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8)
+    }
+  });
+};
+
+// 添加航点图标，带点位数字
+export const addWayPointWithIndex = ({longitude, latitude, height, text, id}: {
+  longitude: number,
+  latitude: number,
+  height: number,
+  text: number,
+  id: string
+}) => {
+  getCustomSource("waylines-update")?.entities.add({
+    id,
+    position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
+    billboard: {
+      image: (() => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 32;
+        canvas.height = 32;
+        const context = canvas.getContext("2d");
+        if (context) {
+          context.beginPath();
+          context.moveTo(16, 28);
+          context.lineTo(4, 4);
+          context.lineTo(28, 4);
+          context.closePath();
+          context.fillStyle = "#4CAF50";
+          context.fill();
+
+          context.font = "bold 16px Arial";
+          context.fillStyle = "white";
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+          context.fillText(text.toString(), 16, 14);
+        }
+        return canvas;
+      })(),
+      verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+      horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+      width: 32,
+      height: 32,
+      color: Cesium.Color.WHITE
+    },
+    polyline: {
+      positions: [
+        Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
+        Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
+      ],
+      width: 2,
+      material: new Cesium.PolylineDashMaterialProperty({
+        color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
+        dashLength: 8.0
+      })
+    }
+  });
+};
+
+// 在两点之间添加标签
+export const addLabelWithin = (start: [number, number, number], end: [number, number, number]) => {
+  // 计算中点坐标
+  const midLongitude = (start[0] + end[0]) / 2;
+  const midLatitude = (start[1] + end[1]) / 2;
+  const midHeight = (start[2] + end[2]) / 2;
+  const distance = calcDistance({
+    start: {longitude: start[0], latitude: start[1], height: start[2]},
+    end: {longitude: end[0], latitude: end[1], height: end[2]}
+  });
+  // 添加标签实体
+  getCustomSource("waylines-update")?.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(midLongitude, midLatitude, midHeight),
+    label: {
+      text: `${distance}m`,
+      font: "14px sans-serif",
+      fillColor: Cesium.Color.BLACK,
+      outlineColor: Cesium.Color.WHITE,
+      outlineWidth: 3,
+      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      verticalOrigin: Cesium.VerticalOrigin.CENTER,
+      horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+      pixelOffset: new Cesium.Cartesian2(10, 0),
+      disableDepthTestDistance: Number.POSITIVE_INFINITY
+    }
+  });
+  return distance;
+};

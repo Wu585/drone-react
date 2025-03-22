@@ -13,7 +13,7 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group.tsx";
-import {cn} from "@/lib/utils";
+import {calculateHaversineDistance, cn, uuidv4} from "@/lib/utils";
 import {toast} from "@/components/ui/use-toast";
 import pashengImage from "@/assets/images/drone/wayline/pasheng.svg";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
@@ -31,7 +31,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.tsx";
 import {
-  Dialog,
+  Dialog, DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -40,18 +40,26 @@ import {
 } from "@/components/ui/dialog.tsx";
 import {useWaylineById} from "@/hooks/drone";
 import {
-  addDroneKeyboardControl, moveDroneToTarget, pointDroneToTarget,
+  addConnectLines,
+  addDroneKeyboardControl, addDroneModel,
+  addLabelWithin, addTakeOffPoint,
+  addWayPointWithIndex,
+  calcDistance,
+  moveDroneToTarget,
+  pointDroneToTarget, removeDroneModel,
+  removeTakeoffPoint,
   useAddEventListener,
   useManuallySetTakeOffPoint,
   useSetTakeOffPoint
 } from "@/hooks/drone/wayline";
+import {getCustomSource} from "@/hooks/public/custom-source.ts";
 
 interface WayPoint {
-  id: number;
+  id: string;
   longitude: number;
   latitude: number;
   height?: number;
-  entity: any;
+  entity?: any;
   speed?: number;
   copyToAll?: boolean;
   copyToPoints?: boolean;
@@ -199,6 +207,11 @@ const CreateWayLine = () => {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
   const {data: currentWaylineData} = useWaylineById(id || "");
+  const [copyCheckedIds, setCopyCheckedIds] = useState<string[]>([]);
+  const [waylineInfo, setWaylineInfo] = useState({
+    distance: 0,
+    time: 0
+  });
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
@@ -262,10 +275,11 @@ const CreateWayLine = () => {
     longitude: number;
     latitude: number;
     height: number;
-    entity: any;
   } | null>(null);
   const [waypoints, setWaypoints] = useState<WayPoint[]>([]);
   const [currentWayPoint, setCurrentWayPoint] = useState<WayPoint | null>(null);
+  const currentWayPointIndex = waypoints.findIndex(point => point.id === currentWayPoint?.id);
+
   const [rightClickPosition, setRightClickPosition] = useState<{
     longitude: number;
     latitude: number;
@@ -273,416 +287,122 @@ const CreateWayLine = () => {
   } | null>(null);
   const [selectedWaypointId, setSelectedWaypointId] = useState<number | null>(null);
 
-  const {takeoffPoint: takeoffPoint111, onSetTakeoffPoint} = useManuallySetTakeOffPoint(form.getValues("global_height"));
+  // 设置参考起飞点
+  const takeoffPointEndHeight = form.getValues("fly_to_wayline_mode") === "pointToPoint" ?
+    form.getValues("take_off_security_height") : form.getValues("global_height");
 
-  console.log("takeoffPoint111===");
-  console.log(takeoffPoint111);
-
-  const onSetPoint = () => {
-    // 只删除起飞点相关的实体，而不是所有实体
-    if (takeoffPoint?.entity) {
-      if (takeoffPoint.entity.takeoff) viewer.entities.remove(takeoffPoint.entity.takeoff);
-      if (takeoffPoint.entity.drone) viewer.entities.remove(takeoffPoint.entity.drone);
-      if (takeoffPoint.entity.verticalLine) viewer.entities.remove(takeoffPoint.entity.verticalLine);
-      if (takeoffPoint.entity.connectLine) viewer.entities.remove(takeoffPoint.entity.connectLine);
-    }
-
+  const onSetTakeoffPoint = () => {
     pickPosition(({longitude, latitude, height}) => {
-      const globalHeight = form.getValues("global_height");
-
-      // 添加起飞点标记
-      const takeoffEntity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
-        billboard: {
-          image: takeOffPng,
-          width: 48,
-          height: 48,
-        },
-      });
-
-      // 添加垂直虚线
-      const verticalLineEntity = viewer.entities.add({
-        polyline: {
-          positions: [
-            Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
-            Cesium.Cartesian3.fromDegrees(longitude, latitude, height + globalHeight)
-          ],
-          width: 2,
-          material: new Cesium.PolylineDashMaterialProperty({
-            color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-            dashLength: 8.0
-          })
-        }
-      });
-
-      // 添加无人机图标
-      const droneEntity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height + globalHeight),
-        billboard: {
-          image: dronePng,
-          verticalOrigin: Cesium.VerticalOrigin.CENTER,
-          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-          width: 64,
-          height: 64,
-          alignedAxis: new Cesium.Cartesian3(0, 0, 1),
-          rotation: Cesium.Math.toRadians(0),
-        },
-      });
-
-      // 添加事件监听器来保持图标朝北
-      viewer.scene.postRender.addEventListener(() => {
-        if (droneEntity) {
-          const heading = viewer.camera.heading;
-          droneEntity.billboard.rotation = -heading;
-        }
-      });
-
-      // 如果有航点，添加到第一个航点的连接线
-      let connectLineEntity = null;
-      if (waypoints.length > 0) {
-        const firstWaypoint = waypoints[0];
-        connectLineEntity = viewer.entities.add({
-          polyline: {
-            positions: [
-              Cesium.Cartesian3.fromDegrees(longitude, latitude, height + globalHeight),
-              Cesium.Cartesian3.fromDegrees(
-                firstWaypoint.longitude,
-                firstWaypoint.latitude,
-                firstWaypoint.height || globalHeight
-              )
-            ],
-            width: 2,
-            material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-          }
-        });
+      removeTakeoffPoint();
+      if (waypoints.length === 0) {
+        removeDroneModel();
       }
-
-      setTakeoffPoint({
+      addTakeOffPoint({
         longitude,
         latitude,
         height,
-        entity: {
-          takeoff: takeoffEntity,
-          drone: droneEntity,
-          verticalLine: verticalLineEntity,
-          connectLine: connectLineEntity
-        }
+        endHeight: takeoffPointEndHeight
       });
-
-      form.setValue("take_off_ref_point", `${latitude},${longitude},${height}`);
+      setTakeoffPoint({longitude, latitude, height});
+      if (waypoints.length === 0) {
+        addDroneModel(longitude, latitude, takeoffPointEndHeight);
+      }
       clearPickPosition();
     });
   };
 
-  /*useEffect(() => {
-    const cleanup = addDroneKeyboardControl();
-    return cleanup;
-  }, []);*/
+  if (takeoffPoint) {
+    form.setValue("take_off_ref_point", `${takeoffPoint.latitude},${takeoffPoint.longitude},${takeoffPoint.height}`);
+  }
 
-  // 监听 global_height 的变化
+  // 监听点击航点图标
+  useAddEventListener(({pickedObject}) => {
+    if (pickedObject && pickedObject.id && pickedObject.id.id) {
+      setSelectedWaypointId(+pickedObject.id.id + 1);
+      getCustomSource("waylines-update")?.entities.values.forEach(item => {
+        if (item.billboard) {
+          item.billboard.color = Cesium.Color.WHITE;
+        }
+      });
+      const entity = getCustomSource("waylines-update")?.entities.getById(pickedObject.id.id);
+      if (entity && entity.billboard) {
+        entity.billboard.color = Cesium.Color.YELLOW;
+      }
+    }
+  });
+
+  const onDeleteWaypoint = (index: number) => {
+    setWaypoints(prev => prev.filter((_, current_index) => index !== current_index));
+  };
+
   useEffect(() => {
-    const subscription = form.watch((value, {name}) => {
-      if (name === "global_height" && takeoffPoint) {
-        const newHeight = takeoffPoint.height + value.global_height;
-
-        // 更新无人机位置
-        if (takeoffPoint.entity.drone) {
-          takeoffPoint.entity.drone.position = new Cesium.ConstantPositionProperty(
-            Cesium.Cartesian3.fromDegrees(takeoffPoint.longitude, takeoffPoint.latitude, newHeight)
-          );
-        }
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [takeoffPoint]);
-
-  const updateWaylinePath = (waypoints: WayPoint[]) => {
-    // 1. 只删除连接线，不删除垂直线
-    const entitiesToRemove = [];
-    viewer.entities.values.forEach((entity: any) => {
-      // 检查是否是连接线（不是垂直线）
-      if (entity.polyline &&
-        !waypoints.some(wp => wp.entity.verticalLine === entity) &&
-        takeoffPoint?.entity.verticalLine !== entity) { // 添加这个条件
-        entitiesToRemove.push(entity);
-      }
-    });
-
-    // 批量删除连接线
-    entitiesToRemove.forEach(entity => {
-      viewer.entities.remove(entity);
-    });
-
-    // 2. 如果有多个航点，重新创建连接线
-    if (waypoints.length >= 2) {
-      const positions = waypoints.map(wp =>
-        Cesium.Cartesian3.fromDegrees(wp.longitude, wp.latitude, wp.height)
-      );
-
-      const connectLine = viewer.entities.add({
-        polyline: {
-          positions: positions,
-          width: 3,
-          material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-          clampToGround: false
-        }
+    if (waypoints.length === 0) return;
+    getCustomSource("waylines-update")?.entities.removeAll();
+    // 添加起始点到1号点位的图标
+    let distance = 0;
+    const globalHeight = form.getValues("global_height");
+    console.log("takeoffPoint===");
+    console.log(takeoffPoint);
+    if (takeoffPoint) {
+      addConnectLines([takeoffPoint.longitude, takeoffPoint.latitude, takeoffPointEndHeight],
+        [waypoints[0].longitude, waypoints[0].latitude, waypoints[0].height || globalHeight]);
+      distance += addLabelWithin([takeoffPoint.longitude, takeoffPoint.latitude, takeoffPointEndHeight],
+        [waypoints[0].longitude, waypoints[0].latitude, waypoints[0].height || globalHeight]);
+    }
+    // 添加航点图标
+    waypoints.forEach((item, index) => {
+      addWayPointWithIndex({
+        longitude: item.longitude,
+        latitude: item.latitude,
+        height: item.height || form.getValues("global_height"),
+        text: index + 1,
+        id: `${index}`
       });
-
-      // 将连接线保存到第一个航点的实体中
-      if (waypoints[0].entity) {
-        waypoints[0].entity.connectLine = connectLine;
-      }
-    }
-
-    // 如果有起飞点和航点，更新起飞点到第一个航点的连接线
-    if (takeoffPoint && waypoints.length > 0) {
-      const globalHeight = form.getValues("global_height");
-
-      // 删除旧的连接线
-      if (takeoffPoint.entity.connectLine) {
-        viewer.entities.remove(takeoffPoint.entity.connectLine);
-      }
-
-      // 添加新的连接线
-      takeoffPoint.entity.connectLine = viewer.entities.add({
-        polyline: {
-          positions: [
-            Cesium.Cartesian3.fromDegrees(
-              takeoffPoint.longitude,
-              takeoffPoint.latitude,
-              takeoffPoint.height + globalHeight
-            ),
-            Cesium.Cartesian3.fromDegrees(
-              waypoints[0].longitude,
-              waypoints[0].latitude,
-              waypoints[0].height || globalHeight
-            )
-          ],
-          width: 2,
-          material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8)
-        }
-      });
-    }
-  };
-
-  const onDeleteWaypoint = (waypoint: WayPoint) => {
-    // 1. 删除当前航点的实体
-    if (waypoint.entity) {
-      if (waypoint.entity.point) viewer.entities.remove(waypoint.entity.point);
-      if (waypoint.entity.verticalLine) viewer.entities.remove(waypoint.entity.verticalLine);
-    }
-
-    // 2. 如果删除的是当前选中的航点，清除选中状态
-    if (selectedWaypointId === waypoint.id) {
-      setSelectedWaypointId(null);
-    }
-
-    // 3. 过滤掉要删除的航点
-    const newWaypoints = waypoints.filter(wp => wp.id !== waypoint.id);
-
-    // 4. 更新剩余航点的编号和图标
-    const updatedWaypoints = newWaypoints.map((wp, index) => {
-      const newId = index + 1;
-
-      // 如果这个航点是被选中的，更新 selectedWaypointId
-      if (selectedWaypointId === wp.id) {
-        setSelectedWaypointId(newId);
-      }
-
-      // 更新航点图标
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      if (context) {
-        canvas.width = 32;
-        canvas.height = 32;
-
-        // 绘制三角形
-        context.beginPath();
-        context.moveTo(16, 28);
-        context.lineTo(4, 4);
-        context.lineTo(28, 4);
-        context.closePath();
-        context.fillStyle = "#4CAF50";
-        context.fill();
-
-        // 更新编号
-        context.font = "bold 16px Arial";
-        context.fillStyle = "white";
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.fillText(newId.toString(), 16, 14);
-
-        // 更新图标
-        if (wp.entity?.point?.billboard) {
-          wp.entity.point.billboard.image = canvas;
-        }
-      }
-
-      return {
-        ...wp,
-        id: newId
-      };
+      addLabelWithin([item.longitude, item.latitude, 0], [item.longitude, item.latitude, item.height || globalHeight]);
     });
+    // 添加连接线
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      addConnectLines([waypoints[i].longitude, waypoints[i].latitude, waypoints[i].height || globalHeight],
+        [waypoints[i + 1].longitude, waypoints[i + 1].latitude, waypoints[i + 1].height || globalHeight]);
+      distance += addLabelWithin([waypoints[i].longitude, waypoints[i].latitude, waypoints[i].height || globalHeight],
+        [waypoints[i + 1].longitude, waypoints[i + 1].latitude, waypoints[i + 1].height || globalHeight]);
+    }
+    setWaylineInfo({
+      ...waylineInfo,
+      distance: +(distance + takeoffPointEndHeight).toFixed(2)
+    });
+  }, [waypoints, form, takeoffPoint, takeoffPointEndHeight]);
 
-    // 5. 更新状态
-    setWaypoints(updatedWaypoints);
-
-    // 6. 重新绘制航线路径
-    updateWaylinePath(updatedWaypoints);
-  };
-
-  const addWaypointAfter = (afterId: number) => {
-    console.log("takeoffPoint111");
-    console.log(takeoffPoint111);
+  const addWaypointAfter = (currentIndex: number) => {
+    if (!takeoffPoint) return toast({
+      description: "请先设置起飞点",
+      variant: "destructive"
+    });
 
     if (!rightClickPosition) return;
-
-    // 先取消当前选中航点的高亮
-    if (selectedWaypointId) {
-      const prevWaypoint = waypoints.find(wp => wp.id === selectedWaypointId);
-      if (prevWaypoint?.entity?.point) {
-        prevWaypoint.entity.point.billboard.color = Cesium.Color.WHITE;
-        prevWaypoint.entity.verticalLine.material = new Cesium.PolylineDashMaterialProperty({
-          color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-          dashLength: 8.0
-        });
-      }
-    }
-
-    const {longitude, latitude} = rightClickPosition;
-
-   const distance = moveDroneToTarget({longitude, latitude, height: 120});
-    console.log('distance');
-    console.log(distance);
-
     const globalHeight = form.getValues("global_height");
     const globalSpeed = form.getValues("auto_flight_speed");
-    const newId = afterId + 1;
-
-    // 1. 找到插入位置
-    const insertIndex = waypoints.findIndex(wp => wp.id === afterId) + 1;
-
-    // 2. 更新后续航点的编号
-    const updatedWaypoints = waypoints.map((wp, index) => {
-      if (index >= insertIndex) {
-        // 更新实体标签
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-        if (context) {
-          canvas.width = 32;
-          canvas.height = 32;
-
-          // 绘制三角形
-          context.beginPath();
-          context.moveTo(16, 28);
-          context.lineTo(4, 4);
-          context.lineTo(28, 4);
-          context.closePath();
-          context.fillStyle = "#4CAF50";
-          context.fill();
-
-          // 更新编号
-          context.font = "bold 16px Arial";
-          context.fillStyle = "white";
-          context.textAlign = "center";
-          context.textBaseline = "middle";
-          context.fillText((wp.id + 1).toString(), 16, 14);
-
-          // 更新图标
-          if (wp.entity?.point?.billboard) {
-            wp.entity.point.billboard.image = canvas;
-          }
-        }
-        return {...wp, id: wp.id + 1};
-      }
-      return wp;
-    });
-
-    // 3. 创建新航点图标
-    const waypointEntity = viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(longitude, latitude, globalHeight),
-      billboard: {
-        image: (() => {
-          const canvas = document.createElement("canvas");
-          canvas.width = 32;
-          canvas.height = 32;
-          const context = canvas.getContext("2d");
-          if (context) {
-            context.beginPath();
-            context.moveTo(16, 28);
-            context.lineTo(4, 4);
-            context.lineTo(28, 4);
-            context.closePath();
-            context.fillStyle = "#4CAF50";
-            context.fill();
-
-            context.font = "bold 16px Arial";
-            context.fillStyle = "white";
-            context.textAlign = "center";
-            context.textBaseline = "middle";
-            context.fillText(newId.toString(), 16, 14);
-          }
-          return canvas;
-        })(),
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        width: 32,
-        height: 32,
-        color: Cesium.Color.WHITE
-      }
-    });
-
-    // 4. 添加垂直虚线
-    const verticalLineEntity = viewer.entities.add({
-      polyline: {
-        positions: [
-          Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
-          Cesium.Cartesian3.fromDegrees(longitude, latitude, globalHeight)
-        ],
-        width: 2,
-        material: new Cesium.PolylineDashMaterialProperty({
-          color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-          dashLength: 8.0
-        })
-      }
-    });
-
-    // 5. 创建新航点对象
-    const newWaypoint = {
-      id: newId,
-      longitude,
-      latitude,
+    const currentPoint: WayPoint = {
+      id: uuidv4(),
+      longitude: rightClickPosition.longitude,
+      latitude: rightClickPosition.latitude,
       height: globalHeight,
       speed: globalSpeed,
-      useGlobalHeight: true,
-      useGlobalSpeed: true,
       actions: [],
-      entity: {
-        point: waypointEntity,
-        verticalLine: verticalLineEntity,
-        connectLine: null
-      }
+      useGlobalHeight: true,
+      useGlobalSpeed: true
     };
-
-    // 6. 插入新航点
     const newWaypoints = [
-      ...updatedWaypoints.slice(0, insertIndex),
-      newWaypoint,
-      ...updatedWaypoints.slice(insertIndex)
+      ...waypoints.slice(0, currentIndex),
+      currentPoint,
+      ...waypoints.slice(currentIndex)
     ];
-
     setWaypoints(newWaypoints);
-    updateWaylinePath(newWaypoints);
-    setRightClickPosition(null);  // 清除右键点击位置
-
-    // 7. 直接设置新航点为选中状态，而不是调用 handleWaypointClick
-    setSelectedWaypointId(newId);
-    waypointEntity.billboard.color = Cesium.Color.YELLOW;
-    verticalLineEntity.material = new Cesium.PolylineDashMaterialProperty({
-      color: Cesium.Color.YELLOW.withAlpha(0.8),
-      dashLength: 8.0
-    });
+    setSelectedWaypointId(currentIndex + 1);
+    const {longitude, latitude} = rightClickPosition;
+    if (currentIndex >= waypoints.length) {
+      moveDroneToTarget({longitude, latitude, height: 120});
+    }
   };
 
   const {RightClickPanel, MenuItem} = useRightClickPanel({
@@ -695,11 +415,8 @@ const CreateWayLine = () => {
         const longitude = Cesium.Math.toDegrees(cartographic.longitude);
         const latitude = Cesium.Math.toDegrees(cartographic.latitude);
         const height = cartographic.height;
-
         setRightClickPosition({longitude, latitude, height});
-        return true; // 返回 true 表示显示右键菜单
       }
-      return false;
     }
   });
 
@@ -713,19 +430,8 @@ const CreateWayLine = () => {
     }
   };
 
-
-  // useSetTakeOffPoint()
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("提交的表单数据:", values);
-    // 这里可以添加保存航线的逻辑
-    /*if (!takeoffPoint) {
-      toast({
-        variant: "destructive",
-        description: "请先设置起飞点"
-      });
-      return;
-    }*/
     const route_point_list = waypoints.map((waypoint, index) => {
       return {
         route_point_index: index,
@@ -853,280 +559,31 @@ const CreateWayLine = () => {
         });
       }
     }
-
-    /*if (waypoints.length === 0) {
-      toast({
-        variant: "destructive",
-        description: "请至少添加一个航点"
-      });
-      return;
-    }*/
   };
 
   const onSaveWayPointSetting = () => {
     if (!currentWayPoint) return;
-
-    // 获取全局设置
-    const globalHeight = form.getValues("global_height");
-    const globalSpeed = form.getValues("auto_flight_speed");
-    // 更新航点数组中的指定航点
-    const newWaypoints = waypoints.map(wp => {
-      if (wp.id === currentWayPoint.id) {
-        // 根据是否跟随航线决定使用的高度和速度
-        const finalHeight = currentWayPoint.useGlobalHeight ? globalHeight : currentWayPoint.height;
-        const finalSpeed = currentWayPoint.useGlobalSpeed ? globalSpeed : currentWayPoint.speed;
-
-        // 更新实体位置
-        if (wp.entity.point) {
-          wp.entity.point.position = new Cesium.ConstantPositionProperty(
-            Cesium.Cartesian3.fromDegrees(wp.longitude, wp.latitude, finalHeight)
-          );
-        }
-
-        // 更新垂直虚线
-        if (wp.entity.verticalLine) {
-          wp.entity.verticalLine.polyline.positions = [
-            Cesium.Cartesian3.fromDegrees(wp.longitude, wp.latitude, 0),
-            Cesium.Cartesian3.fromDegrees(wp.longitude, wp.latitude, finalHeight)
-          ];
-        }
-
-        // 返回更新后的航点
-        return {
-          ...wp,
-          height: finalHeight,
-          speed: finalSpeed,
-          useGlobalHeight: currentWayPoint.useGlobalHeight,
-          useGlobalSpeed: currentWayPoint.useGlobalSpeed,
-          actions: currentWayPoint.actions
-        };
-      }
-      return wp;
-    });
-
-    console.log("newWaypoints");
-    console.log(newWaypoints);
-
-    // 更新航点数组
+    const newWaypoints = waypoints.map(point => point.id === currentWayPoint.id ? currentWayPoint : point);
     setWaypoints(newWaypoints);
-
-    // 更新航线路径
-    updateWaylinePath(newWaypoints);
-
-    // 关闭编辑面板
-    // setWayPointOpen(false);
-
     // 提示保存成功
     toast({
       description: "航点设置已保存"
     });
   };
 
-  const handleWaypointClick = useCallback((waypoint: WayPoint) => {
-    if (selectedWaypointId === waypoint.id) {
-      // 取消当前选中
-      setSelectedWaypointId(null);
-      if (waypoint.entity?.point) {
-        waypoint.entity.point.billboard.color = Cesium.Color.WHITE;
-        waypoint.entity.verticalLine.material = new Cesium.PolylineDashMaterialProperty({
-          color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-          dashLength: 8.0
-        });
-      }
-    } else {
-      // 取消之前选中的航点高亮
-      const prevWaypoint = waypoints.find(wp => wp.id === selectedWaypointId);
-      if (prevWaypoint?.entity?.point) {
-        prevWaypoint.entity.point.billboard.color = Cesium.Color.WHITE;
-        prevWaypoint.entity.verticalLine.material = new Cesium.PolylineDashMaterialProperty({
-          color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-          dashLength: 8.0
-        });
-      }
-
-      // 高亮新选中的航点
-      setSelectedWaypointId(waypoint.id);
-      if (waypoint.entity?.point) {
-        waypoint.entity.point.billboard.color = Cesium.Color.YELLOW;
-        waypoint.entity.verticalLine.material = new Cesium.PolylineDashMaterialProperty({
-          color: Cesium.Color.YELLOW.withAlpha(0.8),
-          dashLength: 8.0
-        });
-      }
-    }
-  }, [selectedWaypointId, waypoints]);
-
-  useEffect(() => {
-    if (!viewer) return;
-
-    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-
-    handler.setInputAction((click: any) => {
-      const pickedObject = viewer.scene.pick(click.position);
-      if (Cesium.defined(pickedObject)) {
-        const clickedWaypoint = waypoints.find(wp =>
-          wp.entity?.point === pickedObject.id ||
-          wp.entity?.verticalLine === pickedObject.id
-        );
-        if (clickedWaypoint) {
-          handleWaypointClick(clickedWaypoint);
-        }
-      }
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
-    return () => {
-      if (handler) {
-        handler.destroy();
-      }
-    };
-  }, [waypoints, handleWaypointClick]); // 添加 handleWaypointClick 作为依赖项
-
   // 在 useEffect 中添加初始化逻辑
   useEffect(() => {
     if (!currentWaylineData || !viewer) return;
-
     const data = currentWaylineData;
 
     // 如果有起飞点数据，初始化起飞点
     if (data.take_off_ref_point) {
       const [latitude, longitude, height] = data.take_off_ref_point.split(",").map(Number);
-
-      // 添加起飞点标记
-      const takeoffEntity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
-        billboard: {
-          image: takeOffPng,
-          width: 48,
-          height: 48,
-        },
-      });
-
-      // 添加垂直虚线
-      const verticalLineEntity = viewer.entities.add({
-        polyline: {
-          positions: [
-            Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
-            Cesium.Cartesian3.fromDegrees(longitude, latitude, height + data.global_height)
-          ],
-          width: 2,
-          material: new Cesium.PolylineDashMaterialProperty({
-            color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-            dashLength: 8.0
-          })
-        }
-      });
-
-      // 添加无人机图标
-      const droneEntity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height + data.global_height),
-        billboard: {
-          image: dronePng,
-          verticalOrigin: Cesium.VerticalOrigin.CENTER,
-          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-          width: 64,
-          height: 64,
-          alignedAxis: new Cesium.Cartesian3(0, 0, 1),
-          rotation: Cesium.Math.toRadians(0),
-        },
-      });
-
-      // 添加事件监听器来保持图标朝北
-      viewer.scene.postRender.addEventListener(() => {
-        if (droneEntity) {
-          const heading = viewer.camera.heading;
-          droneEntity.billboard.rotation = -heading;
-        }
-      });
-
-      // 如果有航点，添加到第一个航点的连接线
-      let connectLineEntity = null;
-      if (data.route_point_list.length > 0) {
-        const firstWaypoint = data.route_point_list[0];
-        connectLineEntity = viewer.entities.add({
-          polyline: {
-            positions: [
-              Cesium.Cartesian3.fromDegrees(longitude, latitude, height + data.global_height),
-              Cesium.Cartesian3.fromDegrees(
-                firstWaypoint.longitude,
-                firstWaypoint.latitude,
-                data.global_height
-              )
-            ],
-            width: 2,
-            material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8)
-          }
-        });
-      }
-
-      // 设置起飞点状态
-      setTakeoffPoint({
-        longitude,
-        latitude,
-        height,
-        entity: {
-          takeoff: takeoffEntity,
-          drone: droneEntity,
-          verticalLine: verticalLineEntity,
-          connectLine: connectLineEntity
-        }
-      });
+      setTakeoffPoint({longitude, latitude, height});
     }
 
     // 初始化航点
-    const initialWaypoints = data.route_point_list.map((point, index) => {
-      // 创建航点图标
-      const waypointEntity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(
-          point.longitude,
-          point.latitude,
-          point.height || data.global_height
-        ),
-        billboard: {
-          image: (() => {
-            const canvas = document.createElement("canvas");
-            canvas.width = 32;
-            canvas.height = 32;
-            const context = canvas.getContext("2d");
-            if (context) {
-              context.beginPath();
-              context.moveTo(16, 28);
-              context.lineTo(4, 4);
-              context.lineTo(28, 4);
-              context.closePath();
-              context.fillStyle = "#4CAF50";
-              context.fill();
-
-              context.font = "bold 16px Arial";
-              context.fillStyle = "white";
-              context.textAlign = "center";
-              context.textBaseline = "middle";
-              context.fillText((index + 1).toString(), 16, 14);
-            }
-            return canvas;
-          })(),
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-          width: 32,
-          height: 32,
-          color: Cesium.Color.WHITE
-        }
-      });
-
-      // 创建垂直虚线
-      const verticalLineEntity = viewer.entities.add({
-        polyline: {
-          positions: [
-            Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, 0),
-            Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, point.height || data.global_height)
-          ],
-          width: 2,
-          material: new Cesium.PolylineDashMaterialProperty({
-            color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-            dashLength: 8.0
-          })
-        }
-      });
-
+    const initialWaypoints = data.route_point_list.map((point: WayPoint) => {
       // 转换动作数据
       const actions = point.actions?.map(action => {
         switch (action.action_actuator_func) {
@@ -1185,7 +642,7 @@ const CreateWayLine = () => {
       }).filter(Boolean);
 
       return {
-        id: index + 1,
+        id: uuidv4(),
         longitude: point.longitude,
         latitude: point.latitude,
         height: point.height || data.global_height,
@@ -1193,11 +650,6 @@ const CreateWayLine = () => {
         useGlobalHeight: !point.height,
         useGlobalSpeed: !point.speed,
         actions,
-        entity: {
-          point: waypointEntity,
-          verticalLine: verticalLineEntity,
-          connectLine: null
-        }
       };
     });
 
@@ -1205,9 +657,6 @@ const CreateWayLine = () => {
     console.log(initialWaypoints);
 
     setWaypoints(initialWaypoints);
-
-    // 更新航线路径
-    updateWaylinePath(initialWaypoints);
 
     // 初始化表单数据
     form.reset({
@@ -1223,10 +672,21 @@ const CreateWayLine = () => {
       waypoint_heading_mode: data.waypoint_heading_req.waypoint_heading_mode,
       global_waypoint_turn_mode: data.waypoint_turn_req.waypoint_turn_mode,
     });
-
-    console.log("reset==");
-
   }, [currentWaylineData, form]);
+
+  // 添加对 auto_flight_speed 的监听
+  useEffect(() => {
+    const speed = form.watch("auto_flight_speed");
+    if (speed && waylineInfo.distance > 0) {
+      // 计算预计飞行时间（秒）
+      const timeInSeconds = waylineInfo.distance / speed;
+      // 四舍五入到2位小数
+      setWaylineInfo(prev => ({
+        ...prev,
+        time: Number(timeInSeconds.toFixed(2))
+      }));
+    }
+  }, [form.watch("auto_flight_speed"), waylineInfo.distance]);
 
   return (
     <Form {...form}>
@@ -1253,12 +713,12 @@ const CreateWayLine = () => {
                 <div className={"flex space-x-4 h-12"}>
                   <div className={"flex flex-col justify-center items-center"}>
                     <span>航线长度</span>
-                    <span>100m</span>
+                    <span>{waylineInfo.distance}m</span>
                   </div>
                   <Separator className={"bg-gray-500"} orientation={"vertical"}/>
                   <div className={"flex flex-col justify-center items-center"}>
                     <span>预计执行时间</span>
-                    <span>10min</span>
+                    <span>{waylineInfo.time}s</span>
                   </div>
                   <Separator className={"bg-gray-500"} orientation={"vertical"}/>
                   <div className={"flex flex-col justify-center items-center"}>
@@ -1288,6 +748,8 @@ const CreateWayLine = () => {
                           className="p-1 hover:bg-[#4c4c4c] rounded"
                           onClick={() => {
                             // 编辑航点
+                            console.log("waypoints");
+                            console.log(waypoints);
                             setWayPointOpen(true);
                             setCurrentWayPoint(waypoint);
                           }}>
@@ -1295,7 +757,7 @@ const CreateWayLine = () => {
                         </button>
                         <button
                           className="p-1 hover:bg-[#4c4c4c] rounded text-red-400"
-                          onClick={() => onDeleteWaypoint(waypoint)}>
+                          onClick={() => onDeleteWaypoint(index)}>
                           删除
                         </button>
                       </div>
@@ -1640,7 +1102,7 @@ const CreateWayLine = () => {
                 className="w-80 bg-[#232323] text-white text-[14px] space-y-4 h-[calc(100vh-60px)]">
                 <div className="p-4 space-y-6">
                   <div className="flex justify-between items-center">
-                    <h3>航点{currentWayPoint?.id}</h3>
+                    <h3>航点{currentWayPointIndex + 1}</h3>
                     <button
                       className="hover:bg-[#4c4c4c] p-1 rounded"
                       onClick={() => setWayPointOpen(false)}
@@ -1658,7 +1120,8 @@ const CreateWayLine = () => {
                                   onCheckedChange={(checked) => {
                                     setCurrentWayPoint({
                                       ...currentWayPoint!,
-                                      useGlobalHeight: checked as boolean
+                                      useGlobalHeight: checked as boolean,
+                                      height: checked ? form.getValues("global_height") : currentWayPoint!.height
                                     });
                                   }}/>
                         <label
@@ -1696,7 +1159,8 @@ const CreateWayLine = () => {
                                   onCheckedChange={(checked) => {
                                     setCurrentWayPoint({
                                       ...currentWayPoint!,
-                                      useGlobalSpeed: checked as boolean
+                                      useGlobalSpeed: checked as boolean,
+                                      speed: checked ? form.getValues("auto_flight_speed") : currentWayPoint!.speed
                                     });
                                   }}
                         />
@@ -1740,17 +1204,10 @@ const CreateWayLine = () => {
                               <div className={"flex items-center space-x-2"}>
                                 <Checkbox
                                   id={"copy-all"}
+                                  checked={copyCheckedIds.length === waypoints.length}
                                   onCheckedChange={(checked) => {
                                     // 更新当前航点的 copyToAll 状态
-                                    setCurrentWayPoint({
-                                      ...currentWayPoint!,
-                                      copyToAll: checked,
-                                      // 如果选中"应用于全部"，则所有航点都选中
-                                      copyToPoints: checked ? waypoints.reduce((acc, wp) => ({
-                                        ...acc,
-                                        [wp.id]: true
-                                      }), {}) : {}
-                                    });
+                                    checked ? setCopyCheckedIds(waypoints.map(p => p.id)) : setCopyCheckedIds([]);
                                   }}
                                 />
                                 <label
@@ -1760,66 +1217,52 @@ const CreateWayLine = () => {
                                   应用于全部航点
                                 </label>
                               </div>
-                              <div className={"grid grid-cols-4"}>
-                                {waypoints.map(point => (
+                              <div className={"grid grid-cols-4 gap-2"}>
+                                {waypoints.map((point, index) => (
                                   <div key={point.id} className={"flex items-center space-x-2"}>
                                     <Checkbox
                                       id={`copy-${point.id}`}
-                                      // 如果全选被选中，则所有航点都选中
-                                      checked={currentWayPoint?.copyToAll || currentWayPoint?.copyToPoints?.[point.id]}
-                                      disabled={currentWayPoint?.copyToAll}  // 全选时禁用单个选择
+                                      checked={copyCheckedIds.includes(point.id)}
                                       onCheckedChange={(checked) => {
-                                        setCurrentWayPoint({
-                                          ...currentWayPoint!,
-                                          copyToPoints: {
-                                            ...(currentWayPoint?.copyToPoints || {}),
-                                            [point.id]: checked
-                                          }
-                                        });
+                                        if (checked) {
+                                          setCopyCheckedIds(prev => [...prev, point.id]);
+                                        } else {
+                                          setCopyCheckedIds(prev => prev.filter(id => id !== point.id));
+                                        }
                                       }}
                                     />
                                     <label
                                       htmlFor={`copy-${point.id}`}
                                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                     >
-                                      航点{point.id}
+                                      航点{index + 1}
                                     </label>
                                   </div>
                                 ))}
                               </div>
                             </div>
                             <DialogFooter>
-                              <Button type="button" onClick={() => {
-                                // 执行动作复制
-                                if (currentWayPoint?.copyToAll) {
-                                  // 复制到所有航点
-                                  setWaypoints(waypoints.map(wp => ({
-                                    ...wp,
-                                    actions: [...currentWayPoint.actions]
-                                  })));
-                                } else if (currentWayPoint?.copyToPoints) {
-                                  // 复制到选中的航点
-                                  setWaypoints(waypoints.map(wp => {
-                                    if (currentWayPoint.copyToPoints[wp.id]) {
+                              <DialogClose>
+                                <Button type="button" onClick={() => {
+                                  const newWaypoints = waypoints.map(point => {
+                                    if (copyCheckedIds.includes(point.id)) {
                                       return {
-                                        ...wp,
-                                        actions: [...currentWayPoint.actions]
+                                        ...point,
+                                        actions: currentWayPoint?.actions || []
                                       };
+                                    } else {
+                                      return point;
                                     }
-                                    return wp;
-                                  }));
-                                }
-
-                                // 关闭对话框
-                                setWayPointOpen(false);
-
-                                // 提示成功
-                                toast({
-                                  description: "动作组复制成功"
-                                });
-                              }}>
-                                保存
-                              </Button>
+                                  });
+                                  setWaypoints(newWaypoints);
+                                  // 提示成功
+                                  toast({
+                                    description: "动作组复制成功"
+                                  });
+                                }}>
+                                  保存
+                                </Button>
+                              </DialogClose>
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>

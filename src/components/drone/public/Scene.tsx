@@ -72,6 +72,8 @@ const Scene = () => {
   useEntityCustomSource("waylines-preview");
   // 航线创建的集合
   useEntityCustomSource("waylines-create");
+  // 航线相关点位、连接线、垂直线的集合
+  useEntityCustomSource("waylines-update");
 
   useEffect(() => {
     getCustomSource("dock")?.entities.removeAll();
