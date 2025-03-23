@@ -27,45 +27,57 @@ function formatTaskStatus(task: Task) {
   return statusObj;
 }
 
+const groupTasksByDate = (tasks: Task[]) => {
+  const groups: { [key: string]: Task[] } = {};
+
+  tasks.forEach(task => {
+    const date = task.begin_time.split(' ')[0]; // 获取日期部分
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(task);
+  });
+
+  return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0])); // 按日期倒序排列
+};
+
 const TaskDataTable = () => {
   const {delete: deleteClient} = useAjax();
 
   const columns: ColumnDef<Task>[] = [
     {
+      header: "计划 | 实际时间",
+      cell: ({row}) => <span>
+        {row.original.begin_time}-{row.original.end_time}
+        |
+        {row.original.execute_time}-{row.original.completed_time}
+      </span>
+    },
+    {
       accessorKey: "job_name",
-      header: "任务名",
+      header: "计划名称",
     },
     {
       accessorKey: "task_type",
-      header: "任务类型",
+      header: "类型",
       cell: ({row}) => <span>{TaskTypeMap[row.original.task_type]}</span>
     },
     {
-      accessorKey: "task_type",
       header: "任务类型",
       cell: ({row}) =>
         <span className={`text-[${formatTaskStatus(row.original).color}]`}>{formatTaskStatus(row.original).text}</span>
     },
     {
       accessorKey: "file_name",
-      header: "线路名称",
+      header: "航线名称",
     },
     {
       accessorKey: "dock_name",
       header: "机场",
     },
     {
-      accessorKey: "rth_altitude",
-      header: "RTH高度",
-    },
-    {
-      accessorKey: "out_of_control_action",
-      header: "失联动作",
-      cell: ({row}) => <span>{OutOfControlActionMap[row.original.out_of_control_action]}</span>
-    },
-    {
       accessorKey: "username",
-      header: "用户",
+      header: "创建人",
     },
     {
       header: "操作",
@@ -132,45 +144,89 @@ const TaskDataTable = () => {
   });
 
   return (
-    <div>
-      <div className="">
-        <Table className={"border-[1px] border-[#0A81E1]"}>
-          <TableHeader className={""}>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          {/* 保持原有的工具栏内容 */}
+        </div>
+      </div>
+
+      <div className="rounded-md border border-[#0A81E1] overflow-hidden bg-[#0A4088]/70">
+        <Table>
+          <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className={"border-none"}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id} className={"bg-[#0A81E1]/[.7]"}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  );
-                })}
+              <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className="bg-[#0A81E1]/70 text-white h-10 font-medium"
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody className={"bg-[#0A4088]/[.7]"}>
+          <TableBody className="bg-[#0A4088]/70">
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  className={"border-b-[#0A81E1]"}
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              groupTasksByDate(data?.list || []).map(([date, tasks]) => (
+                <>
+                  {/* 日期分组行 */}
+                  <TableRow key={`date-${date}`} className="bg-[#0A81E1]/20">
+                    <TableCell
+                      colSpan={columns.length}
+                      className="py-2 px-4 font-medium text-[#43ABFF] border-b border-[#0A81E1]/30"
+                    >
+                      {date}
                     </TableCell>
-                  ))}
-                </TableRow>
+                  </TableRow>
+                  {/* 任务数据行 */}
+                  {tasks.map((task) => {
+                    const row = table.getRowModel().rows.find(
+                      r => r.original.job_id === task.job_id
+                    );
+                    if (!row) return null;
+
+                    return (
+                      <TableRow
+                        key={row.id}
+                        className={cn(
+                          "h-[50px]",
+                          "border-b border-[#0A81E1]/30",
+                          "hover:bg-[#0A4088]/90 transition-colors duration-200",
+                          "data-[state=selected]:bg-transparent"
+                        )}
+                        data-state={row.getIsSelected() && "selected"}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell
+                            key={cell.id}
+                            className={cn(
+                              "py-3",
+                              "align-middle",
+                              "px-4",
+                              "leading-none"
+                            )}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    );
+                  })}
+                </>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-[#43ABFF]">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-[#43ABFF]"
+                >
                   暂无数据
                 </TableCell>
               </TableRow>
@@ -178,20 +234,25 @@ const TaskDataTable = () => {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <Label className={"text-left"}>
+
+      <div className="flex items-center justify-between py-2">
+        <Label className="text-gray-400">
           共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
         </Label>
-        <div className={"space-x-2"}>
+        <div className="space-x-2">
           <Button
+            variant="outline"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
           >
             上一页
           </Button>
           <Button
+            variant="outline"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
           >
             下一页
           </Button>

@@ -260,202 +260,229 @@ const WorkOrderDataTable = () => {
       accept="image/*"
       multiple
       autoUpload>
-      <div className={"mb-4 text-right"}>
-        <Dialog open={open} onOpenChange={(value) => {
-          console.log("Dialog onOpenChange:", value);
-          if (!value) {
-            setCurrentOrder(null);
-          }
-          setOpen(value);
-        }}>
-          <DialogTrigger asChild>
-            <Button
-              className={"bg-[#43ABFF] w-24"}
-              onClick={() => {
-                setCurrentOrder(null);
-                setOrderType("create");
-                stepper.goTo("1");
-              }}
-            >
-              创建
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-screen-lg bg-[#0A4088]/[.7] text-white border-none">
-            <DialogHeader className={""}>
-              <DialogTitle>工单管理</DialogTitle>
-            </DialogHeader>
-            <div className={"border-[2px] border-[#43ABFF] flex p-8"}>
-              <ol className="flex flex-col gap-2" aria-orientation="vertical">
-                {stepper.all.map((step, index, array) => (
-                  <div key={step.id} className={""}>
-                    <li className="flex items-center gap-4 flex-shrink-0">
-                      <Button
-                        type="button"
-                        role="tab"
-                        variant={index <= currentIndex ? "default" : "secondary"}
-                        aria-current={stepper.current.id === step.id ? "step" : undefined}
-                        aria-posinset={index + 1}
-                        aria-setsize={steps.length}
-                        aria-selected={stepper.current.id === step.id}
-                        className={cn(
-                          "flex size-10 items-center justify-center rounded-full",
-                          index <= currentIndex ? "bg-[#43ABFF]" : "",
-                          (!currentOrder && step.id !== "1") ||
-                          (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status)))
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
-                        )}
-                        onClick={() => {
-                          if (!currentOrder && step.id !== "1") return;
-                          if (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status))) return;
-                          stepper.goTo(step.id);
-                        }}
-                      >
-                        {index + 1}
-                      </Button>
-                      <span className={cn(
-                        "text-sm font-medium",
-                        (!currentOrder && step.id !== "1") ||
-                        (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status)))
-                          ? "opacity-50"
-                          : ""
-                      )}>
-                        {step.title}
-                      </span>
-                    </li>
-                    <div className="flex gap-4">
-                      {index < array.length - 1 && (
-                        <div
-                          className="flex justify-center"
-                          style={{
-                            paddingInlineStart: "1.25rem",
+      <div className="space-y-4">
+        <div className="mb-4 text-right">
+          <Dialog open={open} onOpenChange={(value) => {
+            console.log("Dialog onOpenChange:", value);
+            if (!value) {
+              setCurrentOrder(null);
+            }
+            setOpen(value);
+          }}>
+            <DialogTrigger asChild>
+              <Button
+                className={"bg-[#43ABFF] w-24"}
+                onClick={() => {
+                  setCurrentOrder(null);
+                  setOrderType("create");
+                  stepper.goTo("1");
+                }}
+              >
+                创建
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-screen-lg bg-[#0A4088]/[.7] text-white border-none">
+              <DialogHeader className={""}>
+                <DialogTitle>工单管理</DialogTitle>
+              </DialogHeader>
+              <div className={"border-[2px] border-[#43ABFF] flex p-8"}>
+                <ol className="flex flex-col gap-2" aria-orientation="vertical">
+                  {stepper.all.map((step, index, array) => (
+                    <div key={step.id} className={""}>
+                      <li className="flex items-center gap-4 flex-shrink-0">
+                        <Button
+                          type="button"
+                          role="tab"
+                          variant={index <= currentIndex ? "default" : "secondary"}
+                          aria-current={stepper.current.id === step.id ? "step" : undefined}
+                          aria-posinset={index + 1}
+                          aria-setsize={steps.length}
+                          aria-selected={stepper.current.id === step.id}
+                          className={cn(
+                            "flex size-10 items-center justify-center rounded-full",
+                            index <= currentIndex ? "bg-[#43ABFF]" : "",
+                            (!currentOrder && step.id !== "1") ||
+                            (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status)))
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          )}
+                          onClick={() => {
+                            if (!currentOrder && step.id !== "1") return;
+                            if (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status))) return;
+                            stepper.goTo(step.id);
                           }}
                         >
-                          <Separator
-                            orientation="vertical"
-                            className={`w-[2px] h-24`}
-                          />
-                        </div>
-                      )}
+                          {index + 1}
+                        </Button>
+                        <span className={cn(
+                          "text-sm font-medium",
+                          (!currentOrder && step.id !== "1") ||
+                          (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status)))
+                            ? "opacity-50"
+                            : ""
+                        )}>
+                          {step.title}
+                        </span>
+                      </li>
+                      <div className="flex gap-4">
+                        {index < array.length - 1 && (
+                          <div
+                            className="flex justify-center"
+                            style={{
+                              paddingInlineStart: "1.25rem",
+                            }}
+                          >
+                            <Separator
+                              orientation="vertical"
+                              className={`w-[2px] h-24`}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </ol>
-              <div className={"px-4 flex-1"}>
-                {stepper.switch({
-                  "1": () =>
-                    <CreateOrder
-                      type={orderType}
-                      onSuccess={() => {
-                        setOpen(false);
-                        mutate();
-                        mutateCurrentOrder();
-                      }}
-                      currentOrder={currentOrderData}/>,
-                  "2": () => isGly && (currentOrder?.status === 1 || currentOrder?.status === 4) ?
-                    <div
-                      className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
-                      <span className={"text-[32px]"}>待处理...</span>
-                    </div> :
-                    <Feedback
-                      type={orderHandleType}
-                      onSuccess={() => {
-                        setOpen(false);
-                        mutate();
-                        mutateCurrentOrder();
-                      }}
-                      currentOrder={currentOrderData}
-                    />,
-                  "3": () => isGly || currentOrderData?.status === 3 ?
-                    <Audit
-                      currentOrder={currentOrderData}
-                      onSuccess={() => {
-                        setOpen(false);
-                        mutate();
-                        mutateCurrentOrder();
-                      }}
-                    /> : <div
-                      className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
-                      <span className={"text-[32px]"}>审核中...</span>
-                    </div>,
-                  "4": () => <Complete/>
-                })}
+                  ))}
+                </ol>
+                <div className={"px-4 flex-1"}>
+                  {stepper.switch({
+                    "1": () =>
+                      <CreateOrder
+                        type={orderType}
+                        onSuccess={() => {
+                          setOpen(false);
+                          mutate();
+                          mutateCurrentOrder();
+                        }}
+                        currentOrder={currentOrderData}/>,
+                    "2": () => isGly && (currentOrder?.status === 1 || currentOrder?.status === 4) ?
+                      <div
+                        className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
+                        <span className={"text-[32px]"}>待处理...</span>
+                      </div> :
+                      <Feedback
+                        type={orderHandleType}
+                        onSuccess={() => {
+                          setOpen(false);
+                          mutate();
+                          mutateCurrentOrder();
+                        }}
+                        currentOrder={currentOrderData}
+                      />,
+                    "3": () => isGly || currentOrderData?.status === 3 ?
+                      <Audit
+                        currentOrder={currentOrderData}
+                        onSuccess={() => {
+                          setOpen(false);
+                          mutate();
+                          mutateCurrentOrder();
+                        }}
+                      /> : <div
+                        className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
+                        <span className={"text-[32px]"}>审核中...</span>
+                      </div>,
+                    "4": () => <Complete/>
+                  })}
+                </div>
               </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="submit"
-                form={`${stepper.current.id === "1" ? "createOrderForm" :
-                  stepper.current.id === "2" ? "feedbackForm" :
-                    stepper.current.id === "3" ? "auditForm" : ""}`}
-                className="bg-[#43ABFF] w-24"
-              >
-                确认
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-      <Table className={"border-[1px] border-[#0A81E1]"}>
-        <TableHeader className={""}>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className={"border-none"}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead key={header.id} className={"bg-[#0A81E1]/[.7]"}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody className={"bg-[#0A4088]/[.7]"}>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                className={"border-b-[#0A81E1]"}
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  form={`${stepper.current.id === "1" ? "createOrderForm" :
+                    stepper.current.id === "2" ? "feedbackForm" :
+                      stepper.current.id === "3" ? "auditForm" : ""}`}
+                  className="bg-[#43ABFF] w-24"
+                >
+                  确认
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="rounded-md border border-[#0A81E1] overflow-hidden">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className="bg-[#0A81E1]/70 text-white h-10 font-medium"
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody className="bg-[#0A4088]/70">
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className={cn(
+                      "h-[50px]",
+                      "border-b border-[#0A81E1]/30",
+                      "hover:bg-[#0A4088]/90 transition-colors duration-200",
+                      "data-[state=selected]:bg-transparent"
+                    )}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          "py-3",
+                          "align-middle",
+                          "px-4",
+                          "leading-none"
+                        )}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center text-[#43ABFF]"
+                  >
+                    暂无数据
                   </TableCell>
-                ))}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center text-[#43ABFF]">
-                暂无数据
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <Label className={"text-left"}>
-          共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
-        </Label>
-        <div className={"space-x-2"}>
-          <Button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            上一页
-          </Button>
-          <Button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            下一页
-          </Button>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="flex items-center justify-between py-2">
+          <Label className="text-gray-400">
+            共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
+          </Label>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
+            >
+              上一页
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
+            >
+              下一页
+            </Button>
+          </div>
         </div>
       </div>
     </Uploady>

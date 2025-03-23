@@ -384,7 +384,7 @@ const Cockpit = () => {
   }, [dragTimer]);
 
   return (
-    <FitScreen width={1920} height={1080} mode="fit">
+    <FitScreen width={1920} height={1080} mode="full">
       <Form {...form}>
         <form className={"h-full bg-cockpit bg-full-size relative grid grid-cols-5"}
               onSubmit={form.handleSubmit(onSubmit)}>

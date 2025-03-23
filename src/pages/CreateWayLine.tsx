@@ -47,6 +47,7 @@ import {
   removeTakeoffPoint, useAddEventListener,
 } from "@/hooks/drone/wayline";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
+import MapChange from "@/components/drone/public/MapChange.tsx";
 
 interface WayPoint {
   id: string;
@@ -2015,6 +2016,9 @@ const CreateWayLine = () => {
         </header>
         <div className={"flex-1 relative"}>
           <Scene/>
+          <div className={"absolute right-0 bottom-0 z-100"}>
+            <MapChange/>
+          </div>
           <RightClickPanel>
             {waypoints.length === 0 ? (
               <MenuItem onClick={() => addWaypointAfter(0)}>

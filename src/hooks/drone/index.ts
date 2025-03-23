@@ -8,6 +8,7 @@ import {useToast} from "@/components/ui/use-toast.ts";
 import {OutOfControlAction, TaskStatus, TaskType} from "@/types/task.ts";
 import {WaylineType} from "@/types/wayline.ts";
 import {EFlightAreaType, FlightAreaContent} from "@/types/flight-area.ts";
+import {MediaFileType} from "@/hooks/drone/media";
 
 export const useDeviceTopo = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
@@ -57,8 +58,15 @@ export const useOnlineDocks = () => {
 
 export interface Pagination {
   page: number;
-  total: number;
   page_size: number;
+  begin_time?: string;
+  end_time?: string;
+  types?: number[];
+  payloads?: string[];
+  labels?: number[];
+  name?: string;
+  parent?: number;
+  total?: number;
 }
 
 export interface WaylineItem {
@@ -305,6 +313,11 @@ export interface FileItem {
   fingerprint: string;
   create_time: string;
   job_id: string;
+  id: number;
+  parent: number;
+  size: string;
+  type: MediaFileType;
+  preview_url: string;
 }
 
 interface FileData {
@@ -314,12 +327,11 @@ interface FileData {
 
 // Get Media files
 export const useMediaList = (workspaceId: string, body: Pagination) => {
-  const {get} = useAjax();
-  const url = `${MEDIA_HTTP_PREFIX}/files/${workspaceId}/files`;
+  const {post} = useAjax();
+  // const url = `${MEDIA_HTTP_PREFIX}/files/${workspaceId}/files`;
+  const url = `${MEDIA_HTTP_PREFIX}/files/${workspaceId}/page`;
   const key = body ? [url, body] as const : null;
-  return useSWR(key, async ([path, body]) => (await get<Resource<FileData>>(path, {
-    ...body
-  })).data.data);
+  return useSWR(key, async ([path, body]) => (await post<Resource<FileData>>(path, body)).data.data);
 };
 
 export interface UserItem {

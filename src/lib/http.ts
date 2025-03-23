@@ -2,7 +2,6 @@ import axios, {AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse} fro
 import {useNavigate} from "react-router-dom";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {CURRENT_CONFIG} from "@/lib/config.ts";
-import {toast} from "@/components/ui/use-toast.ts";
 
 export class Http {
   instance: AxiosInstance;
@@ -34,8 +33,8 @@ export class Http {
   }
 
   // destroy
-  delete<R = unknown>(url: string, query?: Record<string, string>, config?: Omit<AxiosRequestConfig, "params">) {
-    return this.instance.request<R>({...config, url: url, params: query, method: "delete"});
+  delete<R = unknown>(url: string, query?: Record<string, string>, data?: Record<string, JSONValue> | string[], config?: Omit<AxiosRequestConfig, "params">) {
+    return this.instance.request<R>({...config, url: url, params: query, data, method: "delete"});
   }
 }
 
@@ -97,8 +96,8 @@ export const useAjax = () => {
     put: <T>(url: string, data?: Record<string, JSONValue> | string[], config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
       return client.put<T>(url, data, config).catch(onError);
     },
-    delete: <T>(url: string, query?: Record<string, string>, config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
-      return client.delete<T>(url, query, config).catch(onError);
+    delete: <T>(url: string, query?: Record<string, string>, data?: Record<string, JSONValue> | string[], config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
+      return client.delete<T>(url, query, data, config).catch(onError);
     },
   };
 };

@@ -4,7 +4,7 @@ import WorkOrderDataTable from "@/components/drone/work-order/WorkOrderDataTable
 const BookOrderPage = () => {
 
   return (
-    <div className={"flex-1 border-[#43ABFF] border-[1px] border-l-0 flex flex-col rounded-r-lg"}>
+    <div className={"flex-1 border-[#43ABFF] border-[1px] border-l-0 flex flex-col rounded-r-lg w-full h-full"}>
       <h1 className={"flex justify-between items-center"}>
         <div className={"py-4 px-4 flex space-x-4"}>
           <img src={titleArrowPng} alt=""/>

@@ -25,6 +25,7 @@ import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import {waylinePointConfig} from "@/lib/wayline.ts";
 import takeOffPng from "@/assets/images/drone/wayline/takeoff.svg";
 import {calculateHaversineDistance} from "@/lib/utils.ts";
+import MapChange from "@/components/drone/public/MapChange.tsx";
 
 const HTTP_PREFIX_Wayline = "wayline/api/v1";
 
@@ -277,6 +278,9 @@ const WayLine = () => {
       </div>
       <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative"}>
         <Scene/>
+        <div className={"absolute right-0 bottom-0 z-100"}>
+          <MapChange/>
+        </div>
       </div>
     </div>
   );

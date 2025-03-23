@@ -14,6 +14,7 @@ import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.t
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
+import MapChange from "@/components/drone/public/MapChange.tsx";
 
 const DRC_API_PREFIX = "/control/api/v1";
 
@@ -158,6 +159,9 @@ const Tsa = () => {
       <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative"}>
         {/*<GMap/>*/}
         <TsaScene/>
+       <div className={"absolute right-0 bottom-0 z-100"}>
+         <MapChange/>
+       </div>
         <RightClickPanel>
           <MenuItem onClick={onFlyTo}>飞向此处</MenuItem>
         </RightClickPanel>
