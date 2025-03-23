@@ -134,6 +134,12 @@ const actionList = [
     param: 5
   },
   {
+    name: "全景拍照",
+    func: "panoShot",
+    isGlobal: true,
+    param: ["zoom", "wide", "ir"]
+  },
+  /*{
     name: "创建文件夹"
   },
   {
@@ -144,7 +150,7 @@ const actionList = [
   },
   {
     name: "结束间隔拍照"
-  }
+  }*/
 ];
 
 const formSchema = z.object({
@@ -492,7 +498,7 @@ const CreateWayLine = () => {
               gimbal_pitch_rotate_angle: action.param
             };
           }
-          if (action.func === "takePhoto" || action.func === "startRecord") {
+          if (action.func === "takePhoto" || action.func === "startRecord" || action.func === "panoShot") {
             return action.isGlobal ? {
               ...base,
               use_global_image_format: 1,
@@ -582,6 +588,8 @@ const CreateWayLine = () => {
   const onSaveWayPointSetting = () => {
     if (!currentWayPoint) return;
     const newWaypoints = waypoints.map(point => point.id === currentWayPoint.id ? currentWayPoint : point);
+    console.log("newWaypoints===");
+    console.log(newWaypoints);
     setWaypoints(newWaypoints);
     // 提示保存成功
     toast({
@@ -639,6 +647,13 @@ const CreateWayLine = () => {
             return {
               name: "拍照",
               func: "takePhoto",
+              isGlobal: action.use_global_image_format === 1,
+              param: action.use_global_image_format === 1 ? data.image_format?.split(",") : action.image_format?.split(",")
+            };
+          case "panoShot":
+            return {
+              name: "全景拍照",
+              func: "panoShot",
               isGlobal: action.use_global_image_format === 1,
               param: action.use_global_image_format === 1 ? data.image_format?.split(",") : action.image_format?.split(",")
             };
@@ -1737,6 +1752,79 @@ const CreateWayLine = () => {
                               <div className={"flex items-center space-x-2 col-span-3"}>
                                 <AlignJustify size={16}/>
                                 <span>拍照</span>
+                              </div>
+                              <div className={"content-center space-x-2 col-span-2"}>
+                                <Checkbox id={"photo"}
+                                          checked={action.isGlobal as boolean}
+                                          onCheckedChange={(checked) => {
+                                            setCurrentWayPoint({
+                                              ...currentWayPoint!,
+                                              actions: currentWayPoint!.actions.map((item, idx) => {
+                                                if (idx === index) {
+                                                  return {
+                                                    ...item,
+                                                    isGlobal: checked  // 更新 param 值
+                                                  };
+                                                }
+                                                return item;
+                                              })
+                                            });
+                                          }}
+                                />
+                                <label
+                                  htmlFor="photo"
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  跟随航线
+                                </label>
+                              </div>
+                              <Trash2
+                                className={"cursor-pointer text-right ml-2"}
+                                size={16}
+                                onClick={() => {
+                                  // 删除当前航点的指定动作
+                                  setCurrentWayPoint({
+                                    ...currentWayPoint!,
+                                    actions: currentWayPoint!.actions.filter((_, idx) => idx !== index)
+                                  });
+                                }}
+                              />
+                            </div>
+                            <ToggleGroup
+                              disabled={action.isGlobal}
+                              type="multiple"
+                              className={"space-x-2 whitespace-nowrap"}
+                              value={action.param}
+                              onValueChange={(value) => {
+                                // 如果新的选择为空且当前只有一个选项，则保持不变
+                                if (value.length === 0 && action.param.length === 1) {
+                                  return;
+                                }
+                                setCurrentWayPoint({
+                                  ...currentWayPoint,
+                                  actions: currentWayPoint!.actions.map((item, idx) => {
+                                    if (idx === index) {
+                                      return {
+                                        ...item,
+                                        param: value  // 更新 param 值
+                                      };
+                                    }
+                                    return item;
+                                  })
+                                });
+                              }}
+                            >
+                              <ToggleGroupItem value="wide">广角照片</ToggleGroupItem>
+                              <ToggleGroupItem value="zoom">变焦照片</ToggleGroupItem>
+                              <ToggleGroupItem value="ir">红外照片</ToggleGroupItem>
+                            </ToggleGroup>
+                          </div>;
+                        case "全景拍照":
+                          return <div key={index} className={"space-y-4"}>
+                            <div className={"grid grid-cols-6 items-center"}>
+                              <div className={"flex items-center space-x-2 col-span-3"}>
+                                <AlignJustify size={16}/>
+                                <span>全景拍照</span>
                               </div>
                               <div className={"content-center space-x-2 col-span-2"}>
                                 <Checkbox id={"photo"}
