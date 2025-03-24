@@ -1,6 +1,10 @@
 import {
   ColumnDef,
-  ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel,
+  ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
   PaginationState,
   useReactTable,
   VisibilityState
@@ -9,49 +13,61 @@ import {useEffect, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {Task, useWaylinJobs} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {OutOfControlActionMap, TaskStatus, TaskStatusColor, TaskStatusMap, TaskTypeMap} from "@/types/task.ts";
+import {TaskStatus, TaskTypeMap} from "@/types/task.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
 import {cn} from "@/lib/utils.ts";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
+import {formatMediaTaskStatus, formatTaskStatus, groupTasksByDate, UpdateTaskStatus} from "@/hooks/drone/task";
+import {Circle} from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog.tsx";
 
-function formatTaskStatus(task: Task) {
-  const statusObj = {
-    text: "",
-    color: ""
-  };
-  const {status} = task;
-  statusObj.text = TaskStatusMap[status];
-  statusObj.color = TaskStatusColor[status];
-  return statusObj;
-}
-
-const groupTasksByDate = (tasks: Task[]) => {
-  const groups: { [key: string]: Task[] } = {};
-
-  tasks.forEach(task => {
-    const date = task.begin_time.split(' ')[0]; // 获取日期部分
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(task);
-  });
-
-  return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0])); // 按日期倒序排列
-};
 
 const TaskDataTable = () => {
-  const {delete: deleteClient} = useAjax();
+  const {delete: deleteClient, put} = useAjax();
 
   const columns: ColumnDef<Task>[] = [
     {
-      header: "计划 | 实际时间",
-      cell: ({row}) => <span>
-        {row.original.begin_time}-{row.original.end_time}
-        |
-        {row.original.execute_time}-{row.original.completed_time}
-      </span>
+      header: "计划时间 | 实际时间",
+      cell: ({row}) => {
+        // 格式化时间函数
+        const formatTime = (timeStr: string) => {
+          if (!timeStr) return "";
+          const time = timeStr.split(" ")[1];  // 取空格后的时间部分
+          return time ? time.substring(0, 8) : ""; // 只保留时分秒 (HH:mm:ss)
+        };
+
+        return (
+          <div className="flex gap-0.5 space-x-2">
+            <div className="text-gray-400 text-[13px]">
+              [{formatTime(row.original.begin_time)}-{formatTime(row.original.end_time)}]
+            </div>
+            <div className="text-[#43ABFF] text-[13px]">
+              {formatTime(row.original.execute_time) ?
+                `[${formatTime(row.original.execute_time)}-${formatTime(row.original.completed_time)}]` : "已取消"
+              }
+            </div>
+          </div>
+        );
+      }
+    },
+    {
+      header: "执行状态",
+      cell: ({row}) =>
+        <span style={{
+          color: formatTaskStatus(row.original).color
+        }} className={""}>{formatTaskStatus(row.original).text}</span>
     },
     {
       accessorKey: "job_name",
@@ -61,11 +77,6 @@ const TaskDataTable = () => {
       accessorKey: "task_type",
       header: "类型",
       cell: ({row}) => <span>{TaskTypeMap[row.original.task_type]}</span>
-    },
-    {
-      header: "任务类型",
-      cell: ({row}) =>
-        <span className={`text-[${formatTaskStatus(row.original).color}]`}>{formatTaskStatus(row.original).text}</span>
     },
     {
       accessorKey: "file_name",
@@ -80,25 +91,138 @@ const TaskDataTable = () => {
       header: "创建人",
     },
     {
+      header: "媒体上传",
+      cell: ({row}) => {
+        return <div className={"flex items-center whitespace-nowrap"}>
+          <Circle fill={formatMediaTaskStatus(row.original).color} size={16}/>
+          <span>{formatMediaTaskStatus(row.original).text}
+            {formatMediaTaskStatus(row.original).number && `${formatMediaTaskStatus(row.original).number}`}</span>
+        </div>;
+      }
+    },
+    {
       header: "操作",
       cell: ({row}) =>
-        <span
-          onClick={() => onDeleteTask(row.original.job_id)}
-          className={cn("bg-[#43ABFF] hover:bg-[#43ABFF] py-2 px-4 rounded-md cursor-pointer", row.original.status === TaskStatus.Wait ? "" : "bg-transparent")}>
-        {row.original.status === TaskStatus.Wait && "删除"}
-      </span>
+        <div className={"flex whitespace-nowrap space-x-2"}>
+          {row.original.status === TaskStatus.Wait && <AlertDialog>
+            <AlertDialogTrigger className={""} asChild>
+              <Button
+                type={"submit"}
+                className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
+                删除
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>删除任务</AlertDialogTitle>
+                <AlertDialogDescription>
+                  确认删除任务吗？
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDeleteTask(row.original.job_id)}>确认</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>}
+          {row.original.status === TaskStatus.Carrying && <AlertDialog>
+            <AlertDialogTrigger className={""} asChild>
+              <Button
+                type={"submit"}
+                className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
+                中止
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>中止任务</AlertDialogTitle>
+                <AlertDialogDescription>
+                  确认中止任务吗？
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onSuspandTask(row.original.job_id)}>确认</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>}
+          {row.original.status === TaskStatus.Paused && <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                type={"submit"}
+                className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
+                恢复
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>恢复任务</AlertDialogTitle>
+                <AlertDialogDescription>
+                  确认恢复任务吗？
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onResumeTask(row.original.job_id)}>确认</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>}
+        </div>
     }
   ];
 
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const HTTP_PREFIX = "/wayline/api/v1";
+
+  // 删除任务
   const onDeleteTask = async (jobId: string) => {
-    await deleteClient(`${HTTP_PREFIX}/workspaces/${workspaceId}/jobs`, {
-      job_id: jobId
-    });
-    toast({
-      description: "任务取消成功！"
-    });
+    try {
+      await deleteClient(`${HTTP_PREFIX}/workspaces/${workspaceId}/jobs`, {
+        job_id: jobId
+      });
+      toast({
+        description: "任务取消成功！"
+      });
+    } catch (err: any) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  // 中止任务
+  const onSuspandTask = async (jobId: string) => {
+    try {
+      await put(`${HTTP_PREFIX}/workspaces/${workspaceId}/jobs/${jobId}`, {
+        status: UpdateTaskStatus.Suspend
+      });
+      toast({
+        description: "任务中止成功！"
+      });
+    } catch (err: any) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  // 恢复任务
+  const onResumeTask = async (jobId: string) => {
+    try {
+      await put(`${HTTP_PREFIX}/workspaces/${workspaceId}/jobs/${jobId}`, {
+        status: UpdateTaskStatus.Resume
+      });
+      toast({
+        description: "任务恢复成功！"
+      });
+    } catch (err: any) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
@@ -196,7 +320,7 @@ const TaskDataTable = () => {
                       <TableRow
                         key={row.id}
                         className={cn(
-                          "h-[50px]",
+                          "h-[46px]",
                           "border-b border-[#0A81E1]/30",
                           "hover:bg-[#0A4088]/90 transition-colors duration-200",
                           "data-[state=selected]:bg-transparent"

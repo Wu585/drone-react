@@ -386,7 +386,7 @@ const CreateWayLine = () => {
     }
     setWaylineInfo({
       ...waylineInfo,
-      distance: +(distance + takeoffPointEndHeight).toFixed(2)
+      distance: +distance.toFixed(2)
     });
     if (waypoints.length > 0) {
       moveDroneToTarget({

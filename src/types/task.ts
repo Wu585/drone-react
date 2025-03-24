@@ -117,10 +117,10 @@ export enum MediaStatus { // 媒体上传进度
 }
 
 export const MediaStatusMap = {
-  [MediaStatus.ToUpload]: "Waiting to upload",
-  [MediaStatus.Uploading]: "Uploading…",
-  [MediaStatus.Success]: "Uploaded",
-  [MediaStatus.Empty]: "No media files",
+  [MediaStatus.ToUpload]: "待上传",
+  [MediaStatus.Uploading]: "上传中…",
+  [MediaStatus.Success]: "上传成功",
+  [MediaStatus.Empty]: "无媒体文件",
 };
 
 export const MediaStatusColorMap = {
