@@ -257,7 +257,7 @@ const WorkOrderDataTable = () => {
           [ELocalStorageKey.Token]: getAuthToken()
         }
       }}
-      accept="image/*"
+      accept="image/*,video/*"
       multiple
       autoUpload>
       <div className="space-y-4">

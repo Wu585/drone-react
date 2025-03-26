@@ -10,17 +10,13 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {DateTimePicker} from "@/components/ui/date-time-picker.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
 import Scene from "@/components/drone/public/Scene.tsx";
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 import {pickPosition} from "@/components/toolbar/tools";
 import {useItemFinishListener} from "@rpldy/uploady";
 import UploadButton from "@rpldy/upload-button";
 import {UploadCloud, X} from "lucide-react";
-import {cn, uuidv4} from "@/lib/utils";
+import {cn} from "@/lib/utils";
 import {WorkOrder} from "@/hooks/drone";
-import {FileLike} from "@rpldy/shared";
-import {PreviewMethods, UploadPreview} from "@rpldy/upload-preview";
-import WorkOrderUploadPreview from "@/components/drone/work-order/WorkOrderUploadPreview.tsx";
-import {getMediaType} from "@/hooks/drone/order";
 
 const eventMap = {
   0: "公共设施",
@@ -39,6 +35,7 @@ const eventMap = {
   13: "重点保障",
   14: "其他事件",
 } as const;
+
 
 const createOrderSchema = z.object({
   name: z.string().min(1, "请输入事件名称"),
@@ -83,8 +80,10 @@ interface Props {
 
 const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
   const {post} = useAjax();
-  const [mediaUrlList, setMediaUrlList] = useState<string[]>([]);
-  const [fileList, setFileList] = useState<{ id: string, fileKey: string }[]>([]);
+  const [imageUrlList, setImageUrlList] = useState<string[]>([]);
+
+  const [fileList, setFileList] = useState<Record<string, any>[]>([]);
+
   const isPreview = type === "preview";
 
   const defaultValues = {
@@ -123,40 +122,28 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
 
   useEffect(() => {
     if (currentOrder) {
-      const initialFileList = currentOrder.pic_list_origin?.map(item => ({
-        fileKey: item,
-        id: uuidv4()
-      })) || [];
-
-      setFileList(initialFileList);
-      setMediaUrlList(currentOrder.pic_list || []);
-
       form.reset({
         ...currentOrder,
-        pic_list: initialFileList.map(item => item.fileKey)
+        pic_list: currentOrder.pic_list_origin
       });
+      setImageUrlList(currentOrder.pic_list || []);
     }
-  }, [currentOrder, form]);
+  }, [currentOrder]);
 
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      console.log("Form values changed:", value);
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
-  useItemFinishListener(useCallback(({uploadResponse, id}) => {
+  useItemFinishListener(async ({uploadResponse, file, id}) => {
+    setFileList(prevState => [...prevState, {
+      id,
+      type: file.type,
+      url: URL.createObjectURL(file)
+    }]);
     if (uploadResponse?.data?.data) {
-      setFileList(prevFileList => {
-        const newFileList = [...prevFileList, {
-          id,
-          fileKey: uploadResponse?.data?.data
-        }];
-        form.setValue("pic_list", newFileList.map(item => item.fileKey));
-        return newFileList;
-      });
+      form.setValue("pic_list", [...form.getValues("pic_list"), uploadResponse?.data?.data]);
+      /*const res: any = await post(`${OPERATION_HTTP_PREFIX}/file/getUrl?key=${uploadResponse?.data?.data}`);
+      if (res.data.code === 0) {
+        setImageUrlList([...imageUrlList, res.data.data]);
+      }*/
     }
-  }, [form]));
+  });
 
   const onSubmit = async (values: CreateOrderFormValues) => {
     if (isPreview) return;
@@ -198,26 +185,6 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
       });
     }
   };
-
-  const previewMethodsRef = useRef<PreviewMethods>(null);
-
-  const onClear = useCallback((id: string) => {
-    if (previewMethodsRef.current?.removePreview) {
-      previewMethodsRef.current.removePreview(id);
-      setFileList(prevFileList => {
-        const newFileList = prevFileList.filter(item => item.id !== id);
-        form.setValue("pic_list", newFileList.map(item => item.fileKey));
-        return newFileList;
-      });
-    }
-  }, [previewMethodsRef, form]);
-
-  const onEditRemove = useCallback((url: string) => {
-    const index = mediaUrlList.indexOf(url);
-    setMediaUrlList(mediaUrlList.filter(item => item !== url));
-    const newPicList = form.getValues("pic_list").filter((_, i) => i !== index);
-    form.setValue("pic_list", newPicList);
-  }, [form, mediaUrlList]);
 
   return (
     <Form {...form}>
@@ -374,7 +341,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
               <FormControl>
                 <div className={"col-span-3"}>
                   <div className={cn(
-                    "border-2 border-dashed border-[#43ABFF] rounded-sm p-4 text-center transition-colors",
+                    "w-full h-full border-2 border-dashed border-[#43ABFF] rounded-sm p-4 text-center transition-colors",
                     isPreview
                       ? "opacity-50 cursor-not-allowed pointer-events-none bg-[#072E62]/[.7]"
                       : "hover:bg-[#072E62] cursor-pointer"
@@ -419,89 +386,39 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4 mt-4 ml-24 overflow-auto max-h-[168px]">
-          {type === "edit" && mediaUrlList.map(url => {
-            const fileType = getMediaType(url);
-            return <div className="relative group aspect-video">
-              {fileType === "video" ? <video
-                key={url}
-                muted
-                loop
-                controls
-                className="w-full h-full object-cover rounded-sm"
+        <div className="grid grid-cols-2 gap-4 mt-4 ml-24 overflow-auto max-h-[150px]">
+          {/*{!isPreview && fileList.map(file => <div key={file.id}>
+            {file.type.includes("image") ? <img
+              src={file.url}
+              className="w-full h-full object-fill rounded-sm"
+            /> : <video src={file.url}></video>}
+          </div>)}*/}
+          {imageUrlList?.map((url, index) => (
+            <div key={url} className="relative group aspect-video">
+              <img
                 src={url}
-              /> : <img
-                key={url}
-                src={url}
-                className="w-full h-full object-cover rounded-sm"
-              />}
-              <button
-                onClick={() => onEditRemove(url)}
+                alt={`上传图片 ${index + 1}`}
+                className="w-full h-full object-fill rounded-sm"
+              />
+              {!isPreview && <button
                 type="button"
-                className="absolute top-2 right-2 p-1 bg-red-500 rounded-full
+                onClick={() => {
+                  const newUrls = imageUrlList?.filter((_, i) => i !== index);
+                  setImageUrlList(newUrls);
+                  console.log("form.getValues(\"pic_list\")");
+                  console.log(form.getValues("pic_list"));
+                  const newPicList = form.getValues("pic_list").filter((_, i) => i !== index);
+                  console.log("newPicList");
+                  console.log(newPicList);
+                  form.setValue("pic_list", newPicList);
+                }}
+                className="absolute top-[2px] right-[2px] p-1 bg-red-500 rounded-full
                          text-white opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <X className="w-4 h-4"/>
-              </button>
-            </div>;
-          })}
-          <UploadPreview
-            previewMethodsRef={previewMethodsRef}
-            rememberPreviousBatches
-            PreviewComponent={({url, type: fileType, id}) => <div className="relative group aspect-video">
-              {fileType === "video" ? (
-                <video
-                  muted
-                  loop
-                  controls
-                  className="w-full h-full object-cover rounded-sm"
-                  src={url}
-                />
-              ) : (
-                <img
-                  src={url}
-                  className="w-full h-full object-cover rounded-sm"
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => onClear(id)}
-                className="absolute top-2 right-2 p-1 bg-red-500 rounded-full
-                         text-white opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-4 h-4"/>
-              </button>
-            </div>}
-          />
-          {type === "preview" && mediaUrlList.map(url => {
-            const fileType = getMediaType(url);
-            return <div className="relative group aspect-video">
-              {fileType === "video" ? <video
-                key={url}
-                muted
-                loop
-                controls
-                className="w-full h-full object-cover rounded-sm"
-                src={url}
-              /> : <img
-                key={url}
-                src={url}
-                className="w-full h-full object-cover rounded-sm"
-              />}
-            </div>;
-          })}
-          {/*<WorkOrderUploadPreview
-            mediaList={mediaUrlList}
-            isPreview={isPreview}
-            onPreviewChange={(previews) => {
-              console.log("previews");
-              console.log(previews);
-              const newPicList = fileList.filter(item =>
-                previews.find(file => file.id === item.id));
-              form.setValue("pic_list", newPicList.map(item => item.fileKey));
-            }}
-            onMediaRemove={handleMediaRemove}
-          />*/}
+              </button>}
+            </div>
+          ))}
         </div>
 
       </form>

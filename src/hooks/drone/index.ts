@@ -9,6 +9,7 @@ import {OutOfControlAction, TaskStatus, TaskType} from "@/types/task.ts";
 import {WaylineType} from "@/types/wayline.ts";
 import {EFlightAreaType, FlightAreaContent} from "@/types/flight-area.ts";
 import {MediaFileType} from "@/hooks/drone/media";
+import useSWRImmutable from "swr/immutable";
 
 export const useDeviceTopo = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
@@ -16,7 +17,6 @@ export const useDeviceTopo = () => {
   const url = `${HTTP_PREFIX}/devices/${workspaceId}/devices`;
   return useSWR(url, async (path) => (await get<Resource<any[]>>(path)).data.data);
 };
-
 
 export const useOnlineDocks = () => {
   const {data: deviceTopo} = useDeviceTopo();
@@ -599,7 +599,7 @@ export const useWorkOrderList = (body: {
 export const useWorkOrderById = (id?: number) => {
   const {get} = useAjax();
   const key = id ? [`${OPERATION_HTTP_PREFIX}/order/get?id=${id}`] : null;
-  return useSWR(key, async ([path]) => (await get<Resource<WorkOrder>>(path)).data.data);
+  return useSWRImmutable(key, async ([path]) => (await get<Resource<WorkOrder>>(path)).data.data);
 };
 
 // 查看图片url

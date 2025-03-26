@@ -35,8 +35,10 @@ export const useAddEventListener =
   };
 
 // 添加无人机图标
-export const addDroneModel = (longitude: number, latitude: number, height: number) => {
-  getCustomSource("waylines-create")?.entities.add({
+export const addDroneModel = (longitude: number, latitude: number, height: number, sourceName = "waylines-create") => {
+  const takeoffDroneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
+  if (takeoffDroneEntity) return;
+  getCustomSource(sourceName)?.entities.add({
     id: "takeoff-drone",
     position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
     model: {
@@ -60,11 +62,11 @@ export const removeDroneModel = () => {
 };
 
 export const addTakeOffPoint = ({
-                           longitude,
-                           latitude,
-                           height,
-                           endHeight,
-                         }: {
+                                  longitude,
+                                  latitude,
+                                  height,
+                                  endHeight,
+                                }: {
   longitude: number,
   latitude: number,
   height: number,
@@ -520,6 +522,38 @@ export const addWayPointWithIndex = ({longitude, latitude, height, text, id}: {
       width: 32,
       height: 32,
       color: Cesium.Color.WHITE
+    },
+    polyline: {
+      positions: [
+        Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
+        Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
+      ],
+      width: 2,
+      material: new Cesium.PolylineDashMaterialProperty({
+        color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
+        dashLength: 8.0
+      })
+    }
+  });
+};
+
+export const addHeightPolyline = (longitude: number, latitude: number, height: number) => {
+  const entity = getCustomSource("waylines-create")?.entities.getById("height-polyline");
+  if (entity) return;
+  getCustomSource("waylines-create")?.entities.add({
+    id: "height-polyline",
+    position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height / 2),
+    label: {
+      text: `${height}m`,
+      font: "14px sans-serif",
+      fillColor: Cesium.Color.BLACK,
+      outlineColor: Cesium.Color.WHITE,
+      outlineWidth: 3,
+      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      verticalOrigin: Cesium.VerticalOrigin.CENTER,
+      horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+      pixelOffset: new Cesium.Cartesian2(10, 0),
+      disableDepthTestDistance: Number.POSITIVE_INFINITY
     },
     polyline: {
       positions: [

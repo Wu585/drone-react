@@ -16,7 +16,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({src}) => {
     if (videoRef.current) {
       playerRef.current = videojs(videoRef.current, {
         restoreEl: true,
-        controls: true,
         autoplay: true,
         preload: "auto",
         fluid: true,

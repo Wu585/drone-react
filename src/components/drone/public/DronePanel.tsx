@@ -124,20 +124,6 @@ const DronePanel = () => {
     }
   };
 
-  /*useEffect(() => {
-    if (dockVideoVisible && isDockLive) {
-      const playerElement = document.getElementById("player");
-      if (playerElement && agoraClientRef.current) {
-        // 获取当前发布的视频流
-        const remoteUsers = agoraClientRef.current.remoteUsers;
-        const videoUser = remoteUsers.find(user => user.videoTrack);
-        if (videoUser?.videoTrack) {
-          videoUser.videoTrack.play(playerElement);
-        }
-      }
-    }
-  }, [dockVideoVisible, isDockLive]);*/
-
   const {onStartLiveStream: start, onStopLiveStream: stop} = useDockLive("player", osdVisible.gateway_sn || "");
   const {onStartLiveStream: startDrone, onStopLiveStream: stopDrone} = useDockLive("player2", osdVisible.sn || "");
 
@@ -192,7 +178,10 @@ const DronePanel = () => {
   } = useFullscreen("player2");
 
   const onPointDrone = () => {
-
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(deviceInfo.device.longitude, deviceInfo.device.latitude, 200),
+      duration: 1
+    });
   };
 
   return (

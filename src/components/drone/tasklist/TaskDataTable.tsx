@@ -33,7 +33,6 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog.tsx";
 
-
 const TaskDataTable = () => {
   const {delete: deleteClient, put} = useAjax();
 
@@ -268,7 +267,7 @@ const TaskDataTable = () => {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {/* 保持原有的工具栏内容 */}
@@ -359,7 +358,7 @@ const TaskDataTable = () => {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between py-2">
+      <div className="flex items-center justify-between">
         <Label className="text-gray-400">
           共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
         </Label>

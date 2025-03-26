@@ -56,10 +56,12 @@ const SheetContent = React.forwardRef<
   SheetContentProps
 >(({ side = "right", className, children, ...props }, ref) => (
   <SheetPortal>
-    <SheetOverlay />
+    {/*<SheetOverlay />*/}
     <SheetPrimitive.Content
       ref={ref}
       className={cn(sheetVariants({ side }), className)}
+      onPointerDownOutside={e => e.preventDefault()}
+      onEscapeKeyDown={e => e.preventDefault()}
       {...props}
     >
       {children}

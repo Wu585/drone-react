@@ -56,12 +56,12 @@ import dayjs from "dayjs";
 const fallbackData: FileItem[] = [];
 
 const GridView = ({
-  data,
-  onClickFolder,
-  onDownload,
-  onUpdateFileName,
-  onDeleteFile
-}: {
+                    data,
+                    onClickFolder,
+                    onDownload,
+                    onUpdateFileName,
+                    onDeleteFile
+                  }: {
   data: FileItem[];
   onClickFolder: (file: Partial<FileItem>) => void;
   onDownload: (file: FileItem) => void;
@@ -79,7 +79,7 @@ const GridView = ({
           {/* 文件图标 */}
           <div className="w-full aspect-square flex items-center justify-center mb-2">
             {file.type === MediaFileType.DIR ? (
-              <FolderClosed className="w-16 h-16 text-orange-400" />
+              <FolderClosed className="w-16 h-16 text-orange-400"/>
             ) : file.type === MediaFileType.VIDEO ? (
               <div className="relative w-full h-full">
                 <img
@@ -88,7 +88,7 @@ const GridView = ({
                   alt={file.file_name}
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                  <Play className="w-8 h-8 text-white" />
+                  <Play className="w-8 h-8 text-white"/>
                 </div>
               </div>
             ) : (
@@ -117,7 +117,7 @@ const GridView = ({
                   onDownload(file);
                 }}
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-4 w-4"/>
               </Button>
             )}
             <Button
@@ -129,7 +129,7 @@ const GridView = ({
                 onUpdateFileName(file);
               }}
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="h-4 w-4"/>
             </Button>
             <Button
               variant="ghost"
@@ -140,7 +140,7 @@ const GridView = ({
                 onDeleteFile(file);
               }}
             >
-              <Trash className="h-4 w-4" />
+              <Trash className="h-4 w-4"/>
             </Button>
           </div>
         </div>
@@ -150,14 +150,14 @@ const GridView = ({
 };
 
 const InfiniteGridView = ({
-  data,
-  hasMore,
-  onLoadMore,
-  onClickFolder,
-  onDownload,
-  onUpdateFileName,
-  onDeleteFile
-}: {
+                            data,
+                            hasMore,
+                            onLoadMore,
+                            onClickFolder,
+                            onDownload,
+                            onUpdateFileName,
+                            onDeleteFile
+                          }: {
   data: FileItem[];
   hasMore: boolean;
   onLoadMore: () => void;
@@ -181,13 +181,13 @@ const InfiniteGridView = ({
       },
       {
         root: null,
-        rootMargin: '20px',
+        rootMargin: "20px",
         threshold: 0.1
       }
     );
 
     // 添加一个加载触发器元素
-    const trigger = container.querySelector('.load-more-trigger');
+    const trigger = container.querySelector(".load-more-trigger");
     if (trigger) {
       observer.observe(trigger);
     }
@@ -207,7 +207,7 @@ const InfiniteGridView = ({
             {/* 文件图标 */}
             <div className="w-full aspect-square flex items-center justify-center mb-1">
               {file.type === MediaFileType.DIR ? (
-                <FolderClosed className="w-12 h-12 text-orange-400" />
+                <FolderClosed className="w-12 h-12 text-orange-400"/>
               ) : file.type === MediaFileType.VIDEO ? (
                 <div className="relative w-full h-full">
                   <video
@@ -215,7 +215,7 @@ const InfiniteGridView = ({
                     className="w-full h-full object-cover rounded-lg"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                    <Play className="w-6 h-6 text-white" />
+                    <Play className="w-6 h-6 text-white"/>
                   </div>
                 </div>
               ) : (
@@ -244,7 +244,7 @@ const InfiniteGridView = ({
                     onDownload(file);
                   }}
                 >
-                  <Download className="h-3 w-3" />
+                  <Download className="h-3 w-3"/>
                 </Button>
               )}
               <Button
@@ -256,7 +256,7 @@ const InfiniteGridView = ({
                   onUpdateFileName(file);
                 }}
               >
-                <Edit className="h-3 w-3" />
+                <Edit className="h-3 w-3"/>
               </Button>
               <Button
                 variant="ghost"
@@ -267,7 +267,7 @@ const InfiniteGridView = ({
                   onDeleteFile(file);
                 }}
               >
-                <Trash className="h-3 w-3" />
+                <Trash className="h-3 w-3"/>
               </Button>
             </div>
           </div>
@@ -275,7 +275,7 @@ const InfiniteGridView = ({
       </div>
       {hasMore && (
         <div className="load-more-trigger flex justify-center p-4">
-          <Loader className="h-6 w-6 animate-spin text-[#43ABFF]" />
+          <Loader className="h-6 w-6 animate-spin text-[#43ABFF]"/>
         </div>
       )}
     </div>
@@ -571,6 +571,13 @@ const MediaDataTable = () => {
       </div>
     },
     {
+      accessorKey: "size",
+      header: "大小",
+      cell: ({row}) => <div>
+        {row.original.size || "--"}
+      </div>
+    },
+    {
       accessorKey: "create_time",
       header: "创建时间",
     },
@@ -769,9 +776,9 @@ const MediaDataTable = () => {
     // 切换视图时重置状态
     setAllItems([]); // 清空已加载的数据
     if (displayType === 0) {
-      setListPagination({ pageIndex: 0, pageSize: 10 });
+      setListPagination({pageIndex: 0, pageSize: 10});
     } else {
-      setGridPagination({ page: 1, pageSize: 30 });
+      setGridPagination({page: 1, pageSize: 30});
     }
   }, [displayType]);
 
@@ -805,9 +812,9 @@ const MediaDataTable = () => {
 
     // 重置分页
     if (displayType === 0) {
-      setListPagination({ pageIndex: 0, pageSize: 10 });
+      setListPagination({pageIndex: 0, pageSize: 10});
     } else {
-      setGridPagination({ page: 1, pageSize: 30 });
+      setGridPagination({page: 1, pageSize: 30});
       setAllItems([]); // 清空已加载数据
     }
   }, [displayType]);
@@ -1050,7 +1057,7 @@ const MediaDataTable = () => {
               onDownload={async (file) => {
                 addDownloadingId(file.id.toString());
                 try {
-                  await downloadMediaFile(workspaceId, file.id, file.file_name);
+                  await downloadMediaFile(workspaceId, file.file_id, file.file_name);
                 } finally {
                   removeDownloadingId(file.id.toString());
                 }

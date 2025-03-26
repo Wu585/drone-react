@@ -10,6 +10,7 @@ import bmssPoint from "@/assets/images/bmss-point.png";
 import dockPng from "@/assets/images/drone/dock.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
 import {useConnectMqtt} from "@/hooks/drone/useConnectMqtt.ts";
+import {useAddAllElements} from "@/hooks/drone/elements";
 
 const mapLayerList = [
   {
@@ -74,6 +75,8 @@ const Scene = () => {
   useEntityCustomSource("waylines-create");
   // 航线相关点位、连接线、垂直线的集合
   useEntityCustomSource("waylines-update");
+  // 标注相关的集合
+  useEntityCustomSource("elements");
 
   useEffect(() => {
     getCustomSource("dock")?.entities.removeAll();
@@ -93,8 +96,10 @@ const Scene = () => {
     });
   }, [deviceState]);
 
+  // useAddAllElements();
+
   return (
-    <div id="cesiumContainer" className={"h-full"}></div>
+    <div id="cesiumContainer" className={"h-full rounded-lg"}></div>
   );
 };
 

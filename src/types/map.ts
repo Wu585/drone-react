@@ -126,7 +126,8 @@ export enum MapDoodleColor {
 export enum MapElementEnum {
   PIN = 0,
   LINE = 1,
-  POLY = 2
+  POLY = 2,
+  CIRCLE = 3,
 }
 
 export type MapDoodleType = "pin" | "polyline" | "polygon" | "off" | "circle"

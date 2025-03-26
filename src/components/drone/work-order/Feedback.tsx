@@ -31,7 +31,11 @@ const Feedback = ({currentOrder, onSuccess, type = "handle"}: Props) => {
     operate_pic_list: [],
     result: ""
   };
-  const isPreview = (type === "preview" || currentOrder?.status !== 1) && currentOrder?.status !== 4;
+  console.log("type");
+  console.log(type);
+  const isPreview = type === "preview" || (currentOrder?.status !== 1 && currentOrder?.status !== 4);
+  console.log("isPreview");
+  console.log(isPreview);
   const {post} = useAjax();
   const {data: operationList} = useOperationList(currentOrder?.id);
   console.log("operationList");
@@ -81,7 +85,6 @@ const Feedback = ({currentOrder, onSuccess, type = "handle"}: Props) => {
       });
     }
   };
-
 
   return (
     <div className={"max-h-[500px] overflow-auto"}>

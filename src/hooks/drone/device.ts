@@ -1,5 +1,5 @@
 // 控制权
-import {useEffect, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {DeviceOsd, DockOsd, GatewayOsd} from "@/types/device.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 

@@ -10,17 +10,14 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {DateTimePicker} from "@/components/ui/date-time-picker.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
 import Scene from "@/components/drone/public/Scene.tsx";
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 import {pickPosition} from "@/components/toolbar/tools";
-import {useItemFinishListener} from "@rpldy/uploady";
+import {useItemFinishListener, useItemProgressListener, useBatchProgressListener, useBatchAddListener, useAbortItem, useRequestPreSend} from "@rpldy/uploady";
 import UploadButton from "@rpldy/upload-button";
-import {UploadCloud, X} from "lucide-react";
-import {cn, uuidv4} from "@/lib/utils";
+import {UploadCloud, X, Circle} from "lucide-react";
+import {cn} from "@/lib/utils";
 import {WorkOrder} from "@/hooks/drone";
-import {FileLike} from "@rpldy/shared";
-import {PreviewMethods, UploadPreview} from "@rpldy/upload-preview";
-import WorkOrderUploadPreview from "@/components/drone/work-order/WorkOrderUploadPreview.tsx";
-import {getMediaType} from "@/hooks/drone/order";
+import {UploadPreview} from "@rpldy/upload-preview";
 
 const eventMap = {
   0: "公共设施",
@@ -83,9 +80,11 @@ interface Props {
 
 const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
   const {post} = useAjax();
-  const [mediaUrlList, setMediaUrlList] = useState<string[]>([]);
-  const [fileList, setFileList] = useState<{ id: string, fileKey: string }[]>([]);
+  const [imageUrlList, setImageUrlList] = useState<string[]>([]);
   const isPreview = type === "preview";
+  const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
+  const [uploadStatus, setUploadStatus] = useState<{[key: string]: 'uploading' | 'paused' | 'completed' | 'error'}>({});
+  const abortItem = useAbortItem();
 
   const defaultValues = {
     name: "",
@@ -123,40 +122,41 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
 
   useEffect(() => {
     if (currentOrder) {
-      const initialFileList = currentOrder.pic_list_origin?.map(item => ({
-        fileKey: item,
-        id: uuidv4()
-      })) || [];
-
-      setFileList(initialFileList);
-      setMediaUrlList(currentOrder.pic_list || []);
-
       form.reset({
         ...currentOrder,
-        pic_list: initialFileList.map(item => item.fileKey)
+        pic_list: currentOrder.pic_list_origin
       });
+      setImageUrlList(currentOrder.pic_list || []);
     }
-  }, [currentOrder, form]);
+  }, [currentOrder]);
 
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      console.log("Form values changed:", value);
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
-  useItemFinishListener(useCallback(({uploadResponse, id}) => {
+  // 修改监听上传完成的回调函数
+  useItemFinishListener(async (batchItem) => {
+    const {uploadResponse} = batchItem;
     if (uploadResponse?.data?.data) {
-      setFileList(prevFileList => {
-        const newFileList = [...prevFileList, {
-          id,
-          fileKey: uploadResponse?.data?.data
-        }];
-        form.setValue("pic_list", newFileList.map(item => item.fileKey));
-        return newFileList;
-      });
+      form.setValue("pic_list", [...form.getValues("pic_list"), uploadResponse.data.data]);
+      const res: any = await post(`${OPERATION_HTTP_PREFIX}/file/getUrl?key=${uploadResponse.data.data}`);
+      if (res.data.code === 0) {
+        setImageUrlList([...imageUrlList, res.data.data]);
+      }
     }
-  }, [form]));
+  });
+
+  // 监听上传进度
+  useItemProgressListener((item) => {
+    setUploadProgress(prev => ({
+      ...prev,
+      [item.id]: item.completed
+    }));
+  });
+
+  const item = useItemProgressListener((item) => {
+    //callback is optional for this hook
+    console.log('item==');
+    console.log(item);
+  });
+
+  item &&  console.log(`item ${item.id} is ${item.completed}% done and ${item.loaded} bytes uploaded`)
 
   const onSubmit = async (values: CreateOrderFormValues) => {
     if (isPreview) return;
@@ -198,26 +198,6 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
       });
     }
   };
-
-  const previewMethodsRef = useRef<PreviewMethods>(null);
-
-  const onClear = useCallback((id: string) => {
-    if (previewMethodsRef.current?.removePreview) {
-      previewMethodsRef.current.removePreview(id);
-      setFileList(prevFileList => {
-        const newFileList = prevFileList.filter(item => item.id !== id);
-        form.setValue("pic_list", newFileList.map(item => item.fileKey));
-        return newFileList;
-      });
-    }
-  }, [previewMethodsRef, form]);
-
-  const onEditRemove = useCallback((url: string) => {
-    const index = mediaUrlList.indexOf(url);
-    setMediaUrlList(mediaUrlList.filter(item => item !== url));
-    const newPicList = form.getValues("pic_list").filter((_, i) => i !== index);
-    form.setValue("pic_list", newPicList);
-  }, [form, mediaUrlList]);
 
   return (
     <Form {...form}>
@@ -374,7 +354,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
               <FormControl>
                 <div className={"col-span-3"}>
                   <div className={cn(
-                    "border-2 border-dashed border-[#43ABFF] rounded-sm p-4 text-center transition-colors",
+                    "w-full h-full border-2 border-dashed border-[#43ABFF] rounded-sm p-4 text-center transition-colors",
                     isPreview
                       ? "opacity-50 cursor-not-allowed pointer-events-none bg-[#072E62]/[.7]"
                       : "hover:bg-[#072E62] cursor-pointer"
@@ -419,89 +399,75 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4 mt-4 ml-24 overflow-auto max-h-[168px]">
-          {type === "edit" && mediaUrlList.map(url => {
-            const fileType = getMediaType(url);
-            return <div className="relative group aspect-video">
-              {fileType === "video" ? <video
-                key={url}
-                muted
-                loop
-                controls
-                className="w-full h-full object-cover rounded-sm"
-                src={url}
-              /> : <img
-                key={url}
-                src={url}
-                className="w-full h-full object-cover rounded-sm"
-              />}
-              <button
-                onClick={() => onEditRemove(url)}
-                type="button"
-                className="absolute top-2 right-2 p-1 bg-red-500 rounded-full
-                         text-white opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-4 h-4"/>
-              </button>
-            </div>;
-          })}
+        <div className="grid grid-cols-4 gap-4 mt-4 ml-24 overflow-auto max-h-[150px]">
           <UploadPreview
-            previewMethodsRef={previewMethodsRef}
-            rememberPreviousBatches
-            PreviewComponent={({url, type: fileType, id}) => <div className="relative group aspect-video">
-              {fileType === "video" ? (
-                <video
-                  muted
-                  loop
-                  controls
-                  className="w-full h-full object-cover rounded-sm"
-                  src={url}
-                />
-              ) : (
-                <img
-                  src={url}
-                  className="w-full h-full object-cover rounded-sm"
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => onClear(id)}
-                className="absolute top-2 right-2 p-1 bg-red-500 rounded-full
-                         text-white opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-4 h-4"/>
-              </button>
-            </div>}
-          />
-          {type === "preview" && mediaUrlList.map(url => {
-            const fileType = getMediaType(url);
-            return <div className="relative group aspect-video">
-              {fileType === "video" ? <video
-                key={url}
-                muted
-                loop
-                controls
-                className="w-full h-full object-cover rounded-sm"
-                src={url}
-              /> : <img
-                key={url}
-                src={url}
-                className="w-full h-full object-cover rounded-sm"
-              />}
-            </div>;
-          })}
-          {/*<WorkOrderUploadPreview
-            mediaList={mediaUrlList}
-            isPreview={isPreview}
-            onPreviewChange={(previews) => {
-              console.log("previews");
-              console.log(previews);
-              const newPicList = fileList.filter(item =>
-                previews.find(file => file.id === item.id));
-              form.setValue("pic_list", newPicList.map(item => item.fileKey));
+            PreviewComponent={({url, type, name, id}) => {
+              const progress = uploadProgress[id] || 0;
+              const status = uploadStatus[id] || 'uploading';
+              const isVideo = type?.includes('video');
+              
+              return (
+                <div className="relative group aspect-video">
+                  {status === 'uploading' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                      <div className="relative">
+                        <Circle className="w-12 h-12 text-[#43ABFF] animate-spin-slow" />
+                        <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white">
+                          {Math.round(progress)}%
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (status === 'uploading') {
+                            abortItem(id);
+                            setUploadStatus(prev => ({...prev, [id]: 'paused'}));
+                          } else {
+                            // 实现恢复上传的逻辑
+                            setUploadStatus(prev => ({...prev, [id]: 'uploading'}));
+                          }
+                        }}
+                        className="mt-2 px-2 py-1 bg-[#43ABFF] rounded text-white text-sm"
+                      >
+                        {status === 'uploading' ? '暂停' : '继续'}
+                      </button>
+                    </div>
+                  )}
+
+                  {isVideo ? (
+                    <video
+                      className="w-full h-full object-cover rounded-sm"
+                      src={url}
+                      controls
+                    />
+                  ) : (
+                    <img
+                      src={url}
+                      alt={name}
+                      className="w-full h-full object-cover rounded-sm"
+                    />
+                  )}
+
+                  {!isPreview && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newUrls = imageUrlList?.filter(u => u !== url);
+                        setImageUrlList(newUrls);
+                        const newPicList = form.getValues("pic_list").filter((_, i) => 
+                          imageUrlList[i] !== url
+                        );
+                        form.setValue("pic_list", newPicList);
+                      }}
+                      className="absolute top-2 right-2 p-1 bg-red-500 rounded-full
+                               text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4"/>
+                    </button>
+                  )}
+                </div>
+              );
             }}
-            onMediaRemove={handleMediaRemove}
-          />*/}
+          />
         </div>
 
       </form>

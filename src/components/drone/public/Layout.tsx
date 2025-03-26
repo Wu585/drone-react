@@ -1,13 +1,19 @@
 import TopBar from "@/components/drone/public/TopBar.tsx";
 import {Link, Outlet, useLocation} from "react-router-dom";
 import {cn} from "@/lib/utils.ts";
-import {BookText, Film, Grid, LayoutList, Proportions, Send, Users, Waypoints} from "lucide-react";
+import {BookText, Film, Grid, LayoutList, MapPin, Proportions, Send, Users, Waypoints} from "lucide-react";
 
 const menuList = [
   {
     name: "tsa",
     icon: <Send size={20}/>,
     href: "/tsa"
+  },
+  {
+    name: "elements",
+    icon: <MapPin size={20}/>,
+    href: "/elements",
+    activeHref: "elements"
   },
   {
     name: "wayline",
@@ -58,14 +64,14 @@ const Layout = () => {
   console.log(pathname);
 
   return (
-    <div className={"w-full h-full bg-drone-system flex flex-col bg-full-size"}>
+    <div className="h-full w-full bg-drone-system flex flex-col bg-full-size overflow-hidden">
       <header>
         <TopBar/>
       </header>
-      <div className={"flex-1 p-[22px] flex"}>
+      <div className="flex-1 p-[22px] flex overflow-hidden">
         {!pathname.includes("organ") && !pathname.includes("depart") && !pathname.includes("create-wayline") &&
-          <aside className={"w-[50px] flex border-[1px] border-[#43ABFF] rounded-l-lg border-r-0"}>
-            <div className={"w-[50px] bg-[#0059BF]/[.5]"}>
+          <aside className="w-[50px] border-[1px] border-[#43ABFF] rounded-l-lg border-r-0">
+            <div className="w-[50px] bg-[#0059BF]/[.5] h-full">
               {menuList.map((item, index) =>
                 <Link
                   key={item.href}
@@ -77,7 +83,7 @@ const Layout = () => {
                 </Link>)}
             </div>
           </aside>}
-        <div className={"flex-1"}>
+        <div className="flex-1 min-w-0">
           <Outlet/>
         </div>
       </div>

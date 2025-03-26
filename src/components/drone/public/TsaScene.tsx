@@ -8,6 +8,7 @@ import dockPng from "@/assets/images/drone/dock.png";
 import dronePng from "@/assets/images/drone/drone.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
 import {useConnectMqtt} from "@/hooks/drone/useConnectMqtt.ts";
+import {addDroneModel, addHeightPolyline, moveDroneToTarget, removeDroneModel} from "@/hooks/drone/wayline";
 
 const mapLayerList = [
   {
@@ -68,15 +69,16 @@ const TsaScene = () => {
   useEntityCustomSource("dock");
   useEntityCustomSource("drone");
   useEntityCustomSource("drone-wayline");
+  useEntityCustomSource("waylines-create");
 
   useEffect(() => {
     if (!viewer) return;
-    getCustomSource("dock")?.entities.removeAll();
     Object.keys(deviceState.dockInfo).forEach(dockSn => {
       const dockInfo = deviceState.dockInfo[dockSn];
       // console.log("dockInfo");
       // console.log(dockInfo);
       if (dockInfo.basic_osd && dockInfo.basic_osd.longitude && dockInfo.basic_osd.latitude) {
+        if (getCustomSource("dock")?.entities.getById(`dock-${dockSn}`)) return;
         getCustomSource("dock")?.entities.add({
           id: `dock-${dockSn}`,
           position: Cesium.Cartesian3.fromDegrees(dockInfo.basic_osd.longitude, dockInfo.basic_osd.latitude),
@@ -92,29 +94,19 @@ const TsaScene = () => {
 
   useEffect(() => {
     if (realTimeDeviceInfo.device && realTimeDeviceInfo.device.longitude && realTimeDeviceInfo.device.latitude && realTimeDeviceInfo.device.height) {
-      getCustomSource("drone")?.entities.removeAll();
+      // getCustomSource("drone")?.entities.removeAll();
       const longitude = +realTimeDeviceInfo.device.longitude;
       const latitude = +realTimeDeviceInfo.device.latitude;
       const height = +realTimeDeviceInfo.device.height;
-      getCustomSource("drone")?.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
-        billboard: {
-          image: dronePng,
-          width: 48,
-          height: 48,
-        },
-        polyline: {
-          positions: [
-            Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
-            Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
-          ],
-          width: 2,
-          material: new Cesium.PolylineDashMaterialProperty({
-            color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-            dashLength: 8.0
-          })
-        }
+      // addHeightPolyline(longitude, latitude, height);
+      addDroneModel(longitude, latitude, height);
+      moveDroneToTarget({
+        longitude,
+        latitude,
+        height
       });
+    } else {
+      removeDroneModel();
     }
   }, [realTimeDeviceInfo]);
 
