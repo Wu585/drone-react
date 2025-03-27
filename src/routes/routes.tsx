@@ -18,6 +18,7 @@ import TestStep from "@/pages/TestStep.tsx";
 import CreateWayLine from "@/pages/CreateWayLine.tsx";
 import Elements from "@/pages/Elements.tsx";
 import VideoShare from "@/pages/VideoShare.tsx";
+import MapPhoto from "@/pages/MapPhoto.tsx";
 
 const Login = lazy(() => import("@/pages/hgyq/Login.tsx"));
 
@@ -113,6 +114,10 @@ export const routes: RouteObject[] = [
       {
         path: "elements",
         element: <Elements/>
+      },
+      {
+        path: "map-photo",
+        element: <MapPhoto/>
       },
     ]
   },

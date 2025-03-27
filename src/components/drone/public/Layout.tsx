@@ -1,7 +1,7 @@
 import TopBar from "@/components/drone/public/TopBar.tsx";
 import {Link, Outlet, useLocation} from "react-router-dom";
 import {cn} from "@/lib/utils.ts";
-import {BookText, Film, Grid, LayoutList, MapPin, Proportions, Send, Users, Waypoints} from "lucide-react";
+import {BookText, Film, Grid, Image, LayoutList, MapPin, Proportions, Send, Waypoints} from "lucide-react";
 
 const menuList = [
   {
@@ -16,6 +16,12 @@ const menuList = [
     activeHref: "elements"
   },
   {
+    name: "map-photo",
+    icon: <Image size={20}/>,
+    href: "/map-photo",
+    activeHref: "map-photo"
+  },
+  {
     name: "wayline",
     icon: <Waypoints size={20}/>,
     href: "/wayline",
@@ -27,12 +33,12 @@ const menuList = [
     href: "/task-list",
     activeHref: "task"
   },
-  {
+  /*{
     name: "flight-area",
     icon: <Grid size={20}/>,
     href: "/flight-area",
     activeHref: "flight-area"
-  },
+  },*/
   {
     name: "media",
     icon: <Film size={20}/>,

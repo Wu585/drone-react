@@ -3,24 +3,19 @@ import {
   DiamondIcon, Eye, EyeOff,
   Folder,
   FolderOpen,
-  FolderPlus,
   Pencil,
   Spline,
   Square,
-  Trash2
+  Trash2,
+  Video,
+  Image, ImageIcon,
+  Loader
 } from "lucide-react";
 import Scene from "@/components/drone/public/Scene.tsx";
 import MapChange from "@/components/drone/public/MapChange.tsx";
-import {
-  deleteElementById,
-  ElementParam,
-  Layer, toggleVisibleElementById,
-  useElementActions,
-  useElementsGroup,
-  useElementsGroupActions
-} from "@/hooks/drone/elements";
+import {ElementParam, generateLabelConfig, Layer} from "@/hooks/drone/elements";
 import {cn} from "@/lib/utils";
-import {useState} from "react";
+import {useMemo, useState, useCallback, useEffect} from "react";
 import {
   Dialog, DialogClose,
   DialogContent,
@@ -44,6 +39,12 @@ import {
 } from "@/components/ui/sheet";
 import ElementInfo, {Element} from "@/components/drone/elements/ElementInfo.tsx";
 import {MapElementEnum} from "@/types/map.ts";
+import {MapPhoto as MapPhotoType, useMapLoadMedia, useMapPhoto} from "@/hooks/drone/map-photo";
+import {MediaFileType} from "@/hooks/drone/media";
+import {getMediaType} from "@/hooks/drone/order";
+import ggpPng from "@/assets/images/ggp.png";
+import {EntitySize} from "@/assets/datas/enum.ts";
+import {flyToDegree} from "@/lib/view.ts";
 
 const GroupItem = ({
                      group,
@@ -241,257 +242,259 @@ const GroupItem = ({
   );
 };
 
-const Elements = () => {
-  const [selectedId, setSelectedId] = useState<string>("");
-  const [selectedParentId, setSelectedParentId] = useState<string>("");
-  const [hasChild, setHasChild] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editElement, setEditElement] = useState<ElementParam>();
-  const [editParam, setEditParam] = useState<Element>();
+// 修改 FolderItem 组件，添加 onVisibleChange 属性
+const FolderItem = ({folder, onVisibleChange, onClickFile}: {
+  folder: any,
+  onVisibleChange?: (id: number, visible: boolean) => void
+  onClickFile?: (file: any) => void
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
 
-  const {data: groups, mutate} = useElementsGroup();
-  const {addGroup, updateGroup, deleteGroup} = useElementsGroupActions();
-  const {deleteElement, updateElement, updateElementVisible} = useElementActions();
-
-  const [groupName, setGroupName] = useState("");
-
-  // 查找节点的父节点ID
-  const findParentId = (groups: Layer[], targetId: string): string => {
-    // 先检查每个顶层组的elements
-    for (const group of groups) {
-      if (group.elements.some(element => element.id === targetId)) {
-        return group.id;
-      }
-    }
-
-    // 如果是组本身
-    const group = groups.find(g => g.id === targetId);
-    if (group) {
-      return group.parent_id || "";
-    }
-
-    // 递归检查子组
-    for (const group of groups) {
-      const children = groups.filter(g => g.parent_id === group.id);
-      const parentId = findParentId(children, targetId);
-      if (parentId !== null) {
-        return parentId;
-      }
-    }
-
-    return "";
-  };
-
-  const isHasChild = (id: string) =>
-    !!groups?.find(group => group.id === id);
-
-  // 处理选中
-  const handleSelect = (id: string) => {
-    setSelectedId(id);
-    if (groups) {
-      const parentId = findParentId(groups, id);
-      setSelectedParentId(parentId);
-      setHasChild(isHasChild(id));
-      console.log("Selected ID:", id, "Parent ID:", parentId, "has child", isHasChild(id));
-      if (!isHasChild(id)) {
-        viewer.flyTo(getCustomSource("elements")?.entities.getById(id), {
-          duration: 1
-        });
-      }
-    }
-  };
-
-  const onCreateGroup = async () => {
-    try {
-      await addGroup({
-        name: groupName,
-        parent_id: selectedParentId
-      });
-      toast({
-        description: "创建成功"
-      });
-      await mutate();
-    } catch (err: any) {
-      toast({
-        description: err.data.message,
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleUpdateGroup = async (id: string, name: string) => {
-    try {
-      await updateGroup({group_id: id, name});
-      toast({
-        description: "更新成功"
-      });
-      await mutate();
-    } catch (err: any) {
-      toast({
-        description: err.data.message,
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleDeleteGroup = async (id: string) => {
-    try {
-      await deleteGroup(id);
-      const group = groups?.find(group => group.id === id);
-      group?.elements.forEach(item => deleteElementById(item.id));
-      toast({
-        description: "删除成功"
-      });
-      await mutate();
-
-      // 如果删除的是当前选中的节点，清空选中状态
-      if (selectedId === id) {
-        setSelectedId("");
-        setSelectedParentId("");
-      }
-    } catch (err: any) {
-      toast({
-        description: err.data.message,
-        variant: "destructive"
-      });
-    }
-  };
-
-  const onDeleteElement = async (id: string) => {
-    await deleteElement(id);
-    deleteElementById(id);
-    await mutate();
-  };
-
-  const onChangeVisible = async (groupId: string, id: string, visible: boolean) => {
-    toggleVisibleElementById(id, visible);
-    await updateElementVisible(groupId, id, visible);
-    await mutate();
-  };
-
-  // 构建树状结构
-  const buildTree = (groups: Layer[]) => {
-    const topLevel = groups.filter(g => !g.parent_id);
-    const getChildren = (parentId: string) => {
-      return groups.filter(g => g.parent_id === parentId);
-    };
-
-    const renderGroup = (group: Layer) => {
-      const children = getChildren(group.id);
-      return (
-        <div key={group.id}>
-          <GroupItem
-            onVisibleChange={onChangeVisible}
-            group={group}
-            selected={selectedId}
-            onSelect={handleSelect}
-            onUpdate={handleUpdateGroup}
-            onDelete={handleDeleteGroup}
-            onDeleteElement={(id) => onDeleteElement(id)}
-            onClickEdit={(element) => {
-              setSheetOpen(true);
-              setEditElement(element);
-            }}
-          />
-          {children.length > 0 && (
-            <div className="ml-4">
-              {children.map(child => renderGroup(child))}
-            </div>
-          )}
+  return (
+    <div>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center space-x-2 px-2 py-1.5 hover:bg-white/5 rounded-md cursor-pointer group"
+      >
+        <div className="flex items-center space-x-2 flex-1 min-w-0">
+          {isOpen ? <FolderOpen className="w-4 h-4 text-orange-400 shrink-0"/> :
+            <Folder className="w-4 h-4 text-orange-400 shrink-0"/>}
+          <span className="text-sm text-white truncate" title={folder.file_name}>{folder.file_name}</span>
         </div>
-      );
+        <ChevronRight className={cn(
+          "w-4 h-4 text-white/60 transition-transform shrink-0",
+          isOpen && "rotate-90"
+        )}/>
+      </div>
+
+      {/* 文件列表 */}
+      {isOpen && folder.children.length > 0 && (
+        <div className="ml-4 space-y-1 mt-1">
+          {folder.children.map((file: any) => (
+            <div
+              key={file.id}
+              className="flex items-center space-x-2 px-2 py-1.5 hover:bg-white/5 rounded-md group min-w-0"
+            >
+              {/* 根据文件类型显示不同图标 */}
+              {file.type === MediaFileType.DIR ? (
+                <Folder className="w-4 h-4 shrink-0 text-orange-400"/>
+              ) : getMediaType(file.preview_url) === "video" ? (
+                <Video className="w-4 h-4 text-orange-400 shrink-0"/>
+              ) : (
+                <Image className="w-4 h-4 text-orange-400 shrink-0"/>
+              )}
+              <span className="text-sm text-white truncate flex-1"
+                    onClick={() => onClickFile?.(file)}
+                    title={file.file_name}>
+                {file.file_name}
+              </span>
+              {/* 可见性切换按钮 */}
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onVisibleChange?.(file.id, !file.visual);
+                }}
+                className="p-1 hover:bg-[#43ABFF]/20 rounded cursor-pointer"
+              >
+                {file.visual ? (
+                  <Eye className="h-4 w-4 text-[#43ABFF]"/>
+                ) : (
+                  <EyeOff className="h-4 w-4 text-white/60"/>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 添加图片加载状态组件
+const ImagePreview = ({ url }: { url?: string }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  
+  // 当 url 改变时重置状态
+  useEffect(() => {
+    setLoading(true);
+    setError(false);
+  }, [url]);
+
+  return (
+    <div className="relative w-full h-[300px] bg-black/20 rounded-lg overflow-hidden">
+      {url && (
+        <img 
+          src={url} 
+          alt=""
+          className={cn(
+            "w-full h-full object-contain transition-opacity duration-300",
+            loading ? "opacity-0" : "opacity-100"
+          )}
+          onLoad={() => setLoading(false)}
+          onError={() => setError(true)}
+        />
+      )}
+      
+      {/* 加载状态 */}
+      {loading && !error && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="animate-spin">
+            <Loader className="w-6 h-6 text-[#43ABFF]" />
+          </div>
+        </div>
+      )}
+      
+      {/* 错误状态 */}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <ImageIcon className="w-8 h-8 text-white/60" />
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MapPhoto = () => {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const {changePhotoVisual} = useMapLoadMedia();
+  const {data: mapPhotoData, mutate} = useMapPhoto();
+
+  // 处理可见性变化
+  const handleVisibleChange = useCallback(async (id: number, visible: boolean) => {
+    console.log("Visibility changed:", id, visible);
+    // TODO: 在这里处理可见性变化的逻辑
+    try {
+      await changePhotoVisual({id, visual: visible});
+      await mutate();
+    } catch (error: any) {
+      toast({
+        description: error.data.message
+      });
+    }
+  }, []);
+
+  // 构建文件夹-文件结构
+  const getDirList = useMemo(() => {
+    if (!mapPhotoData?.list) return [];
+
+    // 先找出所有文件夹
+    const folders = mapPhotoData.list.filter(item => item.type === MediaFileType.DIR);
+
+    // 找出所有 onMap 为 true 的文件的父文件夹 ID
+    const onMapFileParentIds = new Set(
+      mapPhotoData.list
+        .filter(item => item.on_map)
+        .map(item => item.parent)
+    );
+
+    // 过滤文件夹，只保留包含 onMap 文件的文件夹
+    const filteredFolders = folders.filter(folder =>
+      onMapFileParentIds.has(folder.id)
+    );
+
+    // 为每个文件夹添加其直接子文件，但只包含 onMap 为 true 的文件
+    return filteredFolders.map(folder => ({
+      ...folder,
+      children: mapPhotoData.list.filter(item =>
+        item.parent === folder.id && item.on_map
+      )
+    }));
+
+  }, [mapPhotoData]);
+
+  console.log("包含地图文件的文件夹:", getDirList);
+
+  useEffect(() => {
+    const source = getCustomSource("map-photos");
+    if (source) {
+      source.entities.removeAll();
+      getDirList.forEach(dir => {
+        dir.children.forEach(item => {
+          if (item.visual) {
+            source.entities.add({
+              id: `photo-${item.id}`,
+              position: Cesium.Cartesian3.fromDegrees(+item.longitude, +item.latitude, 0),
+              billboard: {
+                image: ggpPng,
+                width: EntitySize.Width,
+                height: EntitySize.Height,
+              },
+              label: generateLabelConfig(item.file_name)
+            });
+          }
+        });
+      });
+    }
+  }, [getDirList]);
+
+  const onFlyTo = (file: MapPhotoType) => {
+    flyToDegree(+file.longitude, +file.latitude);
+  };
+
+  const [currentPhoto, setCurrentPhoto] = useState<MapPhotoType | null>(null);
+
+  useEffect(() => {
+    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    handler.setInputAction((movement: any) => {
+      viewer.scene.pickPositionAsync(movement.position).then(() => {
+        const pickedObject = viewer.scene.pick(movement.position);
+        if (!pickedObject) return;
+        if (pickedObject.id.id && pickedObject.id.id.includes("photo")) {
+          const selected = mapPhotoData?.list.find(item => item.id === +pickedObject.id.id.split("-")[1]);
+          setCurrentPhoto(selected || null);
+          setSheetOpen(true);
+        }
+      });
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    return () => {
+      handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK);//移除事件
+      handler.destroy();
     };
 
-    return topLevel.map(group => renderGroup(group));
-  };
+  }, [mapPhotoData]);
 
   return (
     <div className="h-full flex">
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="bg-[#072E62] border border-[#43ABFF] text-white">
           <SheetHeader>
-            <SheetTitle className="text-white mb-4">标注信息：</SheetTitle>
+            <SheetTitle className="text-white mb-4">{currentPhoto?.file_name}</SheetTitle>
           </SheetHeader>
-          <ElementInfo
-            element={editElement!}
-            onParamChange={setEditParam}
-          />
-          <SheetFooter>
-            <Button
-              onClick={async () => {
-                if (editElement && editParam) {
-                  try {
-                    await updateElement(editElement.id, {
-                      name: editParam.name,
-                      content: {
-                        ...editElement.resource.content,
-                        properties: {
-                          ...editElement.resource.content.properties,
-                          color: editParam.color
-                        }
-                      },
-                    });
-                    toast({
-                      description: "更新成功"
-                    });
-                    await mutate();
-                    setSheetOpen(false);
-                  } catch (err: any) {
-                    toast({
-                      description: err.data?.message || "更新失败",
-                      variant: "destructive"
-                    });
-                  }
-                }
-              }}
-              className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 text-white"
-            >
-              保存
-            </Button>
-          </SheetFooter>
+          <div className={"grid grid-cols-6 gap-2"}>
+            <h3 className={"col-span-1"}>时间：</h3>
+            <div className={"col-span-5 text-[#43ABFF]"}>{currentPhoto?.create_time}</div>
+            <h3 className={"col-span-6"}>坐标经度：</h3>
+            <div className={"text-[#43ABFF]"}>{currentPhoto?.longitude}</div>
+            <h3 className={"col-span-6"}>坐标纬度：</h3>
+            <div className={"text-[#43ABFF]"}>{currentPhoto?.latitude}</div>
+          </div>
+          <div className={"my-4"}>
+            <ImagePreview url={currentPhoto?.preview_url} />
+          </div>
         </SheetContent>
       </Sheet>
       <div className="w-[340px] min-w-[340px] border-[1px] border-[#43ABFF] bg-gradient-to-r
         from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0 rounded-tr-lg rounded-br-lg flex flex-col">
         <div
           className="flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between">
-          <span>地图标注</span>
-          <div className="flex space-x-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <FolderPlus size={18} className="cursor-pointer text-orange-400"/>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>新建文件夹</DialogTitle>
-                </DialogHeader>
-                <div className={"flex space-x-2 items-center"}>
-                  <Label className={"mr-4 whitespace-nowrap"}>文件夹名称</Label>
-                  <Input value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
-                </div>
-                <DialogFooter>
-                  <DialogFooter>
-                    <DialogClose>
-                      <Button onClick={onCreateGroup}>确认</Button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+          <span>地图照片</span>
         </div>
         <div className="flex-1 px-[12px] py-4 space-y-2 overflow-y-auto">
-          {groups && buildTree(groups)}
+          {/* 渲染文件夹列表 */}
+          {getDirList.map(folder => (
+            <FolderItem
+              key={folder.id}
+              folder={folder}
+              onVisibleChange={handleVisibleChange}
+              onClickFile={onFlyTo}
+            />
+          ))}
         </div>
       </div>
       <div className="flex-1 min-w-0 ml-[20px] border-[2px] rounded-lg border-[#43ABFF] relative">
         <Scene/>
-        <div className="absolute right-6 top-80">
-          <DrawPanel
-            onSuccess={() => mutate()}
-            groupId={hasChild ? selectedId : selectedParentId}
-          />
-        </div>
         <div className="absolute right-0 bottom-0 z-[30]">
           <MapChange/>
         </div>
@@ -500,5 +503,5 @@ const Elements = () => {
   );
 };
 
-export default Elements;
+export default MapPhoto;
 

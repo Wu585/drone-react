@@ -77,6 +77,8 @@ const Scene = () => {
   useEntityCustomSource("waylines-update");
   // 标注相关的集合
   useEntityCustomSource("elements");
+  // 地图加载的图片的结合
+  useEntityCustomSource("map-photos");
 
   useEffect(() => {
     getCustomSource("dock")?.entities.removeAll();

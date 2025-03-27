@@ -48,6 +48,7 @@ import CreateOrder from "@/components/drone/work-order/CreateOrder.tsx";
 import UploadButton from "@rpldy/upload-button";
 import {getMediaType} from "@/hooks/drone/order";
 import {useNavigate} from "react-router-dom";
+import {useMapLoadMedia} from "@/hooks/drone/map-photo";
 
 const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
@@ -814,6 +815,29 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     pic_list_origin,
   }), [pic_list_origin, pic_list, longitude, latitude]);
 
+  const {loadMedia} = useMapLoadMedia();
+
+  const onLoadMap = useCallback(async () => {
+    const files = table.getSelectedRowModel().rows.map(row => row.original);
+    const canLoad = !files.find(file => [MediaFileType.DIR, MediaFileType.ZIP, MediaFileType.VIDEO, MediaFileType.MANUAL].includes(file.type));
+    if (!canLoad) return toast({
+      description: "请选择正确的文件类型",
+      variant: "warning"
+    });
+    const ids = getSelectedFileIds();
+    try {
+      await loadMedia({ids});
+      toast({
+        description: "地图加载图片成功"
+      });
+    } catch (err: any) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
+      });
+    }
+  }, [rowSelection]);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -848,14 +872,14 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                 begin_time: date ? dayjs(date[0]).format("YYYY-MM-DD HH:mm:ss") : "",
                 end_time: date ? dayjs(date[1]).format("YYYY-MM-DD HH:mm:ss") : ""
               });
-            }} className={"bg-[#0A81E1] border-[#0A81E1] hover:bg-[#0A81E1] h-[30px]"}/>
+            }} className={"bg-[#0A81E1] border-[#0A81E1] hover:bg-[#0A81E1] h-[36px]"}/>
           </div>
           <div className={"flex items-center space-x-2"}>
             <span>文件类型</span>
             <Select onValueChange={(value) => updateQuery({
               types: value === "all" ? [] : [+value]
             })}>
-              <SelectTrigger className="w-[120px] h-[30px] bg-[#0A81E1]/70 border-[#0A81E1]">
+              <SelectTrigger className="w-[120px] h-[36px] bg-[#0A81E1]/70 border-[#0A81E1]">
                 <SelectValue placeholder="所有类型"/>
               </SelectTrigger>
               <SelectContent>
@@ -870,7 +894,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
             <Select onValueChange={(value) => updateQuery({
               payloads: value === "all" ? [] : [value]
             })}>
-              <SelectTrigger className="w-[120px] h-[30px] bg-[#0A81E1]/70 border-[#0A81E1]">
+              <SelectTrigger className="w-[120px] h-[36px] bg-[#0A81E1]/70 border-[#0A81E1]">
                 <SelectValue placeholder="所有类型"/>
               </SelectTrigger>
               <SelectContent>
@@ -885,7 +909,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               <DialogTrigger disabled={table.getSelectedRowModel().rows.length === 0}>
                 <Button
                   disabled={table.getSelectedRowModel().rows.length === 0}
-                  className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[30px]"
+                  className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"
                 >
                   删除
                 </Button>
@@ -908,7 +932,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               <DialogTrigger disabled={table.getSelectedRowModel().rows.length === 0}>
                 <Button
                   disabled={table.getSelectedRowModel().rows.length === 0}
-                  className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[30px]"
+                  className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"
                 >
                   移动
                 </Button>
@@ -926,7 +950,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               </DialogContent>
             </Dialog>
             <Dialog open={createOrderVisible} onOpenChange={setCreateOrderVisible}>
-              <Button onClick={onClickCreateOrder} className={"bg-[#43ABFF] w-24 h-[30px]"}>
+              <Button onClick={onClickCreateOrder} className={"bg-[#43ABFF] w-24 h-[36px]"}>
                 创建工单
               </Button>
               <DialogContent className="max-w-screen-lg bg-[#0A4088]/[.7] text-white border-none">
@@ -947,13 +971,14 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"} onClick={onLoadMap}>地图加载</Button>
           </>}
           <UploadButton>
-            <Button type={"button"} className={"bg-[#43ABFF] h-[30px]"}>上传文件</Button>
+            <Button type={"button"} className={"bg-[#43ABFF] h-[36px]"}>上传文件</Button>
           </UploadButton>
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[30px]">创建文件夹</Button>
+              <Button className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]">创建文件夹</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
