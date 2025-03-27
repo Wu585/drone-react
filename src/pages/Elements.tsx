@@ -204,7 +204,8 @@ const GroupItem = ({
                 {element.resource.type === MapElementEnum.POLY && <Square className="h-4 w-4 text-[#43ABFF]"/>}
                 {element.resource.type === MapElementEnum.CIRCLE && <Circle className="h-4 w-4 text-[#43ABFF]"/>}
               </div>
-              <span onClick={() => onSelect(element.id)} className="w-40 text-sm text-white truncate">{element.name}</span>
+              <span onClick={() => onSelect(element.id)}
+                    className="w-40 text-sm text-white truncate">{element.name}</span>
               <div
                 className={"opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 absolute right-2"}>
                 {element.visual ? <Eye className="p-1 hover:bg-[#43ABFF]/20 rounded" onClick={() => {
@@ -434,7 +435,7 @@ const Elements = () => {
                       description: "更新成功"
                     });
                     await mutate();
-                    // setSheetOpen(false);
+                    setSheetOpen(false);
                   } catch (err: any) {
                     toast({
                       description: err.data?.message || "更新失败",

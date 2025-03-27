@@ -14,6 +14,11 @@ export const useDockLive = (ele: string, dockSn: string, cameraIndex?: string) =
   // dock流畅度
   const [dockPosition, setDockPosition] = useState("0");
   const [currentMode, setCurrentMode] = useState("normal");
+  const [agoraLiveParam, setAgoraLiveParam] = useState({
+    channel: "",
+    token: ""
+  });
+
   useEffect(() => {
     agoraClientRef.current = AgoraRTC.createClient({mode: "live", codec: "vp8"});
     const agoraClient = agoraClientRef.current;
@@ -84,6 +89,10 @@ export const useDockLive = (ele: string, dockSn: string, cameraIndex?: string) =
         // video_type: "zoom"
       });
       const {token, channel} = res.data.data;
+      setAgoraLiveParam({
+        channel,
+        token
+      });
       // const
       if (agoraClient.connectionState === "DISCONNECTED") {
         await agoraClient.join(AGORA_APP_ID, channel, token);
@@ -137,6 +146,7 @@ export const useDockLive = (ele: string, dockSn: string, cameraIndex?: string) =
     currentMode,
     setCurrentMode,
     switchDeviceVideoMode,
-    onChangeCamera
+    onChangeCamera,
+    agoraLiveParam
   };
 };

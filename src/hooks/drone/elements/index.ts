@@ -304,8 +304,6 @@ export function two_points_distance(start_point: [number, number], end_point: [n
 
 // 计算多个点之间的总距离
 export const calcManyPointsDistance = (coordinates: [number, number][]): number => {
-  console.log("!!!!!!!");
-  console.log(coordinates);
   if (coordinates.length < 2) return 0;
 
   let totalDistance = 0;

@@ -10,7 +10,7 @@ import {
   ThermometerSun,
   X,
   Zap,
-  Maximize2
+  Maximize2, Forward
 } from "lucide-react";
 import yjqfPng from "@/assets/images/drone/yjqf.png";
 import {useSceneStore} from "@/store/useSceneStore.ts";
@@ -124,8 +124,16 @@ const DronePanel = () => {
     }
   };
 
-  const {onStartLiveStream: start, onStopLiveStream: stop} = useDockLive("player", osdVisible.gateway_sn || "");
-  const {onStartLiveStream: startDrone, onStopLiveStream: stopDrone} = useDockLive("player2", osdVisible.sn || "");
+  const {
+    onStartLiveStream: start,
+    onStopLiveStream: stop,
+    agoraLiveParam: dockAgoraLiveParam
+  } = useDockLive("player", osdVisible.gateway_sn || "");
+  const {
+    onStartLiveStream: startDrone,
+    onStopLiveStream: stopDrone,
+    agoraLiveParam: droneAgoraLiveParam
+  } = useDockLive("player2", osdVisible.sn || "");
 
   // 开启机场直播
   const onStartLiveStream = async () => {
@@ -178,9 +186,28 @@ const DronePanel = () => {
   } = useFullscreen("player2");
 
   const onPointDrone = () => {
+    if (!deviceInfo.device) return;
     viewer.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(deviceInfo.device.longitude, deviceInfo.device.latitude, 200),
       duration: 1
+    });
+  };
+
+  const onShareDockLink = async () => {
+    const base = import.meta.env.MODE === "development" ? "localhost:5173/#/" : "http://36.152.38.220:8920/#/";
+    const url = `${base}video-share?channel=${dockAgoraLiveParam.channel}&token=${encodeURIComponent(dockAgoraLiveParam.token)}`;
+    await navigator.clipboard.writeText(url);
+    toast({
+      description: "直播链接已复制到粘贴板！"
+    });
+  };
+
+  const onShareDroneLink = async () => {
+    const base = import.meta.env.MODE === "development" ? "localhost:5173/#/" : "http://36.152.38.220:8920/#/";
+    const url = `${base}video-share?channel=${droneAgoraLiveParam.channel}&token=${encodeURIComponent(droneAgoraLiveParam.token)}`;
+    await navigator.clipboard.writeText(url);
+    toast({
+      description: "直播链接已复制到粘贴板！"
     });
   };
 
@@ -266,11 +293,14 @@ const DronePanel = () => {
               </span>
               <span className={"col-span-4 content-center flex justify-end space-x-2"}>
                 {dockVideoVisible && (
-                  <Maximize2
-                    size={17}
-                    className="cursor-pointer"
-                    onClick={toggleDockFullscreen}
-                  />
+                  <div className={"flex space-x-2"}>
+                    <Maximize2
+                      size={17}
+                      className="cursor-pointer"
+                      onClick={toggleDockFullscreen}
+                    />
+                    <Forward size={17} className="cursor-pointer" onClick={onShareDockLink}/>
+                  </div>
                 )}
                 <Settings onClick={() => {
                   hide();
@@ -325,11 +355,14 @@ const DronePanel = () => {
                   </span>
                   <div className={"col-span-4 content-center flex justify-end space-x-2"}>
                     {droneVideoVisible && (
-                      <Maximize2
-                        size={17}
-                        className="cursor-pointer"
-                        onClick={toggleDroneFullscreen}
-                      />
+                      <div className={"flex space-x-2"}>
+                        <Maximize2
+                          size={17}
+                          className="cursor-pointer"
+                          onClick={toggleDroneFullscreen}
+                        />
+                        <Forward size={17} className="cursor-pointer" onClick={onShareDroneLink}/>
+                      </div>
                     )}
                     <TooltipProvider delayDuration={100}>
                       <Tooltip>
