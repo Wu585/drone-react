@@ -318,6 +318,8 @@ export interface FileItem {
   size: string;
   type: MediaFileType;
   preview_url: string;
+  longitude: string;
+  latitude: string;
 }
 
 interface FileData {

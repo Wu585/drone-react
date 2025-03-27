@@ -9,13 +9,13 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useMemo, useState, useRef, useEffect, useCallback} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {downloadFile, FileItem, MEDIA_HTTP_PREFIX, useMediaList, WorkOrder} from "@/hooks/drone";
+import {downloadFile, FileItem, MEDIA_HTTP_PREFIX, useMediaList} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
-import {Download, Edit, FolderClosed, Grid3X3, Loader, Play, SquareMenu, Trash} from "lucide-react";
+import {Download, Edit, FolderClosed, Grid3X3, Loader, SquareMenu, Trash, Play} from "lucide-react";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {CameraType, MediaFileMap, MediaFileType, useDirectory} from "@/hooks/drone/media";
-import {useBatchFinishListener} from "@rpldy/uploady";
+import Uploady from "@rpldy/uploady";
 import {HoverCard, HoverCardContent, HoverCardTrigger} from "@/components/ui/hover-card";
 import {
   Breadcrumb,
@@ -41,16 +41,15 @@ import {
 import {cn} from "@/lib/utils.ts";
 import {Checkbox} from "@/components/ui/checkbox.tsx";
 import DirTree from "@/components/drone/media/DirTree.tsx";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePicker.tsx";
 import dayjs from "dayjs";
-import CreateOrder from "@/components/drone/work-order/CreateOrder.tsx";
-import UploadButton from "@rpldy/upload-button";
-import {getMediaType} from "@/hooks/drone/order";
-import {useNavigate} from "react-router-dom";
-
-const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
-const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
 const fallbackData: FileItem[] = [];
 
@@ -281,57 +280,64 @@ const InfiniteGridView = ({
   );
 };
 
-interface Props {
-  onChangeDir: (currentDir: FileItem, isUploadOrder: boolean) => void;
-}
-
-const MediaDataTable = ({onChangeDir}: Props) => {
+const MediaDataTable = () => {
   const {get} = useAjax();
-  const navigate = useNavigate();
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
-  const [displayType, setDisplayType] = useState<0 | 1>(0);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
+    []
+  );
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
-  const [date, setDate] = useState<Date[] | undefined>(undefined);
+  const [displayType, setDisplayType] = useState<0 | 1>(0);
 
-  const [pagination, setPagination] = useState<PaginationState>({
+  const [breadcrumbList, setBreadcrumbList] = useState<Partial<FileItem>[]>([
+    {
+      id: 0,
+      file_name: "全部文件夹",
+      type: MediaFileType.DIR
+    }
+  ]);
+
+  // 分开管理两种视图的分页参数
+  const [listPagination, setListPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 10
+    pageSize: 10,
   });
 
+  const [gridPagination, setGridPagination] = useState({
+    page: 1,
+    pageSize: 30,
+  });
+
+  // 合并查询参数
   const [queryParams, setQueryParams] = useState({
     types: [] as number[],
     payloads: [] as string[],
     begin_time: "",
     end_time: "",
-    search: "",
     parent: 0,
-    page: pagination.pageIndex + 1,
-    page_size: pagination.pageSize
   });
 
-  useEffect(() => {
-    setQueryParams(prev => ({
-      ...prev,
-      page: pagination.pageIndex + 1,
-      page_size: pagination.pageSize
-    }));
-  }, [pagination]);
+  // 根据当前视图类型获取正确的分页参数
+  const getCurrentPagination = () => {
+    if (displayType === 0) {
+      return {
+        page: listPagination.pageIndex + 1,
+        page_size: listPagination.pageSize,
+      };
+    }
+    return {
+      page: gridPagination.page,
+      page_size: gridPagination.pageSize,
+    };
+  };
 
-  const updateQuery = useCallback((updates: Partial<typeof queryParams>) => {
-    setQueryParams(prev => ({
-      ...prev,
-      ...updates,
-      page: 1
-    }));
-    setPagination(prev => ({
-      ...prev,
-      pageIndex: 0
-    }));
-  }, []);
-
-  const {data, mutate} = useMediaList(workspaceId, queryParams);
+  // 使用 SWR 获取数据
+  const {data, mutate} = useMediaList(workspaceId, {
+    ...getCurrentPagination(),
+    ...queryParams,
+  });
 
   const {
     setName,
@@ -356,42 +362,15 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     });
   };
 
-  // 添加面包屑状态
-  const [breadcrumbList, setBreadcrumbList] = useState<Partial<FileItem>[]>([
-    {
-      id: 0,
-      file_name: "全部文件夹",
-      type: MediaFileType.DIR
-    }
-  ]);
-
-  // 创建工单面板控制
-  const [createOrderVisible, setCreateOrderVisible] = useState(false);
-
-  const onClickCreateOrder = () => {
-    const selections = table.getSelectedRowModel().rows.map(item => item.original.type);
-    if (selections.includes(MediaFileType.DIR)) {
-      return toast({
-        description: "请选择正确的文件类型",
-        variant: "warning"
-      });
-    }
-    setCreateOrderVisible(true);
-  };
-
-  useEffect(() => {
-    createOrderVisible ? onChangeDir?.(breadcrumbList[breadcrumbList.length - 1] as FileItem, true)
-      : onChangeDir?.(breadcrumbList[breadcrumbList.length - 1] as FileItem, false);
-  }, [breadcrumbList, createOrderVisible]);
-
-  // 修改 onClickFolder 函数，添加面包屑处理
+  // 点击文件夹时更新 parent
   const onClickFolder = (file: Partial<FileItem>) => {
     if (file.type === MediaFileType.DIR) {
-      updateQuery({
+      setQueryParams(prev => ({
+        ...prev,
         parent: file.id || 0,
         page: 1
-      });
-      setPagination(prev => ({
+      }));
+      setListPagination(prev => ({
         ...prev,
         pageIndex: 0
       }));
@@ -416,6 +395,32 @@ const MediaDataTable = ({onChangeDir}: Props) => {
         }
       }
     }
+  };
+
+  // 搜索文件
+  const onSearch = (value: string) => {
+    setQueryParams(prev => ({
+      ...prev,
+      search: value,
+      page: 1
+    }));
+    setListPagination(prev => ({
+      ...prev,
+      pageIndex: 0
+    }));
+  };
+
+  // 过滤文件类型
+  const onFilterType = (type: string) => {
+    setQueryParams(prev => ({
+      ...prev,
+      type,
+      page: 1
+    }));
+    setListPagination(prev => ({
+      ...prev,
+      pageIndex: 0
+    }));
   };
 
   const onDeleteFile = async (file: FileItem) => {
@@ -491,10 +496,8 @@ const MediaDataTable = ({onChangeDir}: Props) => {
         const current = row.original;
         const fileType = current.type;
         const isDir = fileType === MediaFileType.DIR;
-        const isVideo = fileType === MediaFileType.VIDEO ||
-          (fileType === MediaFileType.MANUAL && getMediaType(current.preview_url) === "video");
-        const isPhoto = fileType !== MediaFileType.ZIP && fileType !== MediaFileType.VIDEO
-          && fileType !== MediaFileType.DIR && getMediaType(current.preview_url) === "image";
+        const isVideo = fileType === MediaFileType.VIDEO;
+        const isPhoto = fileType !== MediaFileType.ZIP && fileType !== MediaFileType.VIDEO && fileType !== MediaFileType.DIR;
 
         return (
           <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onClickFolder(current)}>
@@ -645,24 +648,23 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   ], []);
 
   const table = useReactTable({
-    data: data?.list ?? [],
+    data: data?.list ?? fallbackData,
     columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    onPaginationChange: setListPagination,
+    manualPagination: true,
+    rowCount: data?.pagination.total,
     state: {
       columnFilters,
       columnVisibility,
       rowSelection,
-      pagination,
+      pagination: listPagination,
     },
-    pageCount: Math.ceil((data?.pagination.total || 0) / pagination.pageSize),
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    manualPagination: true,
   });
 
   const downloadMediaFile = async (workspaceId: string, fileId: string, fileName: string) => {
@@ -692,12 +694,14 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     }
   };
 
+  // 获取选中的文件 ID 数组
   const getSelectedFileIds = (): number[] => {
     return table.getSelectedRowModel().rows.map(row => row.original.id);
   };
 
   const [selectMoveDirId, setSelectMoveDirId] = useState(0);
 
+  // 批量删除示例
   const handleBatchDelete = async () => {
     const selectedIds = getSelectedFileIds();
     if (selectedIds.length === 0) {
@@ -713,6 +717,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
       toast({
         description: "删除文件成功"
       });
+      // 清除选中状态
       table.resetRowSelection();
       await mutate();
     } catch (err) {
@@ -723,6 +728,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     }
   };
 
+  // 批量移动示例
   const handleBatchMove = async () => {
     if (selectMoveDirId === 0) return toast({
       description: "请选择文件夹",
@@ -744,6 +750,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
       toast({
         description: "移动文件成功"
       });
+      // 清除选中状态
       table.resetRowSelection();
       setSelectMoveDirId(0);
       await mutate();
@@ -754,138 +761,159 @@ const MediaDataTable = ({onChangeDir}: Props) => {
       });
     }
   };
-
   const [isLoading, setIsLoading] = useState(false);
 
+  const [date, setDate] = useState<Date[] | undefined>(undefined);
+
+
+  // 添加一个状态记录所有加载的数据
   const [allItems, setAllItems] = useState<FileItem[]>([]);
 
+  // 监听显示类型变化
   useEffect(() => {
-    setAllItems([]);
+    // 切换视图时重置状态
+    setAllItems([]); // 清空已加载的数据
     if (displayType === 0) {
-      setPagination({pageIndex: 0, pageSize: 10});
+      setListPagination({pageIndex: 0, pageSize: 10});
     } else {
-      setPagination({page: 1, pageSize: 30});
+      setGridPagination({page: 1, pageSize: 30});
     }
   }, [displayType]);
 
+  // 更新网格视图数据
   useEffect(() => {
     if (data?.list && displayType === 1) {
-      if (pagination.page === 1) {
+      if (gridPagination.page === 1) {
         setAllItems(data.list);
       } else {
         setAllItems(prev => [...prev, ...data.list]);
       }
     }
-  }, [data?.list, displayType, pagination.page]);
+  }, [data?.list, displayType, gridPagination.page]);
 
+  // 加载更多数据
   const loadMore = useCallback(() => {
     if (displayType === 1 && !isLoading) {
-      setPagination(prev => ({
+      setGridPagination(prev => ({
         ...prev,
         page: prev.page + 1
       }));
     }
   }, [displayType, isLoading]);
 
-  useBatchFinishListener(async () => {
-    await mutate();
-  });
+  // 处理查询参数变化
+  const handleQueryChange = useCallback((newParams: Partial<typeof queryParams>) => {
+    setQueryParams(prev => ({
+      ...prev,
+      ...newParams,
+    }));
 
-  const pic_list_origin = useMemo(() =>
-    table.getSelectedRowModel().rows.map(row => row.original.object_key), [rowSelection]);
-  const pic_list = useMemo(() =>
-    table.getSelectedRowModel().rows.map(row => row.original.preview_url), [rowSelection]);
-  const longitude = useMemo(() =>
-    table.getSelectedRowModel().rows[0]?.original.longitude || "0.0", [rowSelection]);
-  const latitude = useMemo(() =>
-    table.getSelectedRowModel().rows[0]?.original.latitude || "0.0", [rowSelection]);
-  const currentOrder: Partial<WorkOrder> = useMemo(() => ({
-    name: "",
-    found_time: dayjs().valueOf(),
-    order_type: 0,
-    address: "",
-    contact: "",
-    contact_phone: "",
-    longitude: parseFloat(longitude) || 0.0,
-    latitude: parseFloat(latitude) || 0.0,
-    pic_list,
-    description: "",
-    warning_level: 1,
-    pic_list_origin,
-  }), [pic_list_origin, pic_list, longitude, latitude]);
+    // 重置分页
+    if (displayType === 0) {
+      setListPagination({pageIndex: 0, pageSize: 10});
+    } else {
+      setGridPagination({page: 1, pageSize: 30});
+      setAllItems([]); // 清空已加载数据
+    }
+  }, [displayType]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Breadcrumb>
-            <BreadcrumbList>
-              {breadcrumbList.map((file, index) => (
-                <BreadcrumbItem key={file.id}>
-                  <BreadcrumbLink
-                    onClick={() => onClickFolder(file)}
-                    className={cn(
-                      "text-gray-400 hover:text-gray-300",
-                      index === breadcrumbList.length - 1
-                        ? "cursor-default pointer-events-none"
-                        : "cursor-pointer"
-                    )}
-                  >
-                    {file.file_name}
-                  </BreadcrumbLink>
-                  {index < breadcrumbList.length - 1 && <BreadcrumbSeparator/>}
-                </BreadcrumbItem>
-              ))}
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className={"flex items-center space-x-2 whitespace-nowrap"}>
-            <span>日期</span>
-            <NewCommonDateRangePicker date={date} setDate={(date) => {
-              setDate(date);
-              updateQuery({
-                begin_time: date ? dayjs(date[0]).format("YYYY-MM-DD HH:mm:ss") : "",
-                end_time: date ? dayjs(date[1]).format("YYYY-MM-DD HH:mm:ss") : ""
-              });
-            }} className={"bg-[#0A81E1] border-[#0A81E1] hover:bg-[#0A81E1] h-[30px]"}/>
+    <Uploady>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <Breadcrumb>
+              <BreadcrumbList>
+                {breadcrumbList.map((file, index) => (
+                  <BreadcrumbItem key={file.id}>
+                    <BreadcrumbLink
+                      onClick={() => onClickFolder(file)}
+                      className={cn(
+                        "text-gray-400 hover:text-gray-300",
+                        index === breadcrumbList.length - 1
+                          ? "cursor-default pointer-events-none"
+                          : "cursor-pointer"
+                      )}
+                    >
+                      {file.file_name}
+                    </BreadcrumbLink>
+                    {index < breadcrumbList.length - 1 && <BreadcrumbSeparator/>}
+                  </BreadcrumbItem>
+                ))}
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
-          <div className={"flex items-center space-x-2"}>
-            <span>文件类型</span>
-            <Select onValueChange={(value) => updateQuery({
-              types: value === "all" ? [] : [+value]
-            })}>
-              <SelectTrigger className="w-[120px] h-[30px] bg-[#0A81E1]/70 border-[#0A81E1]">
-                <SelectValue placeholder="所有类型"/>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={"all"}>所有类型</SelectItem>
-                {Object.keys(MediaFileMap).map(item =>
-                  <SelectItem value={item} key={item}>{MediaFileMap[item]}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className={"flex items-center space-x-2"}>
-            <span>负载类型</span>
-            <Select onValueChange={(value) => updateQuery({
-              payloads: value === "all" ? [] : [value]
-            })}>
-              <SelectTrigger className="w-[120px] h-[30px] bg-[#0A81E1]/70 border-[#0A81E1]">
-                <SelectValue placeholder="所有类型"/>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={"all"}>所有负载</SelectItem>
-                {Object.values(CameraType).map(item =>
-                  <SelectItem value={item} key={item}>{item}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          {getSelectedFileIds().length > 0 && <>
+          <div className="flex items-center space-x-2">
+            {/* 显示选中数量 */}
+            {/*{table.getSelectedRowModel().rows.length > 0 && (
+              <span className="text-gray-400">
+                已选择 {table.getSelectedRowModel().rows.length} 项
+              </span>
+            )}*/}
+            {/* 批量操作按钮 */}
+            <div className={"flex items-center space-x-2 whitespace-nowrap"}>
+              <span>日期</span>
+              <NewCommonDateRangePicker date={date} setDate={(date) => {
+                console.log("date==");
+                console.log(date);
+                setDate(date);
+                if (!date || date.length !== 2) {
+                  setQueryParams(prevState => ({
+                    ...prevState,
+                    page: 1,
+                    page_size: 10,
+                    begin_time: "",
+                    end_time: "",
+                  }));
+                } else {
+                  setQueryParams(prevState => ({
+                    ...prevState,
+                    page: 1,
+                    page_size: 10,
+                    begin_time: dayjs(date[0]).format("YYYY-MM-DD HH:mm:ss"),
+                    end_time: dayjs(date[1]).format("YYYY-MM-DD HH:mm:ss"),
+                  }));
+                }
+              }} className={"bg-[#0A81E1]/70 border-[#0A81E1] hover:bg-[#0A81E1]/70 "}/>
+            </div>
+            <div className={"flex items-center space-x-2"}>
+              <span>文件类型</span>
+              <Select onValueChange={(value) => handleQueryChange({
+                types: value === "all" ? [] : [+value]
+              })}>
+                <SelectTrigger className="w-[180px] bg-[#0A81E1]/70 border-[#0A81E1]">
+                  <SelectValue placeholder="所有类型"/>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={"all"}>所有类型</SelectItem>
+                  {Object.keys(MediaFileMap).map(item =>
+                    <SelectItem value={item} key={item}>{MediaFileMap[item]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className={"flex items-center space-x-2"}>
+              <span>负载类型</span>
+              <Select onValueChange={(value) => setQueryParams(prevState => ({
+                ...prevState,
+                payloads: value === "all" ? [] : [value],
+                page: 1,
+                page_size: 10
+              }))}>
+                <SelectTrigger className="w-[180px] bg-[#0A81E1]/70 border-[#0A81E1]">
+                  <SelectValue placeholder="所有类型"/>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={"all"}>所有负载</SelectItem>
+                  {Object.values(CameraType).map(item =>
+                    <SelectItem value={item} key={item}>{item}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <Dialog>
               <DialogTrigger disabled={table.getSelectedRowModel().rows.length === 0}>
                 <Button
                   disabled={table.getSelectedRowModel().rows.length === 0}
-                  className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[30px]"
+                  className="bg-[#43ABFF] hover:bg-[#43ABFF]/90"
                 >
                   删除
                 </Button>
@@ -907,8 +935,9 @@ const MediaDataTable = ({onChangeDir}: Props) => {
             <Dialog>
               <DialogTrigger disabled={table.getSelectedRowModel().rows.length === 0}>
                 <Button
+                  // onClick={() => handleBatchMove(86)} // 这里的 86 替换为实际的目标文件夹 ID
                   disabled={table.getSelectedRowModel().rows.length === 0}
-                  className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[30px]"
+                  className="bg-[#43ABFF] hover:bg-[#43ABFF]/90"
                 >
                   移动
                 </Button>
@@ -925,170 +954,145 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Dialog open={createOrderVisible} onOpenChange={setCreateOrderVisible}>
-              <Button onClick={onClickCreateOrder} className={"bg-[#43ABFF] w-24 h-[30px]"}>
-                创建工单
-              </Button>
-              <DialogContent className="max-w-screen-lg bg-[#0A4088]/[.7] text-white border-none">
-                <DialogHeader className={""}>
-                  <DialogTitle>创建工单</DialogTitle>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-[#43ABFF] hover:bg-[#43ABFF]/90">创建文件夹</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>创建文件夹</DialogTitle>
                 </DialogHeader>
-                <div className={"border-[2px] border-[#43ABFF] flex p-8 border-opacity-35 rounded-lg"}>
-                  <CreateOrder
-                    onSuccess={() => {
-                      setCreateOrderVisible(false);
-                      navigate("/work-order");
-                    }}
-                    type={"form-media"}
-                    currentOrder={currentOrder as WorkOrder}/>
+                <div className={"grid grid-cols-6 items-center gap-4"}>
+                  <span className={"text-right"}>名称</span>
+                  <Input defaultValue={name}
+                         onChange={(e) => setName(e.target.value)} className={"col-span-5"}/>
                 </div>
                 <DialogFooter>
-                  <Button form={"createOrderForm"} className="bg-[#43ABFF] w-24" type="submit">确认</Button>
+                  <DialogClose>
+                    <Button onClick={() => createDir({
+                      name,
+                      parent: breadcrumbList[breadcrumbList.length - 1].id || 0
+                    })}>确认</Button>
+                  </DialogClose>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-          </>}
-          <UploadButton>
-            <Button type={"button"} className={"bg-[#43ABFF] h-[30px]"}>上传文件</Button>
-          </UploadButton>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[30px]">创建文件夹</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>创建文件夹</DialogTitle>
-              </DialogHeader>
-              <div className={"grid grid-cols-6 items-center gap-4"}>
-                <span className={"text-right"}>名称</span>
-                <Input defaultValue={name}
-                       onChange={(e) => setName(e.target.value)} className={"col-span-5"}/>
-              </div>
-              <DialogFooter>
-                <DialogClose>
-                  <Button onClick={() => createDir({
-                    name,
-                    parent: breadcrumbList[breadcrumbList.length - 1].id || 0
-                  })}>确认</Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <SquareMenu onClick={() => setDisplayType(0)} size={18} color={displayType === 0 && "#1997e6" || "white"}
-                      className={cn("cursor-pointer")}/>
-          <Grid3X3 onClick={() => setDisplayType(1)} size={18} color={displayType === 1 && "#1997e6" || "white"}
-                   className={"cursor-pointer"}/>
-        </div>
-      </div>
-
-      <div className="rounded-md border border-[#0A81E1] overflow-hidden bg-[#0A4088]/70">
-        {displayType === 0 ? (
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      className="bg-[#0A81E1]/70 text-white h-10 font-medium"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody className="bg-[#0A4088]/70">
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className={cn(
-                      "h-[50px]",
-                      "border-b border-[#0A81E1]/30",
-                      "hover:bg-[#0A4088]/90 transition-colors duration-200",
-                      "data-[state=selected]:bg-transparent"
-                    )}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className={cn(
-                          "py-3",
-                          "align-middle",
-                          "px-4",
-                          "leading-none"
-                        )}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center text-[#43ABFF]"
-                  >
-                    暂无数据
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        ) : (
-          <InfiniteGridView
-            data={allItems}
-            hasMore={(data?.pagination.total || 0) > allItems.length}
-            onLoadMore={loadMore}
-            onClickFolder={onClickFolder}
-            onDownload={async (file) => {
-              addDownloadingId(file.id.toString());
-              try {
-                await downloadMediaFile(workspaceId, file.file_id, file.file_name);
-              } finally {
-                removeDownloadingId(file.id.toString());
-              }
-            }}
-            onUpdateFileName={onUpdateFileName}
-            onDeleteFile={onDeleteFile}
-          />
-        )}
-      </div>
-
-      {displayType === 0 && (
-        <div className="flex items-center justify-between py-2">
-          <Label className="text-gray-400">
-            共 {data?.pagination.total || 0} 条记录，共 {Math.ceil((data?.pagination.total || 0) / pagination.pageSize)} 页
-          </Label>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
-            >
-              上一页
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
-            >
-              下一页
-            </Button>
+            <SquareMenu onClick={() => setDisplayType(0)} size={18} color={displayType === 0 && "#1997e6" || "white"}
+                        className={cn("cursor-pointer")}/>
+            <Grid3X3 onClick={() => setDisplayType(1)} size={18} color={displayType === 1 && "#1997e6" || "white"}
+                     className={"cursor-pointer"}/>
           </div>
         </div>
-      )}
-    </div>
+
+        <div className="rounded-md border border-[#0A81E1] overflow-hidden bg-[#0A4088]/70">
+          {displayType === 0 ? (
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className="bg-[#0A81E1]/70 text-white h-10 font-medium"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody className="bg-[#0A4088]/70">
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      className={cn(
+                        "h-[50px]",
+                        "border-b border-[#0A81E1]/30",
+                        "hover:bg-[#0A4088]/90 transition-colors duration-200",
+                        "data-[state=selected]:bg-transparent"
+                      )}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            "py-3",
+                            "align-middle",
+                            "px-4",
+                            "leading-none"
+                          )}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center text-[#43ABFF]"
+                    >
+                      暂无数据
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          ) : (
+            <InfiniteGridView
+              data={allItems}
+              hasMore={(data?.pagination.total || 0) > allItems.length}
+              onLoadMore={loadMore}
+              onClickFolder={onClickFolder}
+              onDownload={async (file) => {
+                addDownloadingId(file.id.toString());
+                try {
+                  await downloadMediaFile(workspaceId, file.file_id, file.file_name);
+                } finally {
+                  removeDownloadingId(file.id.toString());
+                }
+              }}
+              onUpdateFileName={onUpdateFileName}
+              onDeleteFile={onDeleteFile}
+            />
+          )}
+        </div>
+
+        {displayType === 0 && (
+          <div className="flex items-center justify-between py-2">
+            <Label className="text-gray-400">
+              共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
+            </Label>
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
+              >
+                上一页
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
+              >
+                下一页
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Uploady>
   );
 };
 

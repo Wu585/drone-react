@@ -72,7 +72,8 @@ export enum MediaFileType {
   STREAM_CUT_PHOTO = 4,
   VIDEO = 5,
   DIR = 6,
-  ZIP = 7
+  ZIP = 7,
+  MANUAL = 8
 }
 
 export const MediaFileMap = {
@@ -83,6 +84,7 @@ export const MediaFileMap = {
   [MediaFileType.STREAM_CUT_PHOTO]: "码流照片",
   [MediaFileType.VIDEO]: "视频",
   [MediaFileType.DIR]: "文件夹",
+  [MediaFileType.MANUAL]: "外部导入",
 };
 
 export const CameraType = {
@@ -105,3 +107,28 @@ export const CameraType = {
   [DEVICE_MODEL_KEY.M3DCamera]: "M3D Camera",
   [DEVICE_MODEL_KEY.M3TDCamera]: "M3TD Camera",
 };
+
+export function copyToClipboard(textToCopy: string) {
+  // navigator clipboard 需要https等安全上下文
+  if (navigator.clipboard && window.isSecureContext) {
+    // navigator clipboard 向剪贴板写文本
+    return navigator.clipboard.writeText(textToCopy);
+  } else {
+    // 创建text area
+    const textArea = document.createElement("textarea");
+    textArea.value = textToCopy;
+    // 使text area不在viewport，同时设置不可见
+    textArea.style.position = "absolute";
+    textArea.style.opacity = "0";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    return new Promise((res, rej) => {
+      // 执行复制命令并移除文本框
+      document.execCommand("copy") ? res() : rej();
+      textArea.remove();
+    });
+  }
+}

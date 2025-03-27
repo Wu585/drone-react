@@ -35,6 +35,7 @@ import {useFlightControl} from "@/hooks/drone/useFlightControl.ts";
 import {useDockLive} from "@/hooks/drone/useDockLive.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
 import DebugPanel from "@/components/drone/public/DebugPanel.tsx";
+import {copyToClipboard} from "@/hooks/drone/media";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -196,7 +197,7 @@ const DronePanel = () => {
   const onShareDockLink = async () => {
     const base = import.meta.env.MODE === "development" ? "localhost:5173/#/" : "http://36.152.38.220:8920/#/";
     const url = `${base}video-share?channel=${dockAgoraLiveParam.channel}&token=${encodeURIComponent(dockAgoraLiveParam.token)}`;
-    await navigator.clipboard.writeText(url);
+    await copyToClipboard(url);
     toast({
       description: "直播链接已复制到粘贴板！"
     });
@@ -205,7 +206,7 @@ const DronePanel = () => {
   const onShareDroneLink = async () => {
     const base = import.meta.env.MODE === "development" ? "localhost:5173/#/" : "http://36.152.38.220:8920/#/";
     const url = `${base}video-share?channel=${droneAgoraLiveParam.channel}&token=${encodeURIComponent(droneAgoraLiveParam.token)}`;
-    await navigator.clipboard.writeText(url);
+    await copyToClipboard(url);
     toast({
       description: "直播链接已复制到粘贴板！"
     });

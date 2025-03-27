@@ -77,7 +77,7 @@ const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
 interface Props {
   currentOrder?: WorkOrder;
-  type?: "create" | "preview" | "edit";
+  type?: "create" | "preview" | "edit" | "form-media";
   onSuccess?: () => void;
 }
 
@@ -420,7 +420,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
         />
 
         <div className="grid grid-cols-2 gap-4 mt-4 ml-24 overflow-auto max-h-[168px]">
-          {type === "edit" && mediaUrlList.map(url => {
+          {(type === "edit" || type === "form-media") && mediaUrlList.map(url => {
             const fileType = getMediaType(url);
             return <div className="relative group aspect-video">
               {fileType === "video" ? <video
@@ -490,20 +490,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
               />}
             </div>;
           })}
-          {/*<WorkOrderUploadPreview
-            mediaList={mediaUrlList}
-            isPreview={isPreview}
-            onPreviewChange={(previews) => {
-              console.log("previews");
-              console.log(previews);
-              const newPicList = fileList.filter(item =>
-                previews.find(file => file.id === item.id));
-              form.setValue("pic_list", newPicList.map(item => item.fileKey));
-            }}
-            onMediaRemove={handleMediaRemove}
-          />*/}
         </div>
-
       </form>
     </Form>
   );
