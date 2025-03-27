@@ -56,12 +56,6 @@ const DronePanel = () => {
 
   const {delete: deleteClient} = useAjax();
 
-  /*useEffect(() => {
-      post(`${MANAGE_HTTP_PREFIX}/devices/4SEDL9S00178K9/binding`,{
-        deviceSn: "4SEDL9S00178K9"
-      })
-  }, []);*/
-
   const {
     isRemoteControl,
     exitFlightControl,

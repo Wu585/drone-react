@@ -208,15 +208,15 @@ const InfiniteGridView = ({
             <div className="w-full aspect-square flex items-center justify-center mb-1">
               {file.type === MediaFileType.DIR ? (
                 <FolderClosed className="w-12 h-12 text-orange-400"/>
-              ) : file.type === MediaFileType.VIDEO ? (
-                <div className="relative w-full h-full">
+              ) : file.type === MediaFileType.VIDEO || getMediaType(file.preview_url) ? (
+                <div className="relative w-full aspect-square flex items-center justify-center bg-black/20 rounded-lg overflow-hidden">
                   <video
+                    loop
+                    autoPlay
+                    muted
                     src={file.preview_url}
-                    className="w-full h-full object-cover rounded-lg"
+                    className="max-h-full max-w-full object-contain"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                    <Play className="w-6 h-6 text-white"/>
-                  </div>
                 </div>
               ) : (
                 <img
@@ -750,32 +750,44 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   const [allItems, setAllItems] = useState<FileItem[]>([]);
 
   useEffect(() => {
-    setAllItems([]);
-    if (displayType === 0) {
-      setPagination({pageIndex: 0, pageSize: 10});
-    } else {
-      setPagination({page: 1, pageSize: 30});
-    }
+    // 切换显示类型时，重置所有状态
+    setAllItems([]); // 清空列表
+    setPagination({
+      pageIndex: 0,
+      pageSize: displayType === 0 ? 10 : 30
+    });
+    // 重置查询参数
+    setQueryParams(prev => ({
+      ...prev,
+      page: 1,
+      page_size: displayType === 0 ? 10 : 30
+    }));
   }, [displayType]);
 
   useEffect(() => {
     if (data?.list && displayType === 1) {
-      if (pagination.pageIndex === 1) {
+      if (pagination.pageIndex === 0) {
+        // 如果是第一页，直接设置数据
         setAllItems(data.list);
       } else {
+        // 如果是加载更多，追加数据
         setAllItems(prev => [...prev, ...data.list]);
       }
     }
-  }, [data?.list, displayType, pagination.pageIndex]);
+  }, [data?.list, displayType]);
 
   const loadMore = useCallback(() => {
-    if (displayType === 1 && !isLoading) {
+    if (displayType === 1 && !isLoading && data?.pagination.total > allItems.length) {
       setPagination(prev => ({
         ...prev,
-        page: prev.pageIndex + 1
+        pageIndex: prev.pageIndex + 1
+      }));
+      setQueryParams(prev => ({
+        ...prev,
+        page: pagination.pageIndex + 2 // 因为 pageIndex 是从 0 开始的
       }));
     }
-  }, [displayType, isLoading]);
+  }, [displayType, isLoading, data?.pagination.total, allItems.length, pagination.pageIndex]);
 
   useBatchFinishListener(async () => {
     await mutate();
