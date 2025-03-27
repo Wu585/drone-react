@@ -341,8 +341,6 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     removeFile,
     moveFile,
     updateFile,
-    updateName,
-    setUpdateName
   } = useDirectory(() => mutate());
 
   const addDownloadingId = (id: string) => {
@@ -388,6 +386,9 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   // 修改 onClickFolder 函数，添加面包屑处理
   const onClickFolder = (file: Partial<FileItem>) => {
     if (file.type === MediaFileType.DIR) {
+      // 重置数据
+      setAllItems([]);
+
       updateQuery({
         parent: file.id || 0,
         page: 1
@@ -434,15 +435,20 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     }
   };
 
+  const [inputName, setInputName] = useState("");
+  const [editingFile, setEditingFile] = useState<FileItem | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
   const onUpdateFileName = async (file: FileItem) => {
     try {
       await updateFile({
         id: file.id,
-        name: updateName
+        name: inputName
       });
       toast({
         description: "更新文件成功"
       });
+      setIsEditDialogOpen(false);
       await mutate();
     } catch (err) {
       toast({
@@ -597,32 +603,15 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                 <Download size={18}/>
               )}
             </span>}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Edit
-                  className="cursor-pointer hover:opacity-80"
-                  size={18}
-                />
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>重命名</DialogTitle>
-                  <div className="grid grid-cols-6 items-center gap-4">
-                    <span className="text-right">名称</span>
-                    <Input
-                      value={updateName}
-                      onChange={(e) => setUpdateName(e.target.value)}
-                      className="col-span-5"
-                    />
-                  </div>
-                </DialogHeader>
-                <DialogFooter>
-                  <DialogClose>
-                    <Button onClick={() => onUpdateFileName(row.original)} type="submit">确认</Button>
-                  </DialogClose>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Edit
+              className="cursor-pointer hover:opacity-80"
+              size={18}
+              onClick={() => {
+                setEditingFile(row.original);
+                setInputName(row.original.file_name);
+                setIsEditDialogOpen(true);
+              }}
+            />
             <Dialog>
               <DialogTrigger asChild>
                 <Trash className={"cursor-pointer hover:opacity-80"} size={18}/>
@@ -771,19 +760,19 @@ const MediaDataTable = ({onChangeDir}: Props) => {
 
   useEffect(() => {
     if (data?.list && displayType === 1) {
-      if (pagination.page === 1) {
+      if (pagination.pageIndex === 1) {
         setAllItems(data.list);
       } else {
         setAllItems(prev => [...prev, ...data.list]);
       }
     }
-  }, [data?.list, displayType, pagination.page]);
+  }, [data?.list, displayType, pagination.pageIndex]);
 
   const loadMore = useCallback(() => {
     if (displayType === 1 && !isLoading) {
       setPagination(prev => ({
         ...prev,
-        page: prev.page + 1
+        page: prev.pageIndex + 1
       }));
     }
   }, [displayType, isLoading]);
@@ -1113,6 +1102,31 @@ const MediaDataTable = ({onChangeDir}: Props) => {
           </div>
         </div>
       )}
+
+      {/* 重命名对话框 */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>重命名</DialogTitle>
+            <div className="grid grid-cols-6 items-center gap-4">
+              <span className="text-right">名称</span>
+              <Input
+                value={inputName}
+                onChange={(e) => setInputName(e.target.value)}
+                className="col-span-5"
+              />
+            </div>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => editingFile && onUpdateFileName(editingFile)}
+              type="submit"
+            >
+              确认
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
