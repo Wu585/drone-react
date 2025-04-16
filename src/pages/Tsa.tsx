@@ -59,6 +59,10 @@ const Tsa = () => {
   });
 
   const onFlyTo = async () => {
+    if (!realTime.device) return toast({
+      description: "当前状态不支持操作",
+      variant: "destructive"
+    });
     try {
       await post(`${DRC_API_PREFIX}/devices/${osdVisible.gateway_sn}/jobs/fly-to-point`, {
         max_speed: 14,
@@ -156,9 +160,9 @@ const Tsa = () => {
       <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative"}>
         {/*<GMap/>*/}
         <TsaScene/>
-       <div className={"absolute right-0 bottom-0 z-100"}>
-         <MapChange/>
-       </div>
+        <div className={"absolute right-0 bottom-0 z-100"}>
+          <MapChange/>
+        </div>
         <RightClickPanel>
           <MenuItem onClick={onFlyTo}>飞向此处</MenuItem>
         </RightClickPanel>

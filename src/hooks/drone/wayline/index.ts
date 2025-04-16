@@ -42,7 +42,7 @@ export const addDroneModel = (longitude: number, latitude: number, height: numbe
     id: "takeoff-drone",
     position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
     model: {
-      uri: "/models/uav.glb",
+      uri: "/models/CesiumDrone.glb",
       scale: 0.1,
       minimumPixelSize: 64,
       maximumScale: 64,

@@ -294,7 +294,7 @@ export interface DeviceOsd {
   gear: number,
   mode_code: number,
   height: string,
-  home_distance: string,
+  home_distance: number,
   horizontal_speed: string,
   vertical_speed: string,
   wind_speed: string,

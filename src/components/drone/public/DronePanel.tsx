@@ -47,6 +47,8 @@ const DronePanel = () => {
   const {visible: debugPanelvisible, hide: hideDebugPanel, show: showDebugPanel} = useVisible();
   const navigate = useNavigate();
   const deviceInfo = useRealTimeDeviceInfo();
+  console.log('deviceInfo');
+  console.log(deviceInfo);
   const [takeOffType, setTakeOffType] = useState<"take-off" | "fly-to">("take-off");
   const {sendDockControlCmd} = useDockControl();
   const {visible: dockVideoVisible, show: showDockVideo, hide: hideDockVideo} = useVisible();

@@ -1,7 +1,7 @@
 import TopBar from "@/components/drone/public/TopBar.tsx";
 import {Link, Outlet, useLocation} from "react-router-dom";
 import {cn} from "@/lib/utils.ts";
-import {BookText, Film, Grid, Image, LayoutList, MapPin, Proportions, Send, Waypoints} from "lucide-react";
+import {BookText, Film, Image, LayoutList, MapPin, Proportions, Send, Waypoints} from "lucide-react";
 
 const menuList = [
   {

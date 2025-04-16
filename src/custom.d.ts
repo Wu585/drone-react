@@ -8,6 +8,7 @@ declare interface Window {
 
 declare let Cesium: Window.Cesium;
 declare var viewer: Window.viewer;
+declare var viewer2: Window.viewer2;
 declare var CesiumHeatmap: Window.SuperMap3DHeatmap;
 declare var SuperMap3DHeatmap: Window.SuperMap3DHeatmap;
 declare var SuperMap3D: Window.SuperMap3D;

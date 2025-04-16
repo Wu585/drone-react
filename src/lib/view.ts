@@ -98,7 +98,7 @@ export const findS3mLayer = (name: string) => {
   return viewer.scene.layers.find(name);
 };
 
-export const findMapLayer = (name: string) => {
+export const findMapLayer = (name: string, viewer = window.viewer) => {
   return viewer.imageryLayers._layers.find((layer: any) => {
     return layer._imageryProvider.name === name;
   });

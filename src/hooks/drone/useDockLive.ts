@@ -44,7 +44,7 @@ export const useDockLive = (ele: string, dockSn: string, cameraIndex?: string) =
 
     return () => {
       agoraClient.leave();
-      onStopLiveStream();
+      // onStopLiveStream();
     };
   }, []);
 

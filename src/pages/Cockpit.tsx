@@ -705,7 +705,7 @@ const Cockpit = () => {
                     <img src={batteryPng} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0]"}>电池电量</span>
-                      <span>
+                      <span className={"whitespace-nowrap"}>
                         {deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}
                       </span>
                     </div>
@@ -714,7 +714,7 @@ const Cockpit = () => {
                     <img src={rtkPng} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0]"}>搜星质量</span>
-                      <span>
+                      <span className={"whitespace-nowrap"}>
                         {deviceInfo.device ? deviceInfo.device.position_state.rtk_number : str}
                       </span>
                     </div>
@@ -723,7 +723,7 @@ const Cockpit = () => {
                     <img src={czsd} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0]"}>垂直速度</span>
-                      <span>{!deviceInfo.device || deviceInfo.device.vertical_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
+                      <span className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.vertical_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
                     </div>
                   </div>
                   <div className={"flex space-x-4"}>
@@ -731,7 +731,7 @@ const Cockpit = () => {
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span
                         className={"text-[12px] text-[#D0D0D0]"}>水平速度</span>
-                      <span>{!deviceInfo.device || deviceInfo.device?.horizontal_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
+                      <span className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device?.horizontal_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
                     </div>
                   </div>
                 </div>
@@ -740,29 +740,30 @@ const Cockpit = () => {
                     <img src={asl} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0]"}>ASL</span>
-                      <span>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height).toFixed(2) + " m"}</span>
+                      <span className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height).toFixed(2) + " m"}</span>
                     </div>
                   </div>
                   <div className={"flex space-x-4"}>
                     <img src={alt} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0] whitespace-nowrap"}>ALT</span>
-                      <span>{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " m" : str}</span>
+                      <span className={"whitespace-nowrap"}>{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " m" : str}</span>
                     </div>
                   </div>
                   <div className={"flex space-x-4"}>
                     <img src={windSpeed} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0]"}>风速</span>
-                      <span>{!deviceInfo.device || deviceInfo.device.wind_speed === str ? str : (parseFloat(deviceInfo.device?.wind_speed) / 10).toFixed(2) + " m/s"}</span>
+                      <span className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.wind_speed === str ? str : (parseFloat(deviceInfo.device?.wind_speed) / 10).toFixed(2) + " m/s"}</span>
                     </div>
                   </div>
                   <div className={"flex space-x-4"}>
                     <img src={qsdjl} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0]"}>距起始点距离</span>
-                      <span>
-                        {deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}
+                      <span className={"whitespace-nowrap"}>
+                        {!deviceInfo.device || deviceInfo.device.home_distance.toString() === str ? str : (+deviceInfo.device?.home_distance).toFixed(2) + ' m'}
+                        {/*{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}*/}
                       </span>
                     </div>
                   </div>
