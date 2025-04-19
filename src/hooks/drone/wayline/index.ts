@@ -40,9 +40,11 @@ export const addDroneModel = (longitude: number, latitude: number, height: numbe
   if (takeoffDroneEntity) return;
   getCustomSource(sourceName)?.entities.add({
     id: "takeoff-drone",
-    position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
+    position: new Cesium.CallbackProperty(() => {
+      return Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
+    }, false),
     model: {
-      uri: "/models/CesiumDrone.glb",
+      uri: "/models/untitled2.glb",
       scale: 0.1,
       minimumPixelSize: 64,
       maximumScale: 64,
@@ -54,11 +56,269 @@ export const addDroneModel = (longitude: number, latitude: number, height: numbe
   });
 };
 
+// 添加无人机模型
+export const dynamicAddDroneModel = (dronePosition: {
+  longitude: number,
+  latitude: number,
+  height: number,
+  heading?: number // 添加航向角属性
+}, sourceName = "waylines-create") => {
+  const takeoffDroneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
+  if (takeoffDroneEntity) {
+    getCustomSource(sourceName)?.entities.remove(takeoffDroneEntity);
+  }
+  
+  getCustomSource(sourceName)?.entities.add({
+    id: "takeoff-drone",
+    position: new Cesium.CallbackProperty(() => {
+      const {longitude, latitude, height} = dronePosition;
+      return Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
+    }, false),
+    orientation: new Cesium.CallbackProperty(() => {
+      // 根据航向角计算四元数
+      const heading = Cesium.Math.toRadians(dronePosition.heading || 0);
+      return Cesium.Transforms.headingPitchRollQuaternion(
+        Cesium.Cartesian3.fromDegrees(dronePosition.longitude, dronePosition.latitude, dronePosition.height),
+        new Cesium.HeadingPitchRoll(heading, 0, 0)
+      );
+    }, false),
+    model: {
+      uri: "/models/untitled2.glb",
+      scale: 0.1,
+      minimumPixelSize: 64,
+      maximumScale: 64,
+      runAnimations: true,
+    }
+  });
+};
+
 export const removeDroneModel = () => {
   const takeoffDroneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
   if (takeoffDroneEntity) {
     getCustomSource("waylines-create")?.entities.remove(takeoffDroneEntity);
   }
+};
+
+// 移除棱锥体和中心线
+export const removePyramid = () => {
+  const entityIds = [
+    "center-line",
+    "bottom-polygon",
+    "left-polygon",
+    "right-polygon",
+    "front-polygon",
+    "top-polygon"
+  ];
+
+  entityIds.forEach(id => {
+    const entity = getCustomSource("waylines-create")?.entities.getById(id);
+    if (entity) {
+      getCustomSource("waylines-create")?.entities.remove(entity);
+    }
+  });
+};
+
+// 添加棱锥和中心线
+export const addPyramid = ({longitude, latitude, height, direction}: {
+  longitude: number,
+  latitude: number,
+  height: number,
+  direction: any
+}) => {
+  const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
+  // 零锥体的参数
+  const distance = 200;  // 长度
+  const side = 50; // 边长
+  const centerLineEntity = getCustomSource("waylines-create")?.entities.getById("center-line");
+  if (!centerLineEntity)
+    getCustomSource("waylines-create")?.entities.add({
+      id: "center-line",
+      polyline: {
+        positions: new Cesium.CallbackProperty(() => {
+          // let direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3())  // 方向单位向量
+          const centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
+          return [topPosition, centerPosition];
+        }, false),
+        // positions: [topPosition, centerPosition, centerTopPosition, centerBottomPosition, leftTopPosition, leftBottomPosition, rightTopPosition, rightBottomPosition],
+        material: new Cesium.PolylineDashMaterialProperty({
+          color: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5)
+        }),
+      },  // 顶点和底部中心连线
+    });
+  const bottomEntity = getCustomSource("waylines-create")?.entities.getById("bottom-polygon");
+  if (!bottomEntity)
+    getCustomSource("waylines-create")?.entities.add({
+      id: "bottom-polygon",
+      polygon: {
+        hierarchy: new Cesium.CallbackProperty(() => {
+          const positions = [];
+          const centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
+          /*start 计算四个角点*/
+          const cross = Cesium.Cartesian3.cross(centerPosition, direction, new Cesium.Cartesian3());
+          let nCross = Cesium.Cartesian3.normalize(cross, new Cesium.Cartesian3());
+          nCross = Cesium.Cartesian3.multiplyByScalar(nCross, side / 2, new Cesium.Cartesian3());
+          const carto = Cesium.Cartographic.fromCartesian(centerPosition);
+          carto.height = carto.height + side / 2;
+          carto.height = carto.height - side;
+          const centerBottomPosition = Cesium.Cartographic.toCartesian(carto);
+          const leftBottomPosition = Cesium.Cartesian3.add(centerBottomPosition, nCross, new Cesium.Cartesian3());
+          nCross = Cesium.Cartesian3.multiplyByScalar(nCross, -1, new Cesium.Cartesian3());
+          const rightBottomPosition = Cesium.Cartesian3.add(centerBottomPosition, nCross, new Cesium.Cartesian3());
+          /*end 计算四个角点*/
+          positions.push(topPosition, leftBottomPosition, rightBottomPosition);
+          return new Cesium.PolygonHierarchy(positions);
+        }, false),
+        perPositionHeight: true,
+        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5),
+      }
+    });
+  const leftEntity = getCustomSource("waylines-create")?.entities.getById("left-polygon");
+  if (!leftEntity)
+    getCustomSource("waylines-create")?.entities.add({
+      id: "left-polygon",
+      polygon: {
+        hierarchy: new Cesium.CallbackProperty(() => {
+          let positions = [];
+          let centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
+          /*start 计算四个角点*/
+          let cross = Cesium.Cartesian3.cross(centerPosition, direction, new Cesium.Cartesian3());
+          let nCross = Cesium.Cartesian3.normalize(cross, new Cesium.Cartesian3());
+          nCross = Cesium.Cartesian3.multiplyByScalar(nCross, side / 2, new Cesium.Cartesian3());
+          let centerTopPosition;
+          let carto = Cesium.Cartographic.fromCartesian(centerPosition);
+          carto.height = carto.height + side / 2;
+          centerTopPosition = Cesium.Cartographic.toCartesian(carto);
+          let centerBottomPosition;
+          carto.height = carto.height - side;
+          centerBottomPosition = Cesium.Cartographic.toCartesian(carto);
+          // eslint-disable-next-line no-unused-vars
+          let leftTopPosition = Cesium.Cartesian3.add(centerTopPosition, nCross, new Cesium.Cartesian3());
+          // eslint-disable-next-line no-unused-vars
+          let leftBottomPosition = Cesium.Cartesian3.add(centerBottomPosition, nCross, new Cesium.Cartesian3());
+          nCross = Cesium.Cartesian3.multiplyByScalar(nCross, -1, new Cesium.Cartesian3());
+          // eslint-disable-next-line no-unused-vars
+          let rightTopPosition = Cesium.Cartesian3.add(centerTopPosition, nCross, new Cesium.Cartesian3());
+          // eslint-disable-next-line no-unused-vars
+          let rightBottomPosition = Cesium.Cartesian3.add(centerBottomPosition, nCross, new Cesium.Cartesian3());
+          /*end 计算四个角点*/
+
+          positions.push(topPosition, leftTopPosition, leftBottomPosition);
+          return new Cesium.PolygonHierarchy(positions);
+        }, false),
+        perPositionHeight: true,
+        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5),
+      }
+    });
+  const rightEntity = getCustomSource("waylines-create")?.entities.getById("right-polygon");
+  if (!rightEntity)
+    getCustomSource("waylines-create")?.entities.add({
+      id: "right-polygon",
+      polygon: {
+        hierarchy: new Cesium.CallbackProperty(() => {
+          let positions = [];
+          let centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
+          /*start 计算四个角点*/
+          let cross = Cesium.Cartesian3.cross(centerPosition, direction, new Cesium.Cartesian3());
+          let nCross = Cesium.Cartesian3.normalize(cross, new Cesium.Cartesian3());
+          nCross = Cesium.Cartesian3.multiplyByScalar(nCross, side / 2, new Cesium.Cartesian3());
+          let centerTopPosition;
+          let carto = Cesium.Cartographic.fromCartesian(centerPosition);
+          carto.height = carto.height + side / 2;
+          centerTopPosition = Cesium.Cartographic.toCartesian(carto);
+          let centerBottomPosition;
+          carto.height = carto.height - side;
+          centerBottomPosition = Cesium.Cartographic.toCartesian(carto);
+          // eslint-disable-next-line no-unused-vars
+          let leftTopPosition = Cesium.Cartesian3.add(centerTopPosition, nCross, new Cesium.Cartesian3());
+          // eslint-disable-next-line no-unused-vars
+          let leftBottomPosition = Cesium.Cartesian3.add(centerBottomPosition, nCross, new Cesium.Cartesian3());
+          nCross = Cesium.Cartesian3.multiplyByScalar(nCross, -1, new Cesium.Cartesian3());
+          // eslint-disable-next-line no-unused-vars
+          let rightTopPosition = Cesium.Cartesian3.add(centerTopPosition, nCross, new Cesium.Cartesian3());
+          // eslint-disable-next-line no-unused-vars
+          let rightBottomPosition = Cesium.Cartesian3.add(centerBottomPosition, nCross, new Cesium.Cartesian3());
+          /*end 计算四个角点*/
+
+          positions.push(topPosition, rightTopPosition, rightBottomPosition);
+          return new Cesium.PolygonHierarchy(positions);
+        }, false),
+        perPositionHeight: true,
+        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5),
+      }
+    });
+  const frontEntity = getCustomSource("waylines-create")?.entities.getById("front-polygon");
+  if (!frontEntity)
+    getCustomSource("waylines-create")?.entities.add({
+      id: "front-polygon",
+      polygon: {
+        hierarchy: new Cesium.CallbackProperty(() => {
+          let positions = [];
+          let centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
+          /*start 计算四个角点*/
+          let cross = Cesium.Cartesian3.cross(centerPosition, direction, new Cesium.Cartesian3());
+          let nCross = Cesium.Cartesian3.normalize(cross, new Cesium.Cartesian3());
+          nCross = Cesium.Cartesian3.multiplyByScalar(nCross, side / 2, new Cesium.Cartesian3());
+          let centerTopPosition;
+          let carto = Cesium.Cartographic.fromCartesian(centerPosition);
+          carto.height = carto.height + side / 2;
+          centerTopPosition = Cesium.Cartographic.toCartesian(carto);
+          let centerBottomPosition;
+          carto.height = carto.height - side;
+          centerBottomPosition = Cesium.Cartographic.toCartesian(carto);
+          // eslint-disable-next-line no-unused-vars
+          let leftTopPosition = Cesium.Cartesian3.add(centerTopPosition, nCross, new Cesium.Cartesian3());
+          // eslint-disable-next-line no-unused-vars
+          let leftBottomPosition = Cesium.Cartesian3.add(centerBottomPosition, nCross, new Cesium.Cartesian3());
+          nCross = Cesium.Cartesian3.multiplyByScalar(nCross, -1, new Cesium.Cartesian3());
+          // eslint-disable-next-line no-unused-vars
+          let rightTopPosition = Cesium.Cartesian3.add(centerTopPosition, nCross, new Cesium.Cartesian3());
+          // eslint-disable-next-line no-unused-vars
+          let rightBottomPosition = Cesium.Cartesian3.add(centerBottomPosition, nCross, new Cesium.Cartesian3());
+          /*end 计算四个角点*/
+
+          positions.push(rightTopPosition, rightBottomPosition, leftBottomPosition, leftTopPosition);
+          return new Cesium.PolygonHierarchy(positions);
+        }, false),
+        perPositionHeight: true,
+        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5),
+      }
+    });
+  const topEntity = getCustomSource("waylines-create")?.entities.getById("top-polygon");
+  if (!topEntity)
+    getCustomSource("waylines-create")?.entities.add({
+      id: "top-polygon",
+      polygon: {
+        hierarchy: new Cesium.CallbackProperty(() => {
+          let positions = [];
+          // let direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3())  // 方向单位向量
+          let centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
+          /*start 计算四个角点*/
+          let cross = Cesium.Cartesian3.cross(centerPosition, direction, new Cesium.Cartesian3());
+          let nCross = Cesium.Cartesian3.normalize(cross, new Cesium.Cartesian3());
+          nCross = Cesium.Cartesian3.multiplyByScalar(nCross, side / 2, new Cesium.Cartesian3());
+          let centerTopPosition;
+          let carto = Cesium.Cartographic.fromCartesian(centerPosition);
+          carto.height = carto.height + side / 2;
+          centerTopPosition = Cesium.Cartographic.toCartesian(carto);
+          let centerBottomPosition;
+          carto.height = carto.height - side;
+          centerBottomPosition = Cesium.Cartographic.toCartesian(carto);
+          let leftTopPosition = Cesium.Cartesian3.add(centerTopPosition, nCross, new Cesium.Cartesian3());
+          // eslint-disable-next-line no-unused-vars
+          let leftBottomPosition = Cesium.Cartesian3.add(centerBottomPosition, nCross, new Cesium.Cartesian3());
+          nCross = Cesium.Cartesian3.multiplyByScalar(nCross, -1, new Cesium.Cartesian3());
+          let rightTopPosition = Cesium.Cartesian3.add(centerTopPosition, nCross, new Cesium.Cartesian3());
+          // eslint-disable-next-line no-unused-vars
+          let rightBottomPosition = Cesium.Cartesian3.add(centerBottomPosition, nCross, new Cesium.Cartesian3());
+          /*end 计算四个角点*/
+
+          positions.push(topPosition, leftTopPosition, rightTopPosition);
+          return new Cesium.PolygonHierarchy(positions);
+        }, false),
+        perPositionHeight: true,
+        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5),
+      }
+    });
 };
 
 export const addTakeOffPoint = ({
@@ -84,6 +344,8 @@ export const addTakeOffPoint = ({
       image: takeOffPng,
       width: 48,
       height: 48,
+      heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY
     },
     polyline: {
       positions: [
@@ -91,10 +353,7 @@ export const addTakeOffPoint = ({
         Cesium.Cartesian3.fromDegrees(longitude, latitude, endHeight)
       ],
       width: 2,
-      material: new Cesium.PolylineDashMaterialProperty({
-        color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-        dashLength: 8.0
-      })
+      material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8)
     }
   });
 
@@ -112,7 +371,8 @@ export const addTakeOffPoint = ({
       verticalOrigin: Cesium.VerticalOrigin.CENTER,
       horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
       pixelOffset: new Cesium.Cartesian2(10, 0),
-      disableDepthTestDistance: Number.POSITIVE_INFINITY
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
     }
   });
 
@@ -429,7 +689,7 @@ export const moveDroneToTarget = (targetPosition: { longitude: number, latitude:
   const startTime = performance.now();
 
   // 让无人机朝向目标点
-  pointDroneToTarget(targetPosition);
+  // pointDroneToTarget(targetPosition);
 
   // 动画函数
   const animate = () => {
@@ -521,7 +781,9 @@ export const addWayPointWithIndex = ({longitude, latitude, height, text, id}: {
       horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
       width: 32,
       height: 32,
-      color: Cesium.Color.WHITE
+      color: Cesium.Color.WHITE,
+      heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY
     },
     polyline: {
       positions: [

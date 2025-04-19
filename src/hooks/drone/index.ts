@@ -647,9 +647,67 @@ export const useOperationList = (orderId?: number) => {
   })).data.data);
 };
 
+// 添加 ImageFormat 类型定义
+export type ImageFormat = "wide" | "zoom" | "ir";
+
+// 修改 WaylineData 接口，添加 image_format 字段类型
+export interface WaylineData {
+  id: string;
+  name: string;
+  fly_to_wayline_mode: "safely" | "pointToPoint";
+  take_off_security_height: number;
+  global_transitional_speed: number;
+  template_type: "waypoint";
+  drone_type: number;
+  sub_drone_type: number;
+  payload_type: number;
+  payload_position: number;
+  image_format: string;  // 或者 string 如果后端返回的是逗号分隔的字符串
+  finish_action: "goHome" | "noAction" | "autoLand" | "gotoFirstWaypoint";
+  exit_on_rc_lost_action: "goHome" | "noAction" | "autoLand" | "gotoFirstWaypoint";
+  global_height: number;
+  auto_flight_speed: number;
+  waypoint_heading_req: WaypointHeadingReq;
+  waypoint_turn_req: WaypointTurnReq;
+  gimbal_pitch_mode: "manual" | "usePointSetting";
+  take_off_ref_point: string;
+  route_point_list: RoutePoint[];
+}
+
+interface WaypointHeadingReq {
+  waypoint_heading_mode: "followWayline" | "manually" | "fixed";
+}
+
+interface WaypointTurnReq {
+  waypoint_turn_mode: "coordinateTurn" | "toPointAndStopWithDiscontinuityCurvature" |
+    "toPointAndStopWithContinuityCurvature" | "toPointAndPassWithContinuityCurvature";
+}
+
+interface RoutePoint {
+  route_point_index: number;
+  longitude: number;
+  latitude: number;
+  height?: number;
+  speed?: number;
+  waypoint_heading_req: object; // Assuming this can be an empty object
+  waypoint_turn_req: object; // Assuming this can be an empty object
+  actions: Action[];
+  action_trigger_req: ActionTriggerReq;
+}
+
+interface Action {
+  action_index: number;
+  action_actuator_func: string;
+  use_global_image_format?: number; // Optional, as it may not be present in all actions
+}
+
+interface ActionTriggerReq {
+  action_trigger_type: string;
+}
+
 // 查询航线参数
 export const useWaylineById = (waylineId: string) => {
   const {get} = useAjax();
   const key = waylineId ? [`/wayline/api/v1/common/get?waylineId=${waylineId}`] : null;
-  return useSWR(key, async ([path]) => (await get<Resource<any>>(path)).data.data);
+  return useSWR(key, async ([path]) => (await get<Resource<WaylineData>>(path)).data.data);
 };

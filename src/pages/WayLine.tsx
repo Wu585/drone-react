@@ -42,17 +42,8 @@ const WayLine = () => {
     page_size: 1000
   });
 
-  useEffect(() => {
-    console.log("waylines");
-    console.log(waylines);
-  }, [waylines]);
-
   const onComplete = (xhr: XMLHttpRequest) => {
-    console.log("xhr");
-    console.log(xhr);
     const response = JSON.parse(xhr.response);
-    console.log("response");
-    console.log(response);
     if (response.code === 0) {
       toast({
         description: "上传成功！"

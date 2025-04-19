@@ -3,7 +3,7 @@ import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import Scene from "@/components/drone/public/Scene.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
-import {useState, useEffect} from "react";
+import {useState, useEffect, useMemo, useRef, useCallback} from "react";
 import {pickPosition} from "@/components/toolbar/tools";
 import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
 import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
@@ -36,18 +36,21 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog.tsx";
-import {useWaylineById} from "@/hooks/drone";
+import {useWaylineById, WaylineData} from "@/hooks/drone";
 import {
   addConnectLines,
   addDroneModel,
-  addLabelWithin, addTakeOffPoint,
+  dynamicAddDroneModel,
+  addLabelWithin, addPyramid, addTakeOffPoint,
   addWayPointWithIndex,
   moveDroneToTarget,
-  removeDroneModel,
+  removeDroneModel, removePyramid,
   removeTakeoffPoint, useAddEventListener,
 } from "@/hooks/drone/wayline";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
+import Compass from "@/components/drone/public/Compass.tsx";
+import {ImageFormat} from "@/hooks/drone";
 import SceneMini from "@/components/drone/public/SceneMini.tsx";
 
 interface WayPoint {
@@ -165,7 +168,7 @@ const formSchema = z.object({
     payload_type: z.coerce.number(),
     payload_position: z.coerce.number()
   }),
-  take_off_ref_point: z.string().optional(),
+  take_off_ref_point: z.string(),
   image_format: z.array(z.enum(["wide", "zoom", "ir"])).min(1, {
     message: "请至少选择一种拍照模式"
   }),
@@ -214,15 +217,11 @@ const CreateWayLine = () => {
     distance: 0,
     time: 0
   });
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-  });
 
-  // 监听数据变化，重置表单值
-  useEffect(() => {
+  // 使用 useMemo 计算表单的默认值
+  const defaultValues: z.infer<typeof formSchema> = useMemo(() => {
     if (currentWaylineData) {
-      // 有数据时使用数据初始化
-      form.reset({
+      return {
         device: {
           drone_type: currentWaylineData.drone_type,
           sub_drone_type: currentWaylineData.sub_drone_type,
@@ -230,7 +229,7 @@ const CreateWayLine = () => {
           payload_position: currentWaylineData.payload_position,
         },
         take_off_ref_point: currentWaylineData.take_off_ref_point,
-        image_format: currentWaylineData.image_format?.split(","),
+        image_format: currentWaylineData.image_format?.split(",") as ImageFormat[],
         fly_to_wayline_mode: currentWaylineData.fly_to_wayline_mode,
         global_height: currentWaylineData.global_height,
         take_off_security_height: currentWaylineData.take_off_security_height,
@@ -241,31 +240,36 @@ const CreateWayLine = () => {
         finish_action: currentWaylineData.finish_action,
         waypoint_heading_mode: currentWaylineData.waypoint_heading_req.waypoint_heading_mode,
         name: currentWaylineData.name,
-      });
-    } else {
-      // 没有数据时使用默认值
-      form.reset({
-        device: {
-          drone_type: 67,
-          sub_drone_type: 1,
-          payload_type: 53,
-          payload_position: 0
-        },
-        take_off_ref_point: "",
-        image_format: ["zoom", "wide", "ir"],
-        fly_to_wayline_mode: "safely",
-        global_height: 120,
-        take_off_security_height: 100,
-        auto_flight_speed: 10,
-        global_transitional_speed: 15,
-        global_waypoint_turn_mode: "toPointAndStopWithDiscontinuityCurvature",
-        gimbal_pitch_mode: "manual",
-        finish_action: "goHome",
-        waypoint_heading_mode: "followWayline",
-        name: "新建航点航线"
-      });
+      };
     }
-  }, [currentWaylineData, form]);
+
+    // 默认值
+    return {
+      device: {
+        drone_type: 67,
+        sub_drone_type: 1,
+        payload_type: 53,
+        payload_position: 0
+      },
+      take_off_ref_point: "",
+      image_format: ["zoom", "wide", "ir"] as ImageFormat[],
+      fly_to_wayline_mode: "safely",
+      global_height: 120,
+      take_off_security_height: 100,
+      auto_flight_speed: 10,
+      global_transitional_speed: 15,
+      global_waypoint_turn_mode: "toPointAndStopWithDiscontinuityCurvature",
+      gimbal_pitch_mode: "manual",
+      finish_action: "goHome",
+      waypoint_heading_mode: "followWayline",
+      name: "新建航点航线"
+    };
+  }, [currentWaylineData]);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues // 只在初始化时设置一次默认值
+  });
 
   const {post} = useAjax();
   const navigate = useNavigate();
@@ -287,19 +291,38 @@ const CreateWayLine = () => {
   } | null>(null);
   const [selectedWaypointId, setSelectedWaypointId] = useState<number | null>(null);
 
-  // 设置参考起飞点
+  /*// 设置参考起飞点
   const takeoffPointEndHeight = form.getValues("fly_to_wayline_mode") === "pointToPoint" ?
-    +form.getValues("take_off_security_height") : +form.getValues("global_height");
+    +form.getValues("take_off_security_height") : +form.getValues("global_height");*/
 
-  const globalHeight = +form.watch("global_height");
+  const globalHeight = +form.watch("global_height"); // 提供默认值
   const takeOffSecurityHeight = +form.watch("take_off_security_height");
+  const fly_to_wayline_mode = form.watch("fly_to_wayline_mode");
 
-  useEffect(() => {
-    setWaypoints(waypoints.map(point => point.useGlobalHeight ? ({
-      ...point,
-      height: globalHeight
-    }) : point));
-  }, [globalHeight]);
+  const takeoffPointEndHeight = useMemo(() => {
+    if (fly_to_wayline_mode === "pointToPoint") {
+      return takeOffSecurityHeight;
+    } else {
+      if ((waypoints.length > 0 && waypoints[0].useGlobalHeight) || waypoints.length === 0) {
+        return takeOffSecurityHeight > globalHeight ? takeOffSecurityHeight : globalHeight;
+      } else {
+        return takeOffSecurityHeight > waypoints[0].height! ? takeOffSecurityHeight : waypoints[0].height!;
+      }
+    }
+  }, [takeOffSecurityHeight, globalHeight, fly_to_wayline_mode, waypoints]);
+
+  /*useEffect(() => {
+    const subscription = form.watch((value, {name}) => {
+        if (name === "global_height") {
+          setWaypoints(waypoints.map(point => point.useGlobalHeight ? ({
+            ...point,
+            height: +value.global_height!
+          }) : point));
+        }
+      }
+    );
+    return () => subscription.unsubscribe();
+  }, [form, waypoints]);*/
 
   const onSetTakeoffPoint = () => {
     pickPosition(({longitude, latitude, height}) => {
@@ -332,38 +355,181 @@ const CreateWayLine = () => {
     setWaypoints(prev => prev.filter((_, current_index) => index !== current_index));
   };
 
+  const directionRef = useRef<any>(null);
+
+  const onCameraChange: (direction: any) => void = useCallback((direction) => {
+    directionRef.current.x = direction.x;
+    directionRef.current.y = direction.y;
+    directionRef.current.z = direction.z;
+  }, []);
+
+  const miniSceneCameraPosition = useMemo(() => {
+    if (waypoints.length > 0) {
+      const longitude = waypoints[waypoints.length - 1].longitude;
+      const latitude = waypoints[waypoints.length - 1].latitude;
+      const height = waypoints[waypoints.length - 1].useGlobalHeight ? globalHeight : waypoints[waypoints.length - 1].height!;
+
+      return {
+        longitude, latitude, height
+      };
+    }
+    if (takeoffPoint) {
+      return {
+        ...takeoffPoint,
+        height: takeoffPointEndHeight
+      };
+    }
+  }, [takeoffPoint, waypoints, globalHeight, takeoffPointEndHeight]);
+
+  const dronePositionRef = useRef<{
+    longitude: number
+    latitude: number
+    height: number
+    heading: number
+  } | null>(null);
+
   useEffect(() => {
     if (takeoffPoint) {
+      // 重新生成起飞点
       removeTakeoffPoint();
       addTakeOffPoint({
         ...takeoffPoint,
-        endHeight: takeOffSecurityHeight
+        endHeight: takeoffPointEndHeight
       });
+      removePyramid();
+      const {longitude, latitude} = takeoffPoint;
+      const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, takeoffPointEndHeight);
+      const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, takeoffPointEndHeight);  // 正北方向
+
+      directionRef.current = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3());
+
+      addPyramid({...takeoffPoint, height: takeoffPointEndHeight, direction: directionRef.current});
       if (waypoints.length === 0) {
         removeDroneModel();
-        addDroneModel(takeoffPoint.longitude, takeoffPoint.latitude, takeOffSecurityHeight);
+        dronePositionRef.current = {
+          longitude, latitude, height: takeoffPointEndHeight,heading: 0
+        };
+        dynamicAddDroneModel(dronePositionRef.current);
       } else {
+        removePyramid();
+        const longitude = waypoints[waypoints.length - 1].longitude;
+        const latitude = waypoints[waypoints.length - 1].latitude;
+        const height = waypoints[waypoints.length - 1].useGlobalHeight ? globalHeight : waypoints[waypoints.length - 1].height!;
+        const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
+        const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
+        directionRef.current = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3());
+        addPyramid({longitude, latitude, height, direction: directionRef.current});
+
         removeDroneModel();
         addDroneModel(waypoints[waypoints.length - 1].longitude, waypoints[waypoints.length - 1].latitude,
           waypoints[waypoints.length - 1].useGlobalHeight ? globalHeight : waypoints[waypoints.length - 1].height!);
-        moveDroneToTarget({
+        /*moveDroneToTarget({
           longitude: waypoints[waypoints.length - 1].longitude,
           latitude: waypoints[waypoints.length - 1].latitude,
           height: waypoints[waypoints.length - 1].useGlobalHeight ? globalHeight : waypoints[waypoints.length - 1].height!,
-        });
+        });*/
       }
     }
-  }, [takeoffPoint, takeOffSecurityHeight, globalHeight]);
+  }, [takeoffPointEndHeight, takeoffPoint, globalHeight, waypoints]);
+
+  useEffect(() => {
+    const speed = 1; // 移动速度
+    const rotateSpeed = 5; // 移动速度
+
+    const handleKeyDown = (evt: KeyboardEvent) => {
+      if (!dronePositionRef.current || !directionRef.current) return;
+
+      const position = Cesium.Cartesian3.fromDegrees(
+        dronePositionRef.current.longitude,
+        dronePositionRef.current.latitude,
+        dronePositionRef.current.height
+      );
+      const up = Cesium.Cartesian3.normalize(position, new Cesium.Cartesian3());
+
+      switch (evt.code) {
+        case "KeyA": { // 左移
+          const left = Cesium.Cartesian3.cross(up, directionRef.current, new Cesium.Cartesian3());
+          const offset = Cesium.Cartesian3.multiplyByScalar(left, speed, new Cesium.Cartesian3());
+          const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
+          const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
+          dronePositionRef.current.longitude = Cesium.Math.toDegrees(cartographic.longitude);
+          dronePositionRef.current.latitude = Cesium.Math.toDegrees(cartographic.latitude);
+          dronePositionRef.current.height = cartographic.height;
+          break;
+        }
+        case "KeyD": { // 右移
+          const right = Cesium.Cartesian3.cross(directionRef.current, up, new Cesium.Cartesian3());
+          const offset = Cesium.Cartesian3.multiplyByScalar(right, speed, new Cesium.Cartesian3());
+          const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
+          const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
+          dronePositionRef.current.longitude = Cesium.Math.toDegrees(cartographic.longitude);
+          dronePositionRef.current.latitude = Cesium.Math.toDegrees(cartographic.latitude);
+          dronePositionRef.current.height = cartographic.height;
+          break;
+        }
+        case "KeyW": { // 前进
+          const forward = directionRef.current; // 直接使用朝向作为前进方向
+          const offset = Cesium.Cartesian3.multiplyByScalar(forward, speed, new Cesium.Cartesian3());
+          const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
+          const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
+          dronePositionRef.current.longitude = Cesium.Math.toDegrees(cartographic.longitude);
+          dronePositionRef.current.latitude = Cesium.Math.toDegrees(cartographic.latitude);
+          dronePositionRef.current.height = cartographic.height;
+          break;
+        }
+        case "KeyS": { // 后退
+          const backward = Cesium.Cartesian3.negate(directionRef.current, new Cesium.Cartesian3()); // 反向
+          const offset = Cesium.Cartesian3.multiplyByScalar(backward, speed, new Cesium.Cartesian3());
+          const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
+          const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
+          dronePositionRef.current.longitude = Cesium.Math.toDegrees(cartographic.longitude);
+          dronePositionRef.current.latitude = Cesium.Math.toDegrees(cartographic.latitude);
+          dronePositionRef.current.height = cartographic.height;
+          break;
+        }
+        case "KeyQ": { // 左旋转
+          dronePositionRef.current.heading = (dronePositionRef.current.heading || 0) - rotateSpeed;
+          break;
+        }
+        case "KeyE": { // 右旋转
+          dronePositionRef.current.heading = (dronePositionRef.current.heading || 0) + rotateSpeed;
+          break;
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     getCustomSource("waylines-update")?.entities.removeAll();
     let distance = 0;
-    if (takeoffPoint) {
-      if (waypoints.length > 0) {
-        addConnectLines([takeoffPoint.longitude, takeoffPoint.latitude, takeOffSecurityHeight],
-          [waypoints[0].longitude, waypoints[0].latitude, waypoints[0].height || globalHeight]);
+    if (takeoffPoint && waypoints.length > 0) {
+      const firstPointHeight = waypoints[0].useGlobalHeight ? globalHeight : waypoints[0].height;
+      if (takeoffPointEndHeight > firstPointHeight!) {
+        addConnectLines([takeoffPoint.longitude, takeoffPoint.latitude, takeoffPointEndHeight],
+          [waypoints[0].longitude, waypoints[0].latitude, takeoffPointEndHeight]);
         distance += addLabelWithin([takeoffPoint.longitude, takeoffPoint.latitude, takeoffPointEndHeight],
-          [waypoints[0].longitude, waypoints[0].latitude, waypoints[0].height || globalHeight]);
+          [waypoints[0].longitude, waypoints[0].latitude, takeoffPointEndHeight]);
+        addConnectLines([waypoints[0].longitude, waypoints[0].latitude, takeoffPointEndHeight],
+          [waypoints[0].longitude, waypoints[0].latitude, firstPointHeight!]);
+        distance += addLabelWithin([waypoints[0].longitude, waypoints[0].latitude, takeoffPointEndHeight],
+          [waypoints[0].longitude, waypoints[0].latitude, firstPointHeight!]);
+      } else {
+        if (fly_to_wayline_mode === "pointToPoint") {
+          addConnectLines([takeoffPoint.longitude, takeoffPoint.latitude, takeoffPointEndHeight],
+            [waypoints[0].longitude, waypoints[0].latitude, firstPointHeight!]);
+          distance += addLabelWithin([takeoffPoint.longitude, takeoffPoint.latitude, takeoffPointEndHeight],
+            [waypoints[0].longitude, waypoints[0].latitude, firstPointHeight!]);
+        } else {
+          addConnectLines([takeoffPoint.longitude, takeoffPoint.latitude, takeoffPointEndHeight],
+            [waypoints[0].longitude, waypoints[0].latitude, takeoffPointEndHeight]);
+          distance += addLabelWithin([takeoffPoint.longitude, takeoffPoint.latitude, takeoffPointEndHeight],
+            [waypoints[0].longitude, waypoints[0].latitude, takeoffPointEndHeight]);
+        }
       }
     }
     // 添加航点图标
@@ -396,7 +562,7 @@ const CreateWayLine = () => {
         height: waypoints[waypoints.length - 1].useGlobalHeight ? globalHeight : waypoints[waypoints.length - 1].height!
       });
     }
-  }, [waypoints, form, takeoffPoint, takeoffPointEndHeight, globalHeight, takeOffSecurityHeight]);
+  }, [waypoints, form, takeoffPoint, takeoffPointEndHeight, globalHeight, takeOffSecurityHeight, fly_to_wayline_mode]);
 
   const addWaypointAfter = (currentIndex: number) => {
     if (!takeoffPoint) return toast({
@@ -926,7 +1092,13 @@ const CreateWayLine = () => {
                       <FormLabel>航线高度(海拔高度)</FormLabel>
                       <FormControl>
                         <div className={"flex space-x-2 items-center"}>
-                          <Input className={"bg-transparent"} {...field}/>
+                          <Input className={"bg-transparent"} {...field} onChange={(e) => {
+                            field.onChange(e);
+                            setWaypoints(waypoints.map(point => point.useGlobalHeight ? ({
+                              ...point,
+                              height: +form.getValues("global_height")!
+                            }) : point));
+                          }}/>
                           <span>米</span>
                         </div>
                       </FormControl>
@@ -2017,8 +2189,10 @@ const CreateWayLine = () => {
         </header>
         <div className={"flex-1 relative"}>
           <Scene/>
-          <div className={"absolute bottom-0 right-[80px] w-[256px] h-[256px]"}>
-            <SceneMini/>
+          <div className={"absolute bottom-0 right-[80px] w-[360px] h-[280px]"}>
+            {/*<Compass/>*/}
+            {miniSceneCameraPosition && <SceneMini onCameraChange={onCameraChange}
+                                                   initialPosition={miniSceneCameraPosition}/>}
           </div>
           <div className={"absolute right-0 bottom-0 z-100"}>
             <MapChange/>

@@ -51,7 +51,7 @@ const Scene = () => {
     scene.fxaa = false;
     scene.postProcessStages.fxaa.enabled = false;
     // viewer._cesiumWidget._creditContainer.style.display = "none";
-    scene.globe.depthTestAgainstTerrain = false; // 图标不埋地下
+    scene.globe.depthTestAgainstTerrain = true; // 图标不埋地下
 
     scene.shadowMap.darkness = 0.3; //设置第二重烘焙纹理的效果（明暗程度）
 
@@ -92,6 +92,8 @@ const Scene = () => {
             image: dockPng,
             width: EntitySize.Width,
             height: EntitySize.Height,
+            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
           },
         });
       }
