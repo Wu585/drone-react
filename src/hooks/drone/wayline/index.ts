@@ -7,7 +7,7 @@ import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
 // import gltfJson from "@/assets/datas/drone-gltf.json";
 
 export const useAddEventListener =
-  (func?: ({longitude, latitude, pickedObject}: { longitude: number, latitude: number, pickedObject?: any }) => void,
+  (func?: ({longitude, latitude, pickedObject}: { longitude?: number, latitude?: number, pickedObject?: any }) => void,
    type = Cesium.ScreenSpaceEventType.LEFT_CLICK) => {
     useEffect(() => {
       if (!viewer) return;
@@ -31,7 +31,7 @@ export const useAddEventListener =
           handler.destroy();
         }
       };
-    }, []);
+    }, [func, type]);
   };
 
 // 添加无人机图标
@@ -67,7 +67,7 @@ export const dynamicAddDroneModel = (dronePosition: {
   if (takeoffDroneEntity) {
     getCustomSource(sourceName)?.entities.remove(takeoffDroneEntity);
   }
-  
+
   getCustomSource(sourceName)?.entities.add({
     id: "takeoff-drone",
     position: new Cesium.CallbackProperty(() => {
@@ -119,13 +119,16 @@ export const removePyramid = () => {
 };
 
 // 添加棱锥和中心线
-export const addPyramid = ({longitude, latitude, height, direction}: {
-  longitude: number,
-  latitude: number,
-  height: number,
-  direction: any
+export const addPyramid = ({position, direction}: {
+  position: {
+    longitude: number, latitude: number, height: number
+  }
+  direction: {
+    x: number,
+    y: number
+    z: number
+  }
 }) => {
-  const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
   // 零锥体的参数
   const distance = 200;  // 长度
   const side = 50; // 边长
@@ -135,13 +138,15 @@ export const addPyramid = ({longitude, latitude, height, direction}: {
       id: "center-line",
       polyline: {
         positions: new Cesium.CallbackProperty(() => {
+          const {longitude, latitude, height} = position;
+          const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
           // let direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3())  // 方向单位向量
           const centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
           return [topPosition, centerPosition];
         }, false),
         // positions: [topPosition, centerPosition, centerTopPosition, centerBottomPosition, leftTopPosition, leftBottomPosition, rightTopPosition, rightBottomPosition],
         material: new Cesium.PolylineDashMaterialProperty({
-          color: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5)
+          color: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.2)
         }),
       },  // 顶点和底部中心连线
     });
@@ -152,6 +157,8 @@ export const addPyramid = ({longitude, latitude, height, direction}: {
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
           const positions = [];
+          const {longitude, latitude, height} = position;
+          const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
           const centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
           /*start 计算四个角点*/
           const cross = Cesium.Cartesian3.cross(centerPosition, direction, new Cesium.Cartesian3());
@@ -169,7 +176,7 @@ export const addPyramid = ({longitude, latitude, height, direction}: {
           return new Cesium.PolygonHierarchy(positions);
         }, false),
         perPositionHeight: true,
-        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5),
+        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.2),
       }
     });
   const leftEntity = getCustomSource("waylines-create")?.entities.getById("left-polygon");
@@ -179,6 +186,8 @@ export const addPyramid = ({longitude, latitude, height, direction}: {
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
           let positions = [];
+          const {longitude, latitude, height} = position;
+          const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
           let centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
           /*start 计算四个角点*/
           let cross = Cesium.Cartesian3.cross(centerPosition, direction, new Cesium.Cartesian3());
@@ -206,7 +215,7 @@ export const addPyramid = ({longitude, latitude, height, direction}: {
           return new Cesium.PolygonHierarchy(positions);
         }, false),
         perPositionHeight: true,
-        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5),
+        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.2),
       }
     });
   const rightEntity = getCustomSource("waylines-create")?.entities.getById("right-polygon");
@@ -216,6 +225,8 @@ export const addPyramid = ({longitude, latitude, height, direction}: {
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
           let positions = [];
+          const {longitude, latitude, height} = position;
+          const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
           let centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
           /*start 计算四个角点*/
           let cross = Cesium.Cartesian3.cross(centerPosition, direction, new Cesium.Cartesian3());
@@ -243,7 +254,7 @@ export const addPyramid = ({longitude, latitude, height, direction}: {
           return new Cesium.PolygonHierarchy(positions);
         }, false),
         perPositionHeight: true,
-        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5),
+        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.2),
       }
     });
   const frontEntity = getCustomSource("waylines-create")?.entities.getById("front-polygon");
@@ -253,6 +264,8 @@ export const addPyramid = ({longitude, latitude, height, direction}: {
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
           let positions = [];
+          const {longitude, latitude, height} = position;
+          const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
           let centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
           /*start 计算四个角点*/
           let cross = Cesium.Cartesian3.cross(centerPosition, direction, new Cesium.Cartesian3());
@@ -280,7 +293,7 @@ export const addPyramid = ({longitude, latitude, height, direction}: {
           return new Cesium.PolygonHierarchy(positions);
         }, false),
         perPositionHeight: true,
-        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5),
+        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.2),
       }
     });
   const topEntity = getCustomSource("waylines-create")?.entities.getById("top-polygon");
@@ -290,6 +303,8 @@ export const addPyramid = ({longitude, latitude, height, direction}: {
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
           let positions = [];
+          const {longitude, latitude, height} = position;
+          const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
           // let direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3())  // 方向单位向量
           let centerPosition = Cesium.Cartesian3.add(topPosition, Cesium.Cartesian3.multiplyByScalar(direction, distance, new Cesium.Cartesian3()), new Cesium.Cartesian3());  // 锥体底部中心
           /*start 计算四个角点*/
@@ -316,7 +331,7 @@ export const addPyramid = ({longitude, latitude, height, direction}: {
           return new Cesium.PolygonHierarchy(positions);
         }, false),
         perPositionHeight: true,
-        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.5),
+        material: Cesium.Color.fromCssColorString("#06BB8B").withAlpha(0.2),
       }
     });
 };
@@ -753,7 +768,9 @@ export const addWayPointWithIndex = ({longitude, latitude, height, text, id}: {
 }) => {
   getCustomSource("waylines-update")?.entities.add({
     id,
-    position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
+    position: new Cesium.CallbackProperty(() => {
+      return Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
+    }, false),
     billboard: {
       image: (() => {
         const canvas = document.createElement("canvas");
@@ -786,10 +803,12 @@ export const addWayPointWithIndex = ({longitude, latitude, height, text, id}: {
       disableDepthTestDistance: Number.POSITIVE_INFINITY
     },
     polyline: {
-      positions: [
-        Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
-        Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
-      ],
+      positions: new Cesium.CallbackProperty(() => {
+        return [
+          Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
+          Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
+        ];
+      }, false),
       width: 2,
       material: new Cesium.PolylineDashMaterialProperty({
         color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
@@ -818,10 +837,16 @@ export const addHeightPolyline = (longitude: number, latitude: number, height: n
       disableDepthTestDistance: Number.POSITIVE_INFINITY
     },
     polyline: {
-      positions: [
-        Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
-        Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
-      ],
+      // positions: [
+      //   Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
+      //   Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
+      // ],
+      positions: new Cesium.CallbackProperty(() => {
+        return [
+          Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
+          Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
+        ];
+      }, false),
       width: 2,
       material: new Cesium.PolylineDashMaterialProperty({
         color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),

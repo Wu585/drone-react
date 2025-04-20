@@ -326,77 +326,74 @@ const CreateWayLine = () => {
   }
 
   useEffect(() => {
-    const handler: any = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-    handler.setInputAction(({position}: { position: any }) => {
-      const selectedEntity: any = viewer.selectedEntity;
-      if (!selectedEntity) return;
-      const id = +selectedEntity.id + 1;
+    const clickHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    
+    clickHandler.setInputAction(({position}: { position: any }) => {
+      const pickedObject = viewer.scene.pick(position);
+      if (!pickedObject || !pickedObject.id || !pickedObject.id.id) return;
+      
+      // 直接从 waylines-update source 获取实体
+      const entity = getCustomSource("waylines-update")?.entities.getById(pickedObject.id.id);
+      if (!entity) return;
+      
+      const id = +pickedObject.id.id + 1;
       setSelectedWaypointId(id);
-      getCustomSource("waylines-update")?.entities.values.forEach(item => {
-        if (item.billboard) {
-          item.billboard.color = Cesium.Color.WHITE;
-        }
-      });
-      const entity = getCustomSource("waylines-update")?.entities.getById(selectedEntity.id);
-      if (entity && entity.billboard) {
-        entity.billboard.color = Cesium.Color.YELLOW;
-      }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
     return () => {
-      handler.destroy();
+      clickHandler.destroy();
     };
-  }, [waypoints, globalHeight]);
+  }, []);
 
   useEffect(() => {
     modelDragHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    
     modelDragHandler.setInputAction(({position}: { position: any }) => {
       let endPosition: { longitude: number, latitude: number } | null = null;
-      const selectedEntity: any = viewer.selectedEntity;
-      if (!selectedEntity) {
-        return;
-      } // 如果点击空白区域，则不往下执行
+      const pickedObject = viewer.scene.pick(position);
+      if (!pickedObject || !pickedObject.id || !pickedObject.id.id) return;
+      
+      // 直接从 waylines-update source 获取实体
+      const entityId = pickedObject.id.id;
+      const selectedEntity = getCustomSource("waylines-update")?.entities.getById(entityId);
+      if (!selectedEntity) return;
+      
       viewer.scene.screenSpaceCameraController.enableRotate = false;
 
-      modelDragHandler.setInputAction((arg: any) => {
-        const position = arg.endPosition; // arg有startPosition与endPosition两个属性，即移动前后的位置信息：Cartesian2对象
-        const cartesian = viewer.scene.globe.pick(viewer.camera.getPickRay(position), viewer.scene); //将Cartesian2转为Cartesian3
-        if (!selectedEntity) {
-          return false;
-        }
-        if (cartesian) {
-          const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
-          const longitude = Cesium.Math.toDegrees(cartographic.longitude);
-          const latitude = Cesium.Math.toDegrees(cartographic.latitude);
-          endPosition = {
-            longitude,
-            latitude
-          };
-          const height = waypoints[waypoints.length - 1].useGlobalHeight ? globalHeight : waypoints[waypoints.length - 1].height!;
-          // 创建固定的位置引用
-          const positions = [
-            Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
-            Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
-          ];
-          selectedEntity.position = new Cesium.CallbackProperty(() => positions[1], false);
-          selectedEntity.polyline.positions = new Cesium.CallbackProperty(() => positions, false);
-          // selectedEntity.position = new Cesium.CallbackProperty(() => positions[1], false);
-          // selectedEntity.polyline.positions = new Cesium.CallbackProperty(() => positions, false);
-        }
-      }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+      const moveHandler = (arg: any) => {
+        const position = arg.endPosition;
+        const cartesian = viewer.scene.globe.pick(viewer.camera.getPickRay(position), viewer.scene);
+        if (!cartesian) return;
 
-      modelDragHandler.setInputAction(() => { //为viewer绑定LEFT_UP事件监听器（执行函数，监听的事件）
-        modelDragHandler.removeInputAction(Cesium.ScreenSpaceEventType.MOUSE_MOVE); // 解除viewer的MOUSE_MOVE事件监听器
-        modelDragHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_UP); // 解除viewer的LEFT_UP事件监听器
-        viewer.scene.screenSpaceCameraController.enableRotate = true; // 取消相机锁定
-        if (selectedEntity && endPosition) {
+        const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+        const longitude = Cesium.Math.toDegrees(cartographic.longitude);
+        const latitude = Cesium.Math.toDegrees(cartographic.latitude);
+        endPosition = { longitude, latitude };
+        
+        const height = waypoints[entityId].useGlobalHeight ? globalHeight : waypoints[entityId].height!;
+        const positions = [
+          Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
+          Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
+        ];
+
+        selectedEntity.position = positions[1];
+        selectedEntity.polyline.positions = positions;
+      };
+
+      modelDragHandler.setInputAction(moveHandler, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+      modelDragHandler.setInputAction(() => {
+        modelDragHandler.removeInputAction(Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+        modelDragHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_UP);
+        viewer.scene.screenSpaceCameraController.enableRotate = true;
+
+        if (endPosition) {
           const newWaypoints = [...waypoints];
-          newWaypoints[selectedEntity.id].longitude = endPosition.longitude;
-          newWaypoints[selectedEntity.id].latitude = endPosition.latitude;
+          newWaypoints[entityId].longitude = endPosition.longitude;
+          newWaypoints[entityId].latitude = endPosition.latitude;
           setWaypoints(newWaypoints);
         }
       }, Cesium.ScreenSpaceEventType.LEFT_UP);
-
     }, Cesium.ScreenSpaceEventType.LEFT_DOWN);
 
     return () => {
@@ -410,51 +407,14 @@ const CreateWayLine = () => {
 
   const directionRef = useRef<any>(null);
 
-  const pyramidPositionRef = useRef<{
-    position: {
-      longitude: number
-      latitude: number
-      height: number
-    }
-
-    direction: {
-      x: number,
-      y: number
-      z: number
-    }
-  } | null>(null);
-
   const onCameraChange: (direction: any) => void = useCallback((direction) => {
-    if (pyramidPositionRef.current) {
-      // pyramidPositionRef.current.longitude = 120
-      pyramidPositionRef.current.direction.x = direction.x;
-      pyramidPositionRef.current.direction.y = direction.y;
-      pyramidPositionRef.current.direction.z = direction.z;
-    }
+    directionRef.current.x = direction.x;
+    directionRef.current.y = direction.y;
+    directionRef.current.z = direction.z;
   }, []);
 
   // 小窗口视角
-  const [miniSceneCameraPosition, setMiniSceneCameraPosition] = useState<{
-    longitude: number
-    latitude: number
-    height: number
-  } | null>(null);
-
-  useEffect(() => {
-    if (selectedWaypointId) {
-      const currentWayPoint = waypoints[selectedWaypointId - 1];
-      const height = currentWayPoint.useGlobalHeight ? globalHeight : currentWayPoint.height!;
-      const {longitude, latitude} = currentWayPoint;
-      setMiniSceneCameraPosition({longitude, latitude, height});
-    } else if (takeoffPoint) {
-      setMiniSceneCameraPosition({
-        ...takeoffPoint,
-        height: takeoffPointEndHeight
-      });
-    }
-  }, [takeoffPoint, waypoints, globalHeight, takeoffPointEndHeight, selectedWaypointId]);
-
-  /*const miniSceneCameraPosition = useMemo(() => {
+  const miniSceneCameraPosition = useMemo(() => {
     if (selectedWaypointId) {
       const currentWayPoint = waypoints[selectedWaypointId - 1];
       const height = currentWayPoint.useGlobalHeight ? globalHeight : currentWayPoint.height!;
@@ -466,7 +426,7 @@ const CreateWayLine = () => {
         height: takeoffPointEndHeight
       };
     }
-  }, [takeoffPoint, waypoints, globalHeight, takeoffPointEndHeight, selectedWaypointId]);*/
+  }, [takeoffPoint, waypoints, globalHeight, takeoffPointEndHeight, selectedWaypointId]);
 
   const dronePositionRef = useRef<{
     longitude: number
@@ -486,6 +446,11 @@ const CreateWayLine = () => {
   }, [takeoffPoint, takeoffPointEndHeight]);
 
   useEffect(() => {
+
+  }, []);
+
+
+  useEffect(() => {
     if (takeoffPoint) {
       if (waypoints.length === 0) {
         removePyramid();
@@ -493,17 +458,8 @@ const CreateWayLine = () => {
         const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, takeoffPointEndHeight);
         const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, takeoffPointEndHeight);  // 正北方向
         directionRef.current = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3());
-        pyramidPositionRef.current = {
-          position: {
-            longitude: takeoffPoint.longitude,
-            latitude: takeoffPoint.latitude,
-            height: takeoffPointEndHeight,
-          },
+        addPyramid({...takeoffPoint, height: takeoffPointEndHeight, direction: directionRef.current});
 
-          direction: Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3())
-        };
-        // addPyramid({...takeoffPoint, height: takeoffPointEndHeight, direction: directionRef.current});
-        addPyramid(pyramidPositionRef.current);
         removeDroneModel();
         dronePositionRef.current = {
           longitude, latitude, height: takeoffPointEndHeight, heading: 0
@@ -516,38 +472,31 @@ const CreateWayLine = () => {
           const longitude = waypoints[index].longitude;
           const latitude = waypoints[index].latitude;
           const height = waypoints[index].useGlobalHeight ? globalHeight : waypoints[index].height!;
-          dronePositionRef.current = {
-            longitude,
-            latitude,
-            height,
-            heading: 0
-          };
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
           const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
           directionRef.current = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3());
-          pyramidPositionRef.current = {
-            position: {
-              longitude,
-              latitude,
-              height,
-            },
-            direction: Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3())
-          };
-          // addPyramid({longitude, latitude, height, direction: directionRef.current});
-          addPyramid(pyramidPositionRef.current);
+          addPyramid({longitude, latitude, height, direction: directionRef.current});
           removeDroneModel();
-          dynamicAddDroneModel(dronePositionRef.current);
+          addDroneModel(waypoints[index].longitude, waypoints[index].latitude,
+            waypoints[index].useGlobalHeight ? globalHeight : waypoints[index].height!);
         }
+
+        /*moveDroneToTarget({
+          longitude: waypoints[waypoints.length - 1].longitude,
+          latitude: waypoints[waypoints.length - 1].latitude,
+          height: waypoints[waypoints.length - 1].useGlobalHeight ? globalHeight : waypoints[waypoints.length - 1].height!,
+        });*/
       }
     }
   }, [takeoffPointEndHeight, takeoffPoint, globalHeight, waypoints, selectedWaypointId]);
 
   useEffect(() => {
-    const speed = 3; // 移动速度
-    const rotateSpeed = 1.5; // 移动速度
+    const speed = 1; // 移动速度
+    const rotateSpeed = 5; // 移动速度
 
     const handleKeyDown = (evt: KeyboardEvent) => {
-      if (!dronePositionRef.current || !directionRef.current || !pyramidPositionRef.current) return;
+      if (!dronePositionRef.current || !directionRef.current) return;
+
       const position = Cesium.Cartesian3.fromDegrees(
         dronePositionRef.current.longitude,
         dronePositionRef.current.latitude,
@@ -561,15 +510,9 @@ const CreateWayLine = () => {
           const offset = Cesium.Cartesian3.multiplyByScalar(left, speed, new Cesium.Cartesian3());
           const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
           const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
-          const longitude = Cesium.Math.toDegrees(cartographic.longitude);
-          const latitude = Cesium.Math.toDegrees(cartographic.latitude);
-          const height = cartographic.height;
-          pyramidPositionRef.current.position.longitude = dronePositionRef.current.longitude = longitude;
-          pyramidPositionRef.current.position.latitude = dronePositionRef.current.latitude = latitude;
-          pyramidPositionRef.current.position.height = dronePositionRef.current.height = height;
-          setMiniSceneCameraPosition({
-            longitude, latitude, height
-          });
+          dronePositionRef.current.longitude = Cesium.Math.toDegrees(cartographic.longitude);
+          dronePositionRef.current.latitude = Cesium.Math.toDegrees(cartographic.latitude);
+          dronePositionRef.current.height = cartographic.height;
           break;
         }
         case "KeyD": { // 右移
@@ -577,15 +520,9 @@ const CreateWayLine = () => {
           const offset = Cesium.Cartesian3.multiplyByScalar(right, speed, new Cesium.Cartesian3());
           const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
           const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
-          const longitude = Cesium.Math.toDegrees(cartographic.longitude);
-          const latitude = Cesium.Math.toDegrees(cartographic.latitude);
-          const height = cartographic.height;
-          pyramidPositionRef.current.position.longitude = dronePositionRef.current.longitude = longitude;
-          pyramidPositionRef.current.position.latitude = dronePositionRef.current.latitude = latitude;
-          pyramidPositionRef.current.position.height = dronePositionRef.current.height = height;
-          setMiniSceneCameraPosition({
-            longitude, latitude, height
-          });
+          dronePositionRef.current.longitude = Cesium.Math.toDegrees(cartographic.longitude);
+          dronePositionRef.current.latitude = Cesium.Math.toDegrees(cartographic.latitude);
+          dronePositionRef.current.height = cartographic.height;
           break;
         }
         case "KeyW": { // 前进
@@ -593,15 +530,9 @@ const CreateWayLine = () => {
           const offset = Cesium.Cartesian3.multiplyByScalar(forward, speed, new Cesium.Cartesian3());
           const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
           const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
-          const longitude = Cesium.Math.toDegrees(cartographic.longitude);
-          const latitude = Cesium.Math.toDegrees(cartographic.latitude);
-          const height = cartographic.height;
-          pyramidPositionRef.current.position.longitude = dronePositionRef.current.longitude = longitude;
-          pyramidPositionRef.current.position.latitude = dronePositionRef.current.latitude = latitude;
-          pyramidPositionRef.current.position.height = dronePositionRef.current.height = height;
-          setMiniSceneCameraPosition({
-            longitude, latitude, height
-          });
+          dronePositionRef.current.longitude = Cesium.Math.toDegrees(cartographic.longitude);
+          dronePositionRef.current.latitude = Cesium.Math.toDegrees(cartographic.latitude);
+          dronePositionRef.current.height = cartographic.height;
           break;
         }
         case "KeyS": { // 后退
@@ -609,105 +540,17 @@ const CreateWayLine = () => {
           const offset = Cesium.Cartesian3.multiplyByScalar(backward, speed, new Cesium.Cartesian3());
           const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
           const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
-          const longitude = Cesium.Math.toDegrees(cartographic.longitude);
-          const latitude = Cesium.Math.toDegrees(cartographic.latitude);
-          const height = cartographic.height;
-          pyramidPositionRef.current.position.longitude = dronePositionRef.current.longitude = longitude;
-          pyramidPositionRef.current.position.latitude = dronePositionRef.current.latitude = latitude;
-          pyramidPositionRef.current.position.height = dronePositionRef.current.height = height;
-          setMiniSceneCameraPosition({
-            longitude, latitude, height
-          });
+          dronePositionRef.current.longitude = Cesium.Math.toDegrees(cartographic.longitude);
+          dronePositionRef.current.latitude = Cesium.Math.toDegrees(cartographic.latitude);
+          dronePositionRef.current.height = cartographic.height;
           break;
         }
         case "KeyQ": { // 左旋转
-          const oldHeading = dronePositionRef.current.heading || 0;
-          const newHeading = oldHeading - rotateSpeed;
-          dronePositionRef.current.heading = newHeading;
-
-          // 计算旋转角度差
-          const rotationDiff = Math.abs(newHeading - oldHeading);
-          console.log(`左转: ${rotationDiff}度, 当前朝向: ${newHeading}度`);
-
-          // 计算旋转后的方向
-          const topPosition = Cesium.Cartesian3.fromDegrees(
-            dronePositionRef.current.longitude,
-            dronePositionRef.current.latitude,
-            dronePositionRef.current.height
-          );
-
-          // 计算旋转后的前方位置（使用角度计算）
-          const rotationRadians = Cesium.Math.toRadians(newHeading);
-          const forwardLatitude = dronePositionRef.current.latitude + 0.1 * Math.cos(rotationRadians);
-          const forwardLongitude = dronePositionRef.current.longitude + 0.1 * Math.sin(rotationRadians);
-
-          const forwardPosition = Cesium.Cartesian3.fromDegrees(
-            forwardLongitude,
-            forwardLatitude,
-            dronePositionRef.current.height
-          );
-
-          // 更新方向向量
-          directionRef.current = Cesium.Cartesian3.normalize(
-            Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()),
-            new Cesium.Cartesian3()
-          );
-
-          // 更新金字塔位置和方向
-          pyramidPositionRef.current.position = {
-            longitude: dronePositionRef.current.longitude,
-            latitude: dronePositionRef.current.latitude,
-            height: dronePositionRef.current.height
-          };
-          pyramidPositionRef.current.direction = directionRef.current;
-
-          removePyramid();
-          addPyramid(pyramidPositionRef.current);
+          dronePositionRef.current.heading = (dronePositionRef.current.heading || 0) - rotateSpeed;
           break;
         }
         case "KeyE": { // 右旋转
-          const oldHeading = dronePositionRef.current.heading || 0;
-          const newHeading = oldHeading + rotateSpeed;
-          dronePositionRef.current.heading = newHeading;
-
-          // 计算旋转角度差
-          const rotationDiff = Math.abs(newHeading - oldHeading);
-          console.log(`右转: ${rotationDiff}度, 当前朝向: ${newHeading}度`);
-
-          // 计算旋转后的方向
-          const topPosition = Cesium.Cartesian3.fromDegrees(
-            dronePositionRef.current.longitude,
-            dronePositionRef.current.latitude,
-            dronePositionRef.current.height
-          );
-
-          // 计算旋转后的前方位置（使用角度计算）
-          const rotationRadians = Cesium.Math.toRadians(newHeading);
-          const forwardLatitude = dronePositionRef.current.latitude + 0.1 * Math.cos(rotationRadians);
-          const forwardLongitude = dronePositionRef.current.longitude + 0.1 * Math.sin(rotationRadians);
-
-          const forwardPosition = Cesium.Cartesian3.fromDegrees(
-            forwardLongitude,
-            forwardLatitude,
-            dronePositionRef.current.height
-          );
-
-          // 更新方向向量
-          directionRef.current = Cesium.Cartesian3.normalize(
-            Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()),
-            new Cesium.Cartesian3()
-          );
-
-          // 更新金字塔位置和方向
-          pyramidPositionRef.current.position = {
-            longitude: dronePositionRef.current.longitude,
-            latitude: dronePositionRef.current.latitude,
-            height: dronePositionRef.current.height
-          };
-          pyramidPositionRef.current.direction = directionRef.current;
-
-          removePyramid();
-          addPyramid(pyramidPositionRef.current);
+          dronePositionRef.current.heading = (dronePositionRef.current.heading || 0) + rotateSpeed;
           break;
         }
       }

@@ -60,13 +60,13 @@ const SceneMini = ({initialPosition, onCameraChange}: Props) => {
     const yx = findMapLayer("影像", viewer2);
     yx && (yx.show = false);
 
-    // 清理函数
+    /*// 清理函数
     return () => {
       if (viewer2) {
         viewer2.destroy();
         delete window.viewer2;
       }
-    };
+    };*/
   }, []);
 
   useEffect(() => {
@@ -144,21 +144,38 @@ const SceneMini = ({initialPosition, onCameraChange}: Props) => {
     };
   }, [initialPosition]);
 
+  useEffect(() => {
+    return () => {
+      if (viewer2) {
+        viewer2.destroy();
+        delete window.viewer2;
+      }
+    };
+  }, []);
+
   return (
     <div className="relative h-full">
       <div id="cesiumContainerMini" className="h-full rounded-lg border-[1px] border-white"></div>
 
       {/* 红色边框角 */}
-      <div className="absolute w-[100px] h-[80px] z-[2] left-[60px] top-[40px] border-t-2 border-l-2 border-red-500 pointer-events-none"></div>
-      <div className="absolute w-[100px] h-[80px] z-[2] right-[60px] top-[40px] border-t-2 border-r-2 border-red-500 pointer-events-none"></div>
-      <div className="absolute w-[100px] h-[80px] z-[2] right-[60px] bottom-[40px] border-b-2 border-r-2 border-red-500 pointer-events-none"></div>
-      <div className="absolute w-[100px] h-[80px] z-[2] left-[60px] bottom-[40px] border-b-2 border-l-2 border-red-500 pointer-events-none"></div>
+      <div
+        className="absolute w-[100px] h-[80px] z-[2] left-[60px] top-[40px] border-t-2 border-l-2 border-red-500 pointer-events-none"></div>
+      <div
+        className="absolute w-[100px] h-[80px] z-[2] right-[60px] top-[40px] border-t-2 border-r-2 border-red-500 pointer-events-none"></div>
+      <div
+        className="absolute w-[100px] h-[80px] z-[2] right-[60px] bottom-[40px] border-b-2 border-r-2 border-red-500 pointer-events-none"></div>
+      <div
+        className="absolute w-[100px] h-[80px] z-[2] left-[60px] bottom-[40px] border-b-2 border-l-2 border-red-500 pointer-events-none"></div>
 
       {/* 绿色边框角 */}
-      <div className="absolute w-[50px] h-[40px] z-[2] left-[120px] top-[100px] border-t-2 border-l-2 border-green-500 pointer-events-none"></div>
-      <div className="absolute w-[50px] h-[40px] z-[2] right-[120px] top-[100px] border-t-2 border-r-2 border-green-500 pointer-events-none"></div>
-      <div className="absolute w-[50px] h-[40px] z-[2] right-[120px] bottom-[100px] border-b-2 border-r-2 border-green-500 pointer-events-none"></div>
-      <div className="absolute w-[50px] h-[40px] z-[2] left-[120px] bottom-[100px] border-b-2 border-l-2 border-green-500 pointer-events-none"></div>
+      <div
+        className="absolute w-[50px] h-[40px] z-[2] left-[120px] top-[100px] border-t-2 border-l-2 border-green-500 pointer-events-none"></div>
+      <div
+        className="absolute w-[50px] h-[40px] z-[2] right-[120px] top-[100px] border-t-2 border-r-2 border-green-500 pointer-events-none"></div>
+      <div
+        className="absolute w-[50px] h-[40px] z-[2] right-[120px] bottom-[100px] border-b-2 border-r-2 border-green-500 pointer-events-none"></div>
+      <div
+        className="absolute w-[50px] h-[40px] z-[2] left-[120px] bottom-[100px] border-b-2 border-l-2 border-green-500 pointer-events-none"></div>
     </div>
   );
 };
