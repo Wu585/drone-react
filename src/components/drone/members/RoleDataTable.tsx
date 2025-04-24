@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-table";
 import {useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {Role, useMembers, useRoleList} from "@/hooks/drone";
+import {buildTree, Role, useMembers, useResourceList, useRoleList} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
@@ -103,6 +103,11 @@ const RoleDataTable = () => {
   });
 
   const {data: roleList} = useRoleList();
+  const {data: _resourceList} = useResourceList();
+
+  const resourceList = buildTree(_resourceList?.filter(item => item.type === 1 || item.type === 2) || []);
+  console.log("resourceList");
+  console.log(resourceList);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -140,6 +145,17 @@ const RoleDataTable = () => {
     },
   });
 
+  const createRole = async () => {
+    const value = {
+      name: "测试角色",
+      resource_ids: [77, 78, 80, 87]
+    };
+    await post(`${OPERATION_HTTP_PREFIX}/role/save`, {
+      ...value,
+      menu_ids: []
+    });
+  };
+
   return (
     <div>
       <div className={"flex justify-between mb-4"}>
@@ -152,6 +168,7 @@ const RoleDataTable = () => {
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger>
               <Button className={"bg-[#43ABFF] w-24"}>添加</Button>
+              <Button className={"bg-[#43ABFF] w-24"} onClick={createRole}>创建</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>

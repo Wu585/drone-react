@@ -112,6 +112,8 @@ const WayLine = () => {
             image: takeOffPng,
             width: 48,
             height: 48,
+            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
           },
           polyline: {
             positions: [

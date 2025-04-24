@@ -119,25 +119,27 @@ export const removePyramid = () => {
 };
 
 // 添加棱锥和中心线
-export const addPyramid = ({position, direction}: {
+export const addPyramid = ({position, direction,sideAndDistance}: {
   position: {
     longitude: number, latitude: number, height: number
   }
   direction: {
-    x: number,
+    x: number
     y: number
     z: number
   }
+  sideAndDistance: {
+    side: number
+    distance: number
+  }
 }) => {
-  // 零锥体的参数
-  const distance = 200;  // 长度
-  const side = 50; // 边长
   const centerLineEntity = getCustomSource("waylines-create")?.entities.getById("center-line");
   if (!centerLineEntity)
     getCustomSource("waylines-create")?.entities.add({
       id: "center-line",
       polyline: {
         positions: new Cesium.CallbackProperty(() => {
+          const {side,distance} = sideAndDistance
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
           // let direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3())  // 方向单位向量
@@ -156,6 +158,7 @@ export const addPyramid = ({position, direction}: {
       id: "bottom-polygon",
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
+          const {side,distance} = sideAndDistance
           const positions = [];
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
@@ -185,6 +188,7 @@ export const addPyramid = ({position, direction}: {
       id: "left-polygon",
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
+          const {side,distance} = sideAndDistance
           let positions = [];
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
@@ -224,6 +228,7 @@ export const addPyramid = ({position, direction}: {
       id: "right-polygon",
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
+          const {side,distance} = sideAndDistance
           let positions = [];
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
@@ -263,6 +268,7 @@ export const addPyramid = ({position, direction}: {
       id: "front-polygon",
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
+          const {side,distance} = sideAndDistance
           let positions = [];
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
@@ -302,6 +308,7 @@ export const addPyramid = ({position, direction}: {
       id: "top-polygon",
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
+          const {side,distance} = sideAndDistance
           let positions = [];
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
@@ -766,7 +773,7 @@ export const addWayPointWithIndex = ({longitude, latitude, height, text, id}: {
   text: number,
   id: string
 }) => {
-  getCustomSource("waylines-update")?.entities.add({
+  getCustomSource("waylines-create")?.entities.add({
     id,
     position: new Cesium.CallbackProperty(() => {
       return Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
@@ -804,10 +811,10 @@ export const addWayPointWithIndex = ({longitude, latitude, height, text, id}: {
     },
     polyline: {
       positions: new Cesium.CallbackProperty(() => {
-        return [
-          Cesium.Cartesian3.fromDegrees(longitude, latitude, 0),
-          Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
-        ];
+        // 确保返回有效的 Cartesian3 数组
+        const start = Cesium.Cartesian3.fromDegrees(longitude, latitude, 0);
+        const end = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
+        return [start, end]; // 返回有效的数组
       }, false),
       width: 2,
       material: new Cesium.PolylineDashMaterialProperty({
@@ -884,3 +891,114 @@ export const addLabelWithin = (start: [number, number, number], end: [number, nu
   });
   return distance;
 };
+
+export class CreateFrustum {
+  position: any;
+  orientation: any;
+  fov: any;
+  near: any;
+  far: any;
+  aspectRatio: any;
+  frustumPrimitive: any;
+
+  constructor(options) {
+    this.position = options.position;
+    this.orientation = options.orientation;
+    this.fov = options.fov || 30;
+    this.near = options.near || 10;
+    this.far = options.far || 100;
+    this.aspectRatio = options.aspectRatio;
+    this.add();
+  }
+
+  // 更新视锥体的姿态
+  update(position, orientation) {
+    this.position = position;
+    this.orientation = orientation;
+    this.add();
+  }
+
+  // 创建视锥体和轮廓线
+  add() {
+    this.clear();
+    this.addFrustum();
+  }
+
+  // 清除视锥体和轮廓线
+  clear() {
+    this.clearFrustum();
+  }
+
+  // 清除视锥体
+  clearFrustum() {
+    if (this.frustumPrimitive) {
+      viewer.scene.primitives.remove(this.frustumPrimitive);
+      this.frustumPrimitive = null;
+    }
+  }
+
+  // 创建视锥体及轮廓线
+  addFrustum() {
+    // 创建视椎体
+    let frustum = new Cesium.PerspectiveFrustum({
+      fov: Cesium.Math.toRadians(this.fov),
+      aspectRatio: this.aspectRatio,
+      near: this.near,
+      far: this.far,
+    });
+
+    // 创建几何体实例用于视椎体
+    let instanceGeo = new Cesium.GeometryInstance({
+      geometry: new Cesium.FrustumGeometry({
+        frustum: frustum,
+        origin: this.position,
+        orientation: this.orientation,
+        vertexFormat: Cesium.VertexFormat.POSITION_ONLY,
+      }),
+      attributes: {
+        color: Cesium.ColorGeometryInstanceAttribute.fromColor(
+          new Cesium.Color(1.0, 0.0, 0.0, 0.5)
+        ),
+      },
+    });
+
+    // 创建几何体实例用于视椎体轮廓
+    let instanceGeoLine = new Cesium.GeometryInstance({
+      geometry: new Cesium.FrustumOutlineGeometry({
+        frustum: frustum,
+        origin: this.position,
+        orientation: this.orientation,
+      }),
+      attributes: {
+        color: Cesium.ColorGeometryInstanceAttribute.fromColor(
+          new Cesium.Color(1.0, 0.0, 0.0, 0.5)
+        ),
+      },
+    });
+
+    // 创建视椎体的原始几何体
+    let frustumPrimitive = new Cesium.Primitive({
+      geometryInstances: [instanceGeo],
+      appearance: new Cesium.PerInstanceColorAppearance({
+        closed: false,
+        flat: true,
+      }),
+      asynchronous: false,
+    });
+
+    // 创建视椎体轮廓的原始几何体
+    let outlinePrimitive = new Cesium.Primitive({
+      geometryInstances: [instanceGeoLine],
+      appearance: new Cesium.PerInstanceColorAppearance({
+        closed: false, // 轮廓不应闭合
+        flat: true,
+      }),
+      asynchronous: false,
+    });
+
+    // 添加视椎体和轮廓到场景
+    this.frustumPrimitive = viewer.scene.primitives.add(frustumPrimitive);
+    viewer.scene.primitives.add(outlinePrimitive);
+  }
+
+}

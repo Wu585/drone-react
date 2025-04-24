@@ -12,16 +12,21 @@ import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
-import {Edit} from "lucide-react";
+import {BookImage, Edit, SquareGanttChart} from "lucide-react";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
-import { EditDeviceDialog, EditDeviceFormValues } from "./EditDeviceDialog";
+import {EditDeviceDialog, EditDeviceFormValues} from "./EditDeviceDialog";
+import {Icon} from "@/components/public/Icon.tsx";
+import InsuranceSheet from "@/components/drone/device-manage/InsuranceSheet.tsx";
+import MaintainanceSheet from "@/components/drone/device-manage/Maintainance.tsx";
 
 const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
 const DockDataTable = () => {
   const [currentDock, setCurrentDock] = useState<Device | null>(null);
   const [open, setOpen] = useState(false);
+  const [insuranceSheetVisible, setInsuranceSheetVisible] = useState(false);
+  const [maintainanceSheetVisible, setMaintainanceSheetVisible] = useState(false);
   const {put} = useAjax();
 
   const handleEdit = (device: Device) => {
@@ -103,6 +108,15 @@ const DockDataTable = () => {
       )
     },
     {
+      accessorKey: "bound_time",
+      header: "加入组织时间",
+      cell: ({row}) => (
+        <div className="truncate" title={row.getValue("bound_time")}>
+          {row.getValue("bound_time")}
+        </div>
+      )
+    },
+    {
       accessorKey: "login_time",
       header: "最后在线时间",
       cell: ({row}) => (
@@ -115,11 +129,21 @@ const DockDataTable = () => {
       header: "操作",
       cell: ({row}) => {
         return (
-          <div className="">
+          <div className="flex space-x-2 items-center">
             <Edit
               size={16}
               className="cursor-pointer hover:text-[#43ABFF] transition-colors"
               onClick={() => handleEdit(row.original)}
+            />
+            <SquareGanttChart
+              size={16}
+              className="cursor-pointer hover:text-[#43ABFF] transition-colors"
+              onClick={() => setInsuranceSheetVisible(true)}
+            />
+            <BookImage
+              size={16}
+              className="cursor-pointer hover:text-[#43ABFF] transition-colors"
+              onClick={() => setMaintainanceSheetVisible(true)}
             />
           </div>
         );
@@ -176,7 +200,8 @@ const DockDataTable = () => {
         placeholder="输入机场名称"
         onSubmit={handleSubmit}
       />
-
+      <InsuranceSheet open={insuranceSheetVisible} onOpenChange={setInsuranceSheetVisible}/>
+      <MaintainanceSheet open={maintainanceSheetVisible} onOpenChange={setMaintainanceSheetVisible}/>
       <div className="flex-1 overflow-hidden border border-[#43ABFF] rounded">
         <Table>
           <TableHeader>
@@ -201,19 +226,59 @@ const DockDataTable = () => {
           <TableBody className="bg-[#0A4088]/70">
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className="border-b border-[#43ABFF]/30 hover:bg-[#0A81E1]/10 transition-colors h-14"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="text-[#D0D0D0] px-4"
+                <>
+                  <TableRow
+                    key={row.id}
+                    className="border-b border-[#43ABFF]/30 hover:bg-[#0A81E1]/10 transition-colors h-14"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="text-[#D0D0D0] px-4"
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  {row.original.children && (
+                    <TableRow
+                      key={`${row.id}-child`}
+                      className="border-b border-[#43ABFF]/30 hover:bg-[#0A81E1]/10 transition-colors h-14"
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
+                      {row.getVisibleCells().map((cell, index) => (
+                        <TableCell
+                          key={`${cell.id}-child`}
+                          className="text-[#D0D0D0] px-4"
+                        >
+                          {index === 0 ? (
+                            <div className="flex items-center">
+                              <div className="mr-2 h-4 flex w-4 pb-4 items-center">
+                                <Icon name={"topo-line"} className={"h-2"}/>
+                              </div>
+                              <div className="truncate">
+                                {row.original.children.device_name}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="truncate">
+                              {cell.column.id === "device_sn" && row.original.children.device_sn}
+                              {cell.column.id === "nickname" && row.original.children.nickname}
+                              {cell.column.id === "firmware_version" && row.original.children.firmware_version}
+                              {cell.column.id === "status" && (
+                                <span className={row.original.children.status ? "text-green-500" : "text-red-500"}>
+                                  {row.original.children.status ? "在线" : "离线"}
+                                </span>
+                              )}
+                              {cell.column.id === "workspace_name" && row.original.children.workspace_name}
+                              {cell.column.id === "bound_time" && row.original.children.bound_time}
+                              {cell.column.id === "login_time" && row.original.children.login_time}
+                            </div>
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  )}
+                </>
               ))
             ) : (
               <TableRow>

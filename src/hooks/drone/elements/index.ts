@@ -141,6 +141,8 @@ export const generateLabelConfig = (text: string) => ({
   verticalOrigin: Cesium.VerticalOrigin.CENTER,
   horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
   pixelOffset: new Cesium.Cartesian2(10, 0),
+  heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+  disableDepthTestDistance: Number.POSITIVE_INFINITY
 });
 
 // 初始化所有显示的标签

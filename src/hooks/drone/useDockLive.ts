@@ -49,9 +49,13 @@ export const useDockLive = (ele: string, dockSn: string, cameraIndex?: string) =
   }, []);
 
   const dockCamera = capacityData?.find(item => item.sn === dockSn);
+  console.log('dockCamera');
+  console.log(dockCamera);
   let dockVideoId;
+  console.log('cameraIndex');
+  console.log(cameraIndex);
   if (cameraIndex) {
-    dockVideoId = dockCamera ? `${dockSn}/${dockCamera?.cameras_list?.[+cameraIndex].index}/${dockCamera?.cameras_list?.[+cameraIndex].videos_list[0].index}` : "";
+    dockVideoId = dockCamera ? `${dockSn}/${dockCamera?.cameras_list?.[+cameraIndex]?.index}/${dockCamera?.cameras_list?.[+cameraIndex]?.videos_list[0].index}` : "";
   } else {
     dockVideoId = dockCamera ? `${dockSn}/${dockCamera?.cameras_list?.[0].index}/${dockCamera?.cameras_list?.[0].videos_list[0].index}` : "";
   }

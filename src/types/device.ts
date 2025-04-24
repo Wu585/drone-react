@@ -40,6 +40,7 @@ export enum DRONE_TYPE {
   Mavic3EnterpriseAdvanced = 77,
   M350 = 89,
   M3D = 91,
+  M4TD = 100
 }
 
 // DJI负载类型枚举值
@@ -61,6 +62,7 @@ export enum PAYLOAD_TYPE {
   M3T = 67,
   M3D = 80,
   M3TD = 81,
+  M4TD = 99
   // UNKNOWN = 65535
 }
 
@@ -75,6 +77,7 @@ export enum RC_TYPE {
 export enum DOCK_TYPE {
   Dock = 1,
   Dock2 = 2,
+  Dock3 = 3,
 }
 
 // 设备sub_type 从0升序
@@ -98,6 +101,7 @@ export const DEVICE_MODEL_KEY = {
 
   M3D: `${DOMAIN.DRONE}-${DRONE_TYPE.M3D}-${DEVICE_SUB_TYPE.ZERO}`,
   M3TD: `${DOMAIN.DRONE}-${DRONE_TYPE.M3D}-${DEVICE_SUB_TYPE.ONE}`,
+  M4TD: `${DOMAIN.DRONE}-${DRONE_TYPE.M4TD}-${DEVICE_SUB_TYPE.ONE}`,
 
   FPV: `${DOMAIN.PAYLOAD}-${PAYLOAD_TYPE.FPV}-${DEVICE_SUB_TYPE.ZERO}`,
   H20: `${DOMAIN.PAYLOAD}-${PAYLOAD_TYPE.H20}-${DEVICE_SUB_TYPE.ZERO}`,
@@ -112,6 +116,7 @@ export const DEVICE_MODEL_KEY = {
   M3TCamera: `${DOMAIN.PAYLOAD}-${PAYLOAD_TYPE.M3T}-${DEVICE_SUB_TYPE.ZERO}`,
   M3DCamera: `${DOMAIN.PAYLOAD}-${PAYLOAD_TYPE.M3D}-${DEVICE_SUB_TYPE.ZERO}`,
   M3TDCamera: `${DOMAIN.PAYLOAD}-${PAYLOAD_TYPE.M3TD}-${DEVICE_SUB_TYPE.ZERO}`,
+  M4TDCamera: `${DOMAIN.PAYLOAD}-${PAYLOAD_TYPE.M4TD}-${DEVICE_SUB_TYPE.ZERO}`,
   // M3MCamera: `${DOMAIN.PAYLOAD}-${PAYLOAD_TYPE.M3M}-${DEVICE_SUB_TYPE.ZERO}`,
 
   XT2: `${DOMAIN.PAYLOAD}-${PAYLOAD_TYPE.XT2}-${DEVICE_SUB_TYPE.ZERO}`,
@@ -124,6 +129,7 @@ export const DEVICE_MODEL_KEY = {
 
   Dock: `${DOMAIN.DOCK}-${DOCK_TYPE.Dock}-${DEVICE_SUB_TYPE.ZERO}`,
   Dock2: `${DOMAIN.DOCK}-${DOCK_TYPE.Dock2}-${DEVICE_SUB_TYPE.ZERO}`,
+  Dock3: `${DOMAIN.DOCK}-${DOCK_TYPE.Dock3}-${DEVICE_SUB_TYPE.ZERO}`,
 };
 
 export const DEVICE_NAME = {
@@ -156,6 +162,7 @@ export const DEVICE_NAME = {
   [DEVICE_MODEL_KEY.DockTopCamera]: "Dock Camera",
   [DEVICE_MODEL_KEY.M3DCamera]: "M3D Camera",
   [DEVICE_MODEL_KEY.M3TDCamera]: "M3TD Camera",
+  [DEVICE_MODEL_KEY.M4TDCamera]: "M4TD Camera",
 
   // rc
   [DEVICE_MODEL_KEY.RC]: "RC",
@@ -164,6 +171,7 @@ export const DEVICE_NAME = {
   // dock
   [DEVICE_MODEL_KEY.Dock]: "Dock",
   [DEVICE_MODEL_KEY.Dock2]: "Dock2",
+  [DEVICE_MODEL_KEY.Dock3]: "Dock3",
 };
 
 // 控制权

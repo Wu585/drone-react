@@ -314,7 +314,7 @@ const FolderItem = ({folder, onVisibleChange, onClickFile}: {
 const ImagePreview = ({ url }: { url?: string }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  
+
   // 当 url 改变时重置状态
   useEffect(() => {
     setLoading(true);
@@ -324,8 +324,8 @@ const ImagePreview = ({ url }: { url?: string }) => {
   return (
     <div className="relative w-full h-[300px] bg-black/20 rounded-lg overflow-hidden">
       {url && (
-        <img 
-          src={url} 
+        <img
+          src={url}
           alt=""
           className={cn(
             "w-full h-full object-contain transition-opacity duration-300",
@@ -335,7 +335,7 @@ const ImagePreview = ({ url }: { url?: string }) => {
           onError={() => setError(true)}
         />
       )}
-      
+
       {/* 加载状态 */}
       {loading && !error && (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -344,7 +344,7 @@ const ImagePreview = ({ url }: { url?: string }) => {
           </div>
         </div>
       )}
-      
+
       {/* 错误状态 */}
       {error && (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -419,6 +419,8 @@ const MapPhoto = () => {
                 image: ggpPng,
                 width: EntitySize.Width,
                 height: EntitySize.Height,
+                heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY
               },
               label: generateLabelConfig(item.file_name)
             });

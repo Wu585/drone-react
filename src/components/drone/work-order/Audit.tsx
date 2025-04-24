@@ -7,6 +7,7 @@ import {Textarea} from "@/components/ui/textarea";
 import {toast} from "@/components/ui/use-toast";
 import {useAjax} from "@/lib/http";
 import {useOperationList, WorkOrder} from "@/hooks/drone";
+import {Button} from "@/components/ui/button.tsx";
 
 // 定义审核状态枚举
 enum AuditStatus {
@@ -70,7 +71,7 @@ const Audit = ({currentOrder, onSuccess}: Props) => {
       order_id: currentOrder?.id,
       order_operation_id: operationList?.list[0].id
     };
-    console.log('formValue');
+    console.log("formValue");
     console.log(formValue);
     try {
       const res: any = await post(`${OPERATION_HTTP_PREFIX}/order/approve`, formValue);
@@ -114,6 +115,7 @@ const Audit = ({currentOrder, onSuccess}: Props) => {
                 </SelectContent>
               </Select>
               <FormMessage className="col-span-3 col-start-2"/>
+              <Button className="bg-[#43ABFF] w-24">无人机复核</Button>
             </FormItem>
           )}
         />

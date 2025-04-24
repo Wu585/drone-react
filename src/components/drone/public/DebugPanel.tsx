@@ -78,7 +78,7 @@ const DebugPanel = ({sn, onClose}: Props) => {
         </div>
         <div className={"p-2 text-[14px] space-y-2 py-4"}>
           <div className={"flex items-center space-x-4"}>
-            <h3>设备远程 Debug 模式</h3>
+            <h3>设备远程调试模式</h3>
             <Switch checked={debugStatus} onCheckedChange={onSwitchDebug}
                     className={"data-[state=checked]:bg-[#43ABFF]"}/>
           </div>

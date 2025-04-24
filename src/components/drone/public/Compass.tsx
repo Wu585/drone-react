@@ -5,10 +5,11 @@ const tickNumbers = [
   '南', '210', '240', '西', '300', '330'
 ];
 
-const Compass = () => {
-  // 模拟 params.heading
-  const heading = 0; // 这里可以从 props 或 store 获取真实值
+interface Props {
+  heading: number
+}
 
+const Compass = ({heading}:Props) => {
   // 生成刻度线
   const tickLines = useMemo(() => {
     return Array.from({length: 60}, (_, i) => {
@@ -47,7 +48,7 @@ const Compass = () => {
   }, []);
 
   const rotationStyle = useMemo(() => ({
-    transform: `rotate(${(heading * (180 / Math.PI)).toFixed(0)}deg)`
+    transform: `rotate(${-(heading * (180 / Math.PI)).toFixed(0)}deg)`
   }), [heading]);
 
   return (

@@ -27,8 +27,8 @@ const Login = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "adminPC",
-      password: "adminPC"
+      username: "xiaogang",
+      password: "111111"
     },
   });
 
@@ -49,7 +49,7 @@ const Login = () => {
       localStorage.setItem(ELocalStorageKey.Username, result.data.data.username);
       localStorage.setItem(ELocalStorageKey.UserId, result.data.data.user_id);
       localStorage.setItem(ELocalStorageKey.Flag, EUserType.Web.toString());
-      navigate("/organs")
+      navigate("/depart")
     }
   };
 

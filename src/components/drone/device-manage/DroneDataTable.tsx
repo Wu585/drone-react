@@ -104,6 +104,15 @@ const DroneDataTable = () => {
       )
     },
     {
+      accessorKey: "bound_time",
+      header: "加入组织时间",
+      cell: ({row}) => (
+        <div className="truncate" title={row.getValue("bound_time")}>
+          {row.getValue("bound_time")}
+        </div>
+      )
+    },
+    {
       accessorKey: "login_time",
       header: "最后在线时间",
       cell: ({row}) => (

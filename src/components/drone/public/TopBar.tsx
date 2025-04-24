@@ -18,7 +18,7 @@ const TopBar = () => {
 
   const currentWorkSpace = workSpaceList?.find(item =>
     item.workspace_id === localStorage.getItem(ELocalStorageKey.WorkspaceId)
-  )?.workspace_name || "未选择组织"
+  )?.workspace_name || "未选择组织";
 
   const handleSwitchWorkspace = useCallback(async (workspaceId: string) => {
     localStorage.setItem(ELocalStorageKey.WorkspaceId, workspaceId);
@@ -41,26 +41,7 @@ const TopBar = () => {
       <div className={"flex space-x-4"}>
         <CircleUser/>
         <span>{currentUser?.username || "未登录"} |</span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <span className="cursor-pointer">
-              {"当前组织: " + currentWorkSpace}
-            </span>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {workSpaceList
-              ?.filter(item => item.lead_user === currentUser?.id)
-              .map(item => (
-                <DropdownMenuItem
-                  key={item.workspace_id}
-                  onClick={() => handleSwitchWorkspace(item.workspace_id)}
-                >
-                  {item.workspace_name}
-                </DropdownMenuItem>
-              ))
-            }
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <span>{"当前组织: " + currentWorkSpace}</span>
         {username && <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <ArrowDown/>

@@ -51,7 +51,7 @@ export const useOnlineDocks = () => {
     }).filter((gateway: any) => gateway.gateway.domain === EDeviceTypeName.Dock);
 
     setOnlineDocks(deviceList);
-  }, [deviceTopo]);
+  }, [deviceTopo, departId]);
 
   return {onlineDocks};
 };
@@ -151,6 +151,7 @@ export interface ChildDevice {
   firmware_status: number;
   thing_version: string;
   id: number;
+  bound_time: string;
 }
 
 interface BindingDevice {
@@ -486,6 +487,8 @@ export interface Role {
   id: number;
   name: string;
   create_time: string;
+  menu_ids: number[];
+  resource_ids: number[];
 }
 
 // 获取角色列表
@@ -495,12 +498,63 @@ export const useRoleList = () => {
   return useSWR(url, async (path) => (await get<Resource<Role[]>>(path)).data.data);
 };
 
+export interface RoleResource {
+  id: number;
+  url: string;
+  createTime: string;
+  updateTime: string;
+  uuKey: string;
+  parent: number;
+  name: string;
+  type: number;
+  children?: RoleResource[];
+}
+
+// 获取资源列表
+export const useResourceList = () => {
+  const {get} = useAjax();
+  const url = `${OPERATION_HTTP_PREFIX}/resource/list`;
+  return useSWR(url, async (path) => (await get<Resource<RoleResource[]>>(path)).data.data);
+};
+
+export function buildTree(data?: RoleResource[]): RoleResource[] {
+  if (!data) return [];
+  const map: { [key: number]: RoleResource } = {};
+  const roots: RoleResource[] = [];
+
+  // Step 1: Create a map of all items
+  for (const item of data) {
+    map[item.id] = {...item, children: []};
+  }
+
+  // Step 2: Build the tree structure
+  for (const item of data) {
+    if (item.parent === 0) {
+      roots.push(map[item.id]);
+    } else {
+      const parent = map[item.parent];
+      if (parent) {
+        parent.children?.push(map[item.id]);
+      }
+    }
+  }
+
+  return roots;
+}
+
 export interface Depart {
   id: number;
   name: string;
   lead_user: number;
   workspace: number;
   create_time: number;
+  active: 0 | 1;
+  lead_user_name: string;
+  sort: number;
+  parent: number;
+  workspace_name: string;
+  workspace_id: string;
+  user_ids: number[];
 }
 
 // 获取部门列表
@@ -517,12 +571,53 @@ export const useCurrentUser = () => {
   return useSWR(url, async (path) => (await get<Resource<UserItem>>(path)).data.data);
 };
 
+export const useDepartPermission = (departId: number, workSpaceId: string) => {
+  const {data: user} = useCurrentUser();
+  const {data: departData} = useDepartById(departId);
+  if (!user || !departData) {
+    return false; // 如果用户或部门数据不存在，直接返回 false
+  }
+
+  // 该部门是当前组织节点下，非子组织下的部门
+  const isInCurrentWorkspace = workSpaceId === departData.workspace_id;
+
+  // 如果不在当前工作区，返回 true；否则检查用户是否在部门用户列表中
+  return !isInCurrentWorkspace || departData.users.includes(user.id);
+};
+
+export interface User {
+  id: number;
+  username: string;
+  name: string;
+  role: number;
+  user_id: string;
+  user_type: number;
+  mqtt_username: string;
+  mqtt_password: string;
+  mqtt_addr: string;
+}
+
+interface Data {
+  id: number;
+  name: string;
+  parent: number;
+  sort: number;
+  lead_user: number;
+  active: number;
+  create_time: number;
+  update_time: number;
+  workspace: number;
+  users: number[] | User[];
+  devices: Device[];
+  workspace_id: string;
+}
+
 // 根据id获取部门详情
 export const useDepartById = (id: number) => {
   const {get} = useAjax();
   const key = id !== 0 ? [`${OPERATION_HTTP_PREFIX}/organ/get`, id] : null;
   // return useSWR(id?[])
-  return useSWR(key, async ([path, id]) => (await get<Resource<any>>(path as string, {id})).data.data);
+  return useSWR(key, async ([path, id]) => (await get<Resource<Data>>(path as string, {id})).data.data);
 };
 
 export const useEditDepart = () => {

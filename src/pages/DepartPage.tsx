@@ -4,11 +4,11 @@ import {useMemo, useState, useEffect} from "react";
 import {LogInIcon, Pencil, Plus, Trash2, X} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
 import {
-  useBindingDevice,
-  useCurrentUser,
+  Depart,
+  useBindingDevice, useCurrentUser,
   useDepartList,
   useEditDepart,
-  useMembers,
+  useMembers, User,
   useWorkspaceList
 } from "@/hooks/drone";
 import {useNavigate} from "react-router-dom";
@@ -24,6 +24,13 @@ import {useAjax} from "@/lib/http.ts";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
 import dayjs from "dayjs";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog.tsx";
 
 const OPERATION_HTTP_PREFIX = "/operation/api/v1";
 
@@ -44,35 +51,49 @@ const formSchema = z.object({
 const DepartPage = () => {
   const currentWorkSpaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const [visible, setVisible] = useState(false);
-  const {post} = useAjax();
+  const {post, delete: deleteClient} = useAjax();
   const {data: departList, mutate: mutateDepartList} = useDepartList();
-  const {data: currentUser} = useCurrentUser();
   const {departId, setDepartId, data: currentDepart} = useEditDepart();
   const {data: workSpaceList} = useWorkspaceList();
+  const {data: currentUser} = useCurrentUser();
   const currentWorkSpace = useMemo(() => {
     return workSpaceList?.find(item => item.workspace_id === currentWorkSpaceId);
   }, [workSpaceList, currentWorkSpaceId]);
-  console.log("currentWorkSpace");
-  console.log(currentWorkSpace);
-  const filterDepartList = useMemo(() => {
-    return departList?.filter(item => item.workspace === currentWorkSpace?.id);
-  }, [departList, currentWorkSpace]);
-  console.log("filterDepartList");
-  console.log(filterDepartList);
+
   const navigate = useNavigate();
 
-  const {data: userList} = useMembers(currentWorkSpaceId, {
+  const {data: _userList} = useMembers(currentWorkSpaceId, {
     page: 1,
     page_size: 1000,
     total: 0
   });
 
-  const {data: droneList} = useBindingDevice(currentWorkSpaceId, {
+  const userList = useMemo(() => {
+      if (!_userList) return [];
+      if (currentDepart) {
+        return _userList.list.filter(user => user.workspace_id === currentDepart?.workspace_id);
+      } else {
+        return _userList.list.filter(user => user.workspace_id === currentWorkSpaceId);
+      }
+    }
+    , [_userList, currentDepart, currentWorkSpaceId]);
+
+  const {data: _droneList} = useBindingDevice(currentWorkSpaceId, {
     page: 1,
     page_size: 1000,
     total: 0,
     domain: EDeviceTypeName.Dock
   });
+
+  const droneList = useMemo(() => {
+      if (!_droneList) return [];
+      if (currentDepart) {
+        return _droneList?.list.filter(item => item.workspace_id === currentDepart?.workspace_id);
+      } else {
+        return _droneList?.list.filter(item => item.workspace_id === currentWorkSpaceId);
+      }
+    }
+    , [_droneList, currentDepart, currentWorkSpaceId]);
 
   const defaultValues = {
     name: "",
@@ -91,7 +112,7 @@ const DepartPage = () => {
     if (currentDepart) {
       form.setValue("name", currentDepart.name);
       form.setValue("lead_user", currentDepart.lead_user || 0);
-      form.setValue("users", currentDepart.users.map(item => item.id) || []);
+      form.setValue("users", currentDepart.users.map((item) => (item as User).id) || []);
       form.setValue("devices", currentDepart.devices.map(item => item.id) || []);
     }
   }, [currentDepart, form]);
@@ -101,16 +122,12 @@ const DepartPage = () => {
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log("values");
-    console.log(values);
-    console.log("currentWorkSpace.id");
-    console.log(currentWorkSpace?.id);
     const formValue = departId === 0 ? {
       ...values,
       workspace: currentWorkSpace?.id || 0,
     } : {
       ...values,
-      workspace: currentWorkSpace?.id || 0,
+      workspace: currentDepart?.workspace || 0,
       id: departId
     };
     const res: any = await post(`${OPERATION_HTTP_PREFIX}/organ/save`, formValue);
@@ -119,9 +136,28 @@ const DepartPage = () => {
         description: departId === 0 ? "部门创建成功！" : "部门编辑成功！"
       });
       await mutateDepartList();
-      setVisible(false);
-      form.reset(defaultValues);
+      // setVisible(false);
+      // form.reset(defaultValues);
     }
+  };
+
+  // 是否有权限进入部门
+  const hasPermission = (depart: Depart) => {
+    // 检查当前工作区和用户是否存在
+    if (!currentUser) {
+      return false; // 如果当前用户不存在，直接返回 false
+    }
+
+    // 检查是否在当前工作区，并且用户是否在部门用户列表中
+    return currentWorkSpaceId !== depart.workspace_id || depart.user_ids.includes(currentUser.id);
+  };
+
+  const onDeleteDepart = async (id: number) => {
+    await deleteClient(`${OPERATION_HTTP_PREFIX}/organ/delete?id=${id}`);
+    toast({
+      description: "删除部门成功！"
+    });
+    await mutateDepartList();
   };
 
   return (
@@ -140,21 +176,25 @@ const DepartPage = () => {
           {/*<Button className={"bg-[#43ABFF] w-20"} onClick={() => setVisible(true)}>创建</Button>*/}
         </div>
         <div className={"px-[12px] py-4 space-y-2 h-[calc(100vh-180px)] overflow-y-auto"}>
-          {!filterDepartList || filterDepartList.length === 0 &&
+          {!departList || departList.length === 0 &&
             <div className={"content-center py-8 text-[#d0d0d0]"}>暂无数据</div>}
-          {filterDepartList?.map(item =>
+          {departList?.map(item =>
             <div key={item.id}
                  className={"bg-panel-item bg-full-size text-[14px] p-4 space-y-2"}>
               <div>
                 <span>部门名称：</span>
                 <span>{item.name}</span>
               </div>
+              <div>
+                <span>所属组织：</span>
+                <span>{item.workspace_name}</span>
+              </div>
               <div className={"flex justify-between"}>
                 <div>
                   <span>创建时间：</span>
                   <span>{dayjs(item.create_time).format("YYYY-MM-DD HH:MM:ss")}</span>
                 </div>
-                <div className={"flex space-x-2"}>
+                {hasPermission(item) && <div className={"flex space-x-2 items-center"}>
                   <Pencil
                     size={16}
                     className={"cursor-pointer"}
@@ -163,13 +203,34 @@ const DepartPage = () => {
                       setDepartId(item.id);
                     }}
                   />
-                  <Trash2 size={16} className={"cursor-pointer"}/>
-                  <LogInIcon size={16} className={"cursor-pointer"}
-                             onClick={() => {
-                               navigate(`/tsa`);
-                               localStorage.setItem("departId", item.id.toString());
-                             }}/>
-                </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger>
+                      <Trash2 size={16} className={"cursor-pointer"}/>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>删除部门</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          确认删除部门吗？
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDeleteDepart(item.id)}>确认</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                  <LogInIcon
+                    size={16}
+                    className={`${!hasPermission(item) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                    onClick={() => {
+                      if (hasPermission(item)) {
+                        navigate(`/tsa?workspace=${item?.workspace_id}`);
+                        localStorage.setItem("departId", item.id.toString());
+                      }
+                    }}
+                  />
+                </div>}
               </div>
             </div>)}
         </div>
@@ -212,7 +273,7 @@ const DepartPage = () => {
                     {/*<FormMessage/>*/}
                     <SelectContent>
                       <SelectItem value="0">无</SelectItem>
-                      {userList?.list.map(item => (
+                      {userList.map(item => (
                         <SelectItem key={item.id} value={String(item.id)}>
                           {item.name}
                         </SelectItem>
@@ -232,7 +293,7 @@ const DepartPage = () => {
                     <FormLabel>人员列表：</FormLabel>
                   </div>
                   <div className={"space-y-2 max-h-[200px] overflow-auto"}>
-                    {userList?.list.map((item) => (
+                    {userList.length > 0 ? userList.map((item) => (
                       <FormField
                         key={item.id}
                         control={form.control}
@@ -264,7 +325,7 @@ const DepartPage = () => {
                           );
                         }}
                       />
-                    ))}
+                    )) : <div className={"text-sm text-gray-500"}>当前组织下暂无人员</div>}
                   </div>
                   <FormMessage/>
                 </FormItem>
@@ -279,7 +340,7 @@ const DepartPage = () => {
                     <FormLabel>设备列表：</FormLabel>
                   </div>
                   <div className={"space-y-2 max-h-[200px] overflow-auto"}>
-                    {droneList?.list.map((item) => (
+                    {droneList.length > 0 ? droneList.map((item) => (
                       <FormField
                         key={item.id}
                         control={form.control}
@@ -287,7 +348,7 @@ const DepartPage = () => {
                         render={({field}) => {
                           // 检查父设备和子设备是否都被选中
                           const isChecked = field.value?.includes(item.id) &&
-                            field.value?.includes(item.children.id);
+                            field.value?.includes(item.children?.id);
 
                           return (
                             <FormItem
@@ -303,13 +364,13 @@ const DepartPage = () => {
                                       field.onChange([
                                         ...field.value,
                                         item.id,
-                                        item.children.id
+                                        item.children?.id
                                       ]);
                                     } else {
                                       // 移除父设备和子设备的ID
                                       field.onChange(
                                         field.value?.filter(
-                                          (value) => value !== item.id && value !== item.children.id
+                                          (value) => value !== item.id && value !== item.children?.id
                                         )
                                       );
                                     }
@@ -317,13 +378,13 @@ const DepartPage = () => {
                                 />
                               </FormControl>
                               <FormLabel className="text-sm font-normal">
-                                {item.nickname} - {item.children.device_name}
+                                {item.nickname} - {item.children?.device_name}
                               </FormLabel>
                             </FormItem>
                           );
                         }}
                       />
-                    ))}
+                    )) : <div className={"text-sm text-gray-500"}>当前组织下暂无设备</div>}
                   </div>
                   <FormMessage/>
                 </FormItem>

@@ -23,9 +23,14 @@ interface Props {
     height: number
   };
   onCameraChange?: (direction: any) => void;
+  hp?: {
+    heading: number
+    pitch: number
+  };
+  onChangeHp?: (hp: Props["hp"]) => void;
 }
 
-const SceneMini = ({initialPosition, onCameraChange}: Props) => {
+const SceneMini = ({initialPosition, onCameraChange, hp, onChangeHp}: Props) => {
   useEffect(() => {
     window.viewer2 = new Cesium.Viewer("cesiumContainerMini", {
       shadows: false,
@@ -74,29 +79,26 @@ const SceneMini = ({initialPosition, onCameraChange}: Props) => {
 
     const {longitude, latitude, height} = initialPosition;
     const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
-    const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);
-
-    const direction2 = Cesium.Cartesian3.normalize(
-      Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()),
-      new Cesium.Cartesian3()
-    );
-    const up2 = Cesium.Cartesian3.normalize(topPosition, new Cesium.Cartesian3());
-
     viewer2.camera.flyTo({
       destination: topPosition,
       duration: 0,
       orientation: {
-        direction: direction2,
-        up: up2
+        heading: hp?.heading || 0,
+        pitch: hp?.pitch || 0,
+        roll: 0
       }
     });
-  }, [initialPosition]);
+  }, [initialPosition, hp]);
 
   useEffect(() => {
     if (!viewer2) return;
 
     const cameraChangeListener = () => {
       onCameraChange?.(viewer2.camera.direction);
+      onChangeHp?.({
+        heading: viewer2.camera.heading,
+        pitch: viewer2.camera.pitch,
+      });
     };
 
     viewer2.camera.changed.addEventListener(cameraChangeListener);
@@ -104,7 +106,7 @@ const SceneMini = ({initialPosition, onCameraChange}: Props) => {
     return () => {
       viewer2.camera.changed.removeEventListener(cameraChangeListener);
     };
-  }, [onCameraChange]);
+  }, [onCameraChange, onChangeHp]);
 
   useEffect(() => {
     if (!viewer2) return;

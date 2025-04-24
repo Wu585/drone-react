@@ -1,0 +1,250 @@
+[
+  {
+    "name": "设备管理",
+    "children": [
+      {
+        "name": "查看设备",
+        "url": [
+          "/devices/${workspaceId}/devices",
+          "devices/${workspaceId}/devices/bound"
+        ]
+      },
+      {
+        "name": "设备操作",
+        "children": [
+          {
+            "name": "机场作业参数修改及远程调试",
+            "url": [
+              "devices/${sn}/jobs/debug_mode_open",
+              "devices/${sn}/jobs/debug_mode_close",
+              "...DeviceCmd"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "编辑设备信息",
+        "url": [
+          "http://36.152.38.220:6789/manage/api/v1/devices/ba459635-2a0c-4a5e-8cff-b03a86df7aae/devices/4SEDL9S00178K9(put请求)"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "飞行及直播",
+    "children": [
+      {
+        "name": "设备操控",
+        "children": [
+          {
+            "name": "设备操控基础权限",
+            "url": [
+              "${DRC_API_PREFIX}/devices/${sn}/jobs/takeoff-to-point",
+              "${DRC_API_PREFIX}/devices/${sn}/jobs/fly-to-point",
+              "devices/${sn}/jobs/return_home",
+              "devices/${sn}/jobs/return_home_cancel"
+            ]
+          },
+          {
+            "name": "进入虚拟座舱",
+            "type": "button"
+          },
+          {
+            "name": "远程飞行器实时控制",
+            "url": [
+              "drc/connect",
+              "drc/enter",
+              "drc/exit",
+              "authority/flight"
+            ]
+          },
+          {
+            "name": "远程负载实时控制",
+            "url": [
+              "authority/payload",
+              "payload/commands"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "直播管理",
+        "children": [
+          {
+            "name": "发起直播",
+            "url": [
+              "live/streams/update",
+              "live/streams/switch",
+              "live/streams/stop",
+              "live/streams/start",
+              "live/streams/capacity"
+            ]
+          },
+          {
+            "name": "发起直播分享",
+            "type": "button"
+          },
+          {
+            "name": "开启直播录制",
+            "url": [
+              "payload/commands"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "航线管理",
+    "children": [
+      {
+        "name": "查看航线",
+        "url": [
+          "waylines/api/v1/common/get"
+        ]
+      },
+      {
+        "name": "编辑航线",
+        "children": [
+          {
+            "name": "新建/编辑航线",
+            "url": [
+              "buildKmzFile","updateKmzFile"
+            ]
+          },
+          {
+            "name": "航线下载",
+            "url": [
+              "waylines/wayline_id/url"
+            ]
+          },
+          {
+            "name": "删除航线",
+            "url": [
+              "delete wayline_id"
+            ]
+          },
+          {
+            "name": "导入航线",
+            "url": [
+              "waylines/file/upload"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "计划管理",
+    "children": [
+      {
+        "name": "查看计划",
+        "url": [
+          "jobs"
+        ]
+      },
+      {
+        "name": "操作计划",
+        "children": [
+          {
+            "name": "新建计划",
+            "url": [
+              "flight-tasks"
+            ]
+          },
+          {
+            "name": "删除计划",
+            "url": [
+              "delete jobs"
+            ]
+          },
+          {
+            "name": "任务挂起/解除挂起",
+            "url": [
+              "put jobs"
+            ]
+          },
+          {
+            "name": "导出飞行报告"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "媒体管理",
+    "children": [
+      {
+        "name": "查看媒体库文件",
+        "url": [
+          "media files page"
+        ]
+      },
+      {
+        "name": "媒体文件及文件夹重命名/移动/删除",
+        "url": [
+          "create dir",
+          "update dir",
+          "move",
+          "delete"
+        ]
+      },
+      {
+        "name": "下载媒体",
+        "url": [
+          "media file url"
+        ]
+      },
+      {
+        "name": "媒体文件上图",
+        "url": [
+          "setVisual"
+        ]
+      },
+      {
+        "name": "上传媒体文件",
+        "url": [
+          "upload"
+        ]
+      },
+      {
+        "name": "媒体文件创建工单",
+        "type": "button"
+      }
+    ]
+  },
+  {
+    "name": "地图标注管理",
+    "children": [
+      {
+        "name": "查看标注"
+      },
+      {
+        "name": "编辑/删除标注"
+      },
+      {
+        "name": "控制标注显隐"
+      }
+    ]
+  },
+  {
+    "name": "工单管理",
+    "children": [
+      {
+        "name": "查看工单"
+      },
+      {
+        "name": "创建/编辑工单"
+      },
+      {
+        "name": "分配工单"
+      },
+      {
+        "name": "工单审核"
+      },
+      {
+        "name": "工单报告导出"
+      }
+    ]
+  }
+]

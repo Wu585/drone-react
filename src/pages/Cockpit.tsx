@@ -107,6 +107,8 @@ const Cockpit = () => {
   const [searchParams] = useSearchParams();
   const dockSn = searchParams.get("gateway_sn") || "";
   const deviceSn = searchParams.get("sn") || "";
+  console.log('deviceSn');
+  console.log(deviceSn);
   const deviceInfo = useRealTimeDeviceInfo();
   const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
 

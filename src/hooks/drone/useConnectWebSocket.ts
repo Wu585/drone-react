@@ -20,6 +20,8 @@ export const useInitialConnectWebSocket = () => {
     }
     switch (payload.biz_code) {
       case EBizCode.GatewayOsd: {
+        console.log('payload.data===gateway osd');
+        console.log(payload.data);
         setGateWayInfo(payload.data);
         break;
       }
@@ -28,6 +30,8 @@ export const useInitialConnectWebSocket = () => {
         break;
       }
       case EBizCode.DockOsd: {
+        console.log('payload.data==dock osd');
+        console.log(payload.data);
         setDockInfo(payload.data);
         break;
       }
