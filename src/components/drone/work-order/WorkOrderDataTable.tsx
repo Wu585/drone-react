@@ -8,6 +8,7 @@ import {
 import {useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {
+  HTTP_PREFIX_Wayline,
   useCurrentUser,
   useWorkOrderById,
   useWorkOrderList,
@@ -17,7 +18,7 @@ import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
 import {Edit, Eye, Trash} from "lucide-react";
-import {getAuthToken} from "@/lib/http.ts";
+import {getAuthToken, useAjax} from "@/lib/http.ts";
 import {
   Dialog,
   DialogContent,
@@ -103,6 +104,7 @@ const WorkOrderDataTable = () => {
   const [open, setOpen] = useState(false);
 
   const {data: currentUser} = useCurrentUser();
+  const {post} = useAjax()
   const isGly = currentUser?.role === 3;
   const urlFix = isGly ? "page" : "pageByOperator";
   const [currentOrder, setCurrentOrder] = useState<WorkOrder | null>(null);
@@ -248,6 +250,36 @@ const WorkOrderDataTable = () => {
 
   const [orderType, setOrderType] = useState<"create" | "edit" | "preview">("create");
   const [orderHandleType, setOrderHandleType] = useState<"handle" | "preview">("handle");
+
+  const onExportOrder = async () => {
+    console.log("currentUser");
+    console.log(currentUser);
+    const res: any = await post(
+      `${OPERATION_HTTP_PREFIX}/order/${13}/exprotReport`,
+      {},
+      // 设置响应类型为 blob
+      {responseType: "blob"}
+    );
+
+    // 创建 Blob 对象
+    const blob = new Blob([res.data], {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    });
+
+    // 创建下载链接
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `工单报告_${dayjs().format("YYYY-MM-DD_HH-mm-ss")}.docx`; // 设置文件名
+
+    // 触发下载
+    document.body.appendChild(link);
+    link.click();
+
+    // 清理
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <Uploady
@@ -396,6 +428,7 @@ const WorkOrderDataTable = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          <Button onClick={onExportOrder}>导出工单报告</Button>
         </div>
 
         <div className="rounded-md border border-[#0A81E1] overflow-hidden">

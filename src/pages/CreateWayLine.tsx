@@ -447,8 +447,6 @@ const CreateWayLine = () => {
     setSelectedWaypointId(newWaypoints.length);
   };
 
-  const directionRef = useRef<any>(null);
-
   // 棱锥顶点坐标以及指向
   const pyramidPositionRef = useRef<{
     position: {
@@ -530,13 +528,12 @@ const CreateWayLine = () => {
     const rotateSpeed = 1.5; // 移动速度
 
     const handleKeyDown = (evt: KeyboardEvent) => {
-      if (!dronePositionRef.current || !directionRef.current || !pyramidPositionRef.current) return;
-      const position = Cesium.Cartesian3.fromDegrees(
-        dronePositionRef.current.longitude,
-        dronePositionRef.current.latitude,
-        dronePositionRef.current.height
+      if (!dronePositionRef.current || !pyramidPositionRef.current) return;
+      const topPosition = Cesium.Cartesian3.fromDegrees(
+        pyramidPositionRef.current.position.longitude,
+        pyramidPositionRef.current.position.latitude,
+        pyramidPositionRef.current.position.height
       );
-      const up = Cesium.Cartesian3.normalize(position, new Cesium.Cartesian3());
       switch (evt.code) {
         case "Space": {
           if (!takeoffPoint) return toast({
@@ -564,9 +561,17 @@ const CreateWayLine = () => {
           break;
         }
         case "KeyA": { // 左移
-          const left = Cesium.Cartesian3.cross(up, directionRef.current, new Cesium.Cartesian3());
-          const offset = Cesium.Cartesian3.multiplyByScalar(left, speed, new Cesium.Cartesian3());
-          const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
+          const leftPosition = Cesium.Cartesian3.fromDegrees(
+            pyramidPositionRef.current.position.longitude - 0.1,
+            pyramidPositionRef.current.position.latitude,
+            pyramidPositionRef.current.position.height
+          );
+          const direction = Cesium.Cartesian3.normalize(
+            Cesium.Cartesian3.subtract(leftPosition, topPosition, new Cesium.Cartesian3()),
+            new Cesium.Cartesian3()
+          );
+          const offset = Cesium.Cartesian3.multiplyByScalar(direction, speed, new Cesium.Cartesian3());
+          const newPosition = Cesium.Cartesian3.add(topPosition, offset, new Cesium.Cartesian3());
           const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
           const longitude = Cesium.Math.toDegrees(cartographic.longitude);
           const latitude = Cesium.Math.toDegrees(cartographic.latitude);
@@ -580,9 +585,17 @@ const CreateWayLine = () => {
           break;
         }
         case "KeyD": { // 右移
-          const right = Cesium.Cartesian3.cross(directionRef.current, up, new Cesium.Cartesian3());
-          const offset = Cesium.Cartesian3.multiplyByScalar(right, speed, new Cesium.Cartesian3());
-          const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
+          const rightPosition = Cesium.Cartesian3.fromDegrees(
+            pyramidPositionRef.current.position.longitude + 0.1,
+            pyramidPositionRef.current.position.latitude,
+            pyramidPositionRef.current.position.height
+          );
+          const direction = Cesium.Cartesian3.normalize(
+            Cesium.Cartesian3.subtract(rightPosition, topPosition, new Cesium.Cartesian3()),
+            new Cesium.Cartesian3()
+          );
+          const offset = Cesium.Cartesian3.multiplyByScalar(direction, speed, new Cesium.Cartesian3());
+          const newPosition = Cesium.Cartesian3.add(topPosition, offset, new Cesium.Cartesian3());
           const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
           const longitude = Cesium.Math.toDegrees(cartographic.longitude);
           const latitude = Cesium.Math.toDegrees(cartographic.latitude);
@@ -596,9 +609,15 @@ const CreateWayLine = () => {
           break;
         }
         case "KeyW": { // 前进
-          const forward = directionRef.current; // 直接使用朝向作为前进方向
-          const offset = Cesium.Cartesian3.multiplyByScalar(forward, speed, new Cesium.Cartesian3());
-          const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
+          const forwardPosition = Cesium.Cartesian3.fromDegrees(
+            pyramidPositionRef.current.position.longitude,
+            pyramidPositionRef.current.position.latitude + 0.1,
+            pyramidPositionRef.current.position.height
+          );
+          const direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition,
+            new Cesium.Cartesian3()), new Cesium.Cartesian3()); // 直接使用朝向作为前进方向
+          const offset = Cesium.Cartesian3.multiplyByScalar(direction, speed, new Cesium.Cartesian3());
+          const newPosition = Cesium.Cartesian3.add(topPosition, offset, new Cesium.Cartesian3());
           const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
           const longitude = Cesium.Math.toDegrees(cartographic.longitude);
           const latitude = Cesium.Math.toDegrees(cartographic.latitude);
@@ -612,9 +631,16 @@ const CreateWayLine = () => {
           break;
         }
         case "KeyS": { // 后退
-          const backward = Cesium.Cartesian3.negate(directionRef.current, new Cesium.Cartesian3()); // 反向
+          const forwardPosition = Cesium.Cartesian3.fromDegrees(
+            pyramidPositionRef.current.position.longitude,
+            pyramidPositionRef.current.position.latitude + 0.1,
+            pyramidPositionRef.current.position.height
+          );
+          const direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition,
+            new Cesium.Cartesian3()), new Cesium.Cartesian3());
+          const backward = Cesium.Cartesian3.negate(direction, new Cesium.Cartesian3()); // 反向
           const offset = Cesium.Cartesian3.multiplyByScalar(backward, speed, new Cesium.Cartesian3());
-          const newPosition = Cesium.Cartesian3.add(position, offset, new Cesium.Cartesian3());
+          const newPosition = Cesium.Cartesian3.add(topPosition, offset, new Cesium.Cartesian3());
           const cartographic = Cesium.Cartographic.fromCartesian(newPosition);
           const longitude = Cesium.Math.toDegrees(cartographic.longitude);
           const latitude = Cesium.Math.toDegrees(cartographic.latitude);
@@ -629,92 +655,24 @@ const CreateWayLine = () => {
         }
         case "KeyQ": { // 左旋转
           const oldHeading = dronePositionRef.current.heading || 0;
-          const newHeading = oldHeading - rotateSpeed;
-          dronePositionRef.current.heading = newHeading;
-
-          // 计算旋转角度差
-          const rotationDiff = Math.abs(newHeading - oldHeading);
-          console.log(`左转: ${rotationDiff}度, 当前朝向: ${newHeading}度`);
-
-          // 计算旋转后的方向
-          const topPosition = Cesium.Cartesian3.fromDegrees(
-            dronePositionRef.current.longitude,
-            dronePositionRef.current.latitude,
-            dronePositionRef.current.height
-          );
-
-          // 计算旋转后的前方位置（使用角度计算）
-          const rotationRadians = Cesium.Math.toRadians(newHeading);
-          const forwardLatitude = dronePositionRef.current.latitude + 0.1 * Math.cos(rotationRadians);
-          const forwardLongitude = dronePositionRef.current.longitude + 0.1 * Math.sin(rotationRadians);
-
-          const forwardPosition = Cesium.Cartesian3.fromDegrees(
-            forwardLongitude,
-            forwardLatitude,
-            dronePositionRef.current.height
-          );
-
-          // 更新方向向量
-          directionRef.current = Cesium.Cartesian3.normalize(
-            Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()),
-            new Cesium.Cartesian3()
-          );
-
-          // 更新金字塔位置和方向
-          pyramidPositionRef.current.position = {
-            longitude: dronePositionRef.current.longitude,
-            latitude: dronePositionRef.current.latitude,
-            height: dronePositionRef.current.height
-          };
-          pyramidPositionRef.current.direction = directionRef.current;
-
-          removePyramid();
-          addPyramid(pyramidPositionRef.current);
+          dronePositionRef.current.heading = oldHeading - rotateSpeed;
+          if (miniSceneCameraHp) {
+            setMiniSceneCameraHp({
+              ...miniSceneCameraHp,
+              heading: miniSceneCameraHp.heading - Cesium.Math.toRadians(rotateSpeed)
+            });
+          }
           break;
         }
         case "KeyE": { // 右旋转
           const oldHeading = dronePositionRef.current.heading || 0;
-          const newHeading = oldHeading + rotateSpeed;
-          dronePositionRef.current.heading = newHeading;
-
-          // 计算旋转角度差
-          const rotationDiff = Math.abs(newHeading - oldHeading);
-          console.log(`右转: ${rotationDiff}度, 当前朝向: ${newHeading}度`);
-
-          // 计算旋转后的方向
-          const topPosition = Cesium.Cartesian3.fromDegrees(
-            dronePositionRef.current.longitude,
-            dronePositionRef.current.latitude,
-            dronePositionRef.current.height
-          );
-
-          // 计算旋转后的前方位置（使用角度计算）
-          const rotationRadians = Cesium.Math.toRadians(newHeading);
-          const forwardLatitude = dronePositionRef.current.latitude + 0.1 * Math.cos(rotationRadians);
-          const forwardLongitude = dronePositionRef.current.longitude + 0.1 * Math.sin(rotationRadians);
-
-          const forwardPosition = Cesium.Cartesian3.fromDegrees(
-            forwardLongitude,
-            forwardLatitude,
-            dronePositionRef.current.height
-          );
-
-          // 更新方向向量
-          directionRef.current = Cesium.Cartesian3.normalize(
-            Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()),
-            new Cesium.Cartesian3()
-          );
-
-          // 更新金字塔位置和方向
-          pyramidPositionRef.current.position = {
-            longitude: dronePositionRef.current.longitude,
-            latitude: dronePositionRef.current.latitude,
-            height: dronePositionRef.current.height
-          };
-          pyramidPositionRef.current.direction = directionRef.current;
-
-          removePyramid();
-          addPyramid(pyramidPositionRef.current);
+          dronePositionRef.current.heading = oldHeading + rotateSpeed;
+          if (miniSceneCameraHp) {
+            setMiniSceneCameraHp({
+              ...miniSceneCameraHp,
+              heading: miniSceneCameraHp.heading + Cesium.Math.toRadians(rotateSpeed)
+            });
+          }
           break;
         }
       }
@@ -724,7 +682,7 @@ const CreateWayLine = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [selectedWaypointId, takeoffPoint, globalHeight, form, waypoints]);
+  }, [selectedWaypointId, takeoffPoint, globalHeight, form, waypoints, miniSceneCameraHp]);
 
   useEffect(() => {
     getCustomSource("waylines-update")?.entities.removeAll();
@@ -783,11 +741,10 @@ const CreateWayLine = () => {
       distance += addLabelWithin([waypoints[i].longitude, waypoints[i].latitude, waypoints[i].useGlobalHeight ? globalHeight : waypoints[i].height!],
         [waypoints[i + 1].longitude, waypoints[i + 1].latitude, waypoints[i + 1].useGlobalHeight ? globalHeight : waypoints[i + 1].height!]);
     }
-    setWaylineInfo({
-      ...waylineInfo,
+    setWaylineInfo(prevState => ({
+      ...prevState,
       distance: +distance.toFixed(2)
-    });
-
+    }));
   }, [waypoints, form, takeoffPoint, takeoffPointEndHeight, globalHeight, takeOffSecurityHeight, fly_to_wayline_mode]);
 
   useEffect(() => {
@@ -798,7 +755,6 @@ const CreateWayLine = () => {
       const {longitude, latitude} = takeoffPoint;
       const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, takeoffPointEndHeight);
       const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, takeoffPointEndHeight);  // 正北方向
-      directionRef.current = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3());
       pyramidPositionRef.current = {
         position: {
           longitude: takeoffPoint.longitude,
@@ -832,7 +788,6 @@ const CreateWayLine = () => {
       };
       const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
       const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
-      directionRef.current = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3());
       pyramidPositionRef.current = {
         position: {
           longitude,

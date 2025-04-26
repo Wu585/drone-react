@@ -22,10 +22,10 @@ const DebugPanel = ({sn, onClose}: Props) => {
   const {post} = useAjax();
   const realTimeDeviceInfo = useRealTimeDeviceInfo();
   const devicesCmdExecuteInfo = useSceneStore(state => state.devicesCmdExecuteInfo);
-  console.log('devicesCmdExecuteInfo');
+  console.log("devicesCmdExecuteInfo");
   console.log(devicesCmdExecuteInfo);
   const newCmdList = cmdList.map(cmdItem => Object.assign({}, cmdItem));
-  console.log('newCmdList===');
+  console.log("newCmdList===");
   console.log(newCmdList);
 
   if (sn && devicesCmdExecuteInfo[sn]) {
@@ -68,6 +68,28 @@ const DebugPanel = ({sn, onClose}: Props) => {
     }
   };
 
+  const onResetPosition = async () => {
+    const position = {
+      longitude: realTimeDeviceInfo.dock.basic_osd.longitude,
+      latitude: realTimeDeviceInfo.dock.basic_osd.latitude,
+      height: realTimeDeviceInfo.dock.basic_osd.height
+    };
+    const res: any = await post(`${CMD_API_PREFIX}/devices/${sn}/jobs/${DeviceCmd.RtkCalibration}`, {
+      device: [
+        {
+          sn,
+          type: 1,
+          module: "3",
+          data: {
+            longitude: position.longitude,
+            latitude: position.latitude,
+            height: position.height
+          }
+        }
+      ]
+    });
+  };
+
   return (
     <div className={"w-[393px] bg-full-size"}>
       <div className={"bg-[#001E37]/[.85]"}>
@@ -81,6 +103,7 @@ const DebugPanel = ({sn, onClose}: Props) => {
             <h3>设备远程调试模式</h3>
             <Switch checked={debugStatus} onCheckedChange={onSwitchDebug}
                     className={"data-[state=checked]:bg-[#43ABFF]"}/>
+            <Button onClick={onResetPosition}>一键标定</Button>
           </div>
           <div className={"grid grid-cols-2 gap-4"}>
             {newCmdList.map(item => <div key={item.cmdKey}

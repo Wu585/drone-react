@@ -23,42 +23,26 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog.tsx";
-import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
 import {useAjax} from "@/lib/http.ts";
 import dayjs from "dayjs";
+import {Edit, Trash2} from "lucide-react";
+import {TreeSelect} from "@/components/ui/tree-select.tsx";
+import {toast} from "@/components/ui/use-toast.ts";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog.tsx";
 
 const formSchema = z.object({
   name: z.string().min(3, {
     message: "请输入角色名称"
   }),
+  resource_ids: z.array(z.number()).default([])
 });
-
-export const rolesData = [
-  {
-    id: 0,
-    name: "超级管理员"
-  },
-  {
-    id: 1,
-    name: "组织管理员"
-  },
-  {
-    id: 2,
-    name: "组织成员"
-  },
-  {
-    id: 3,
-    name: "部门管理员"
-  },
-  {
-    id: 4,
-    name: "部门成员"
-  },
-  {
-    id: 5,
-    name: "设备维护员"
-  }
-];
 
 const OPERATION_HTTP_PREFIX = "/operation/api/v1";
 
@@ -76,14 +60,44 @@ const RoleDataTable = () => {
       accessorKey: "create_time",
       header: () => <div className="text-center">创建时间</div>,
       cell: ({row}) => (
-        <div className="text-center">{dayjs(row.getValue("create_time")).format("YYYY-MM-DD HH:MM:ss")}</div>
+        <div className="text-center">{dayjs(row.getValue("create_time")).format("YYYY-MM-DD HH:mm:ss")}</div>
       ),
       size: 120
+    },
+    {
+      accessorKey: "x",
+      header: () => <div className="text-center">操作</div>,
+      cell: ({row}) => (
+        <div className={"flex items-center justify-center space-x-2"}>
+          <Edit
+            size={16}
+            className="cursor-pointer hover:text-[#43ABFF] transition-colors"
+            onClick={() => handleEdit(row.original)}
+          />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Trash2 size={16} className="cursor-pointer hover:text-[#43ABFF] transition-colors"/>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>删除角色</AlertDialogTitle>
+                <AlertDialogDescription>
+                  确认删除该角色吗？
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDeleteRole(row.original.id)}>确认</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      ),
     },
   ];
 
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
-  const {post} = useAjax();
+  const {post, delete: deleteClient} = useAjax();
   const [open, setOpen] = useState(false);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     []
@@ -102,7 +116,7 @@ const RoleDataTable = () => {
     total: 0
   });
 
-  const {data: roleList} = useRoleList();
+  const {data: roleList, mutate: mutateRoleList} = useRoleList();
   const {data: _resourceList} = useResourceList();
 
   const resourceList = buildTree(_resourceList?.filter(item => item.type === 1 || item.type === 2) || []);
@@ -113,16 +127,57 @@ const RoleDataTable = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      resource_ids: []
     }
   });
 
+  const [currentRole, setCurrentRole] = useState<Role | null>(null);
+
+  const handleOpenChange = (open: boolean) => {
+    setOpen(open);
+    if (!open) {
+      setCurrentRole(null);
+      form.reset({name: "", resource_ids: []});
+    }
+  };
+
+  const handleEdit = (role: Role) => {
+    setCurrentRole(role);
+    form.reset({
+      name: role.name,
+      resource_ids: role.resource_ids || []
+    });
+    setOpen(true);
+  };
+
+  const onDeleteRole = async (id: number) => {
+    const res: any = await deleteClient(`${OPERATION_HTTP_PREFIX}/role/delete?id=${id}`);
+    if (res.data.code === 0) {
+      toast({
+        description: `删除角色成功！`
+      });
+      await mutateRoleList();
+    }
+  };
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log("values");
-    console.log(values);
-    const res = await post(`${OPERATION_HTTP_PREFIX}/role/save`, {
+    const body = currentRole ? {
+      ...values,
+      menu_ids: [],
+      id: currentRole.id,
+    } : {
       ...values,
       menu_ids: []
-    });
+    };
+
+    const res: any = await post(`${OPERATION_HTTP_PREFIX}/role/save`, body);
+
+    if (res.data.code === 0) {
+      toast({
+        description: `${currentRole ? "更新" : "创建"}角色成功！`
+      });
+      await mutateRoleList();
+      setOpen(false);
+    }
   };
 
   const table = useReactTable({
@@ -145,17 +200,6 @@ const RoleDataTable = () => {
     },
   });
 
-  const createRole = async () => {
-    const value = {
-      name: "测试角色",
-      resource_ids: [77, 78, 80, 87]
-    };
-    await post(`${OPERATION_HTTP_PREFIX}/role/save`, {
-      ...value,
-      menu_ids: []
-    });
-  };
-
   return (
     <div>
       <div className={"flex justify-between mb-4"}>
@@ -165,14 +209,14 @@ const RoleDataTable = () => {
           {/*<Button className={"bg-[#43ABFF]"}>重置</Button>*/}
         </div>
         <div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger>
+          <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogTrigger asChild>
               <Button className={"bg-[#43ABFF] w-24"}>添加</Button>
-              <Button className={"bg-[#43ABFF] w-24"} onClick={createRole}>创建</Button>
+              {/*<Button className={"bg-[#43ABFF] w-24"} onClick={createRole}>创建</Button>*/}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[625px]">
               <DialogHeader>
-                <DialogTitle>新增角色</DialogTitle>
+                <DialogTitle>{currentRole ? "编辑" : "新增"}角色</DialogTitle>
               </DialogHeader>
               <Form {...form} >
                 <form className="grid gap-4 py-4" onSubmit={form.handleSubmit(onSubmit)}>
@@ -181,15 +225,37 @@ const RoleDataTable = () => {
                     render={({field}) => (
                       <FormItem className={"grid grid-cols-4 items-center gap-4"}>
                         <FormLabel className={"text-right"}>角色名：</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder={"输入角色名"} className={"col-span-3"}/>
-                        </FormControl>
+                        <div className={"col-span-3 space-y-2"}>
+                          <FormControl>
+                            <Input {...field} placeholder={"输入角色名"} className={"col-span-3"}/>
+                          </FormControl>
+                          <FormMessage/>
+                        </div>
                       </FormItem>
                     )}
                     name={"name"}
                   />
+                  <FormField
+                    control={form.control}
+                    name="resource_ids"
+                    render={({field}) => (
+                      <FormItem className={"grid grid-cols-4 items-start gap-4"}>
+                        <FormLabel className={"text-right pt-2"}>资源权限：</FormLabel>
+                        <div className="col-span-3 border border-black/[.5] rounded-md">
+                          <FormControl>
+                            <TreeSelect
+                              value={field.value}
+                              onChange={field.onChange}
+                              treeData={resourceList}
+                            />
+                          </FormControl>
+                          <FormMessage/>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
                   <DialogFooter>
-                    <Button type="submit">创建</Button>
+                    <Button type="submit">确定</Button>
                   </DialogFooter>
                 </form>
               </Form>

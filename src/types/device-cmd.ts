@@ -26,6 +26,7 @@ export enum DeviceCmd {
   BatteryStoreModeSwitch = "battery_store_mode_switch", // 电池保养
   DroneBatteryModeSwitch = "battery_maintenance_switch", // 飞行器电池保养
   SdrWorkModeSwitch = "sdr_workmode_switch", // 增强图传
+  RtkCalibration = "rtk_calibration", // 一键标定
 }
 
 export type DeviceCmdItemAction = AlarmModeEnum | BatteryStoreModeEnum | DroneBatteryModeEnum | LinkWorkModeEnum

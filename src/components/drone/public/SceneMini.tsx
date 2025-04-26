@@ -65,13 +65,6 @@ const SceneMini = ({initialPosition, onCameraChange, hp, onChangeHp}: Props) => 
     const yx = findMapLayer("影像", viewer2);
     yx && (yx.show = false);
 
-    /*// 清理函数
-    return () => {
-      if (viewer2) {
-        viewer2.destroy();
-        delete window.viewer2;
-      }
-    };*/
   }, []);
 
   useEffect(() => {

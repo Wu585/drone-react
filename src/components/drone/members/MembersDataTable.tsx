@@ -27,6 +27,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
+import {Edit} from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -37,7 +38,7 @@ const formSchema = z.object({
   }),
   password: z.string().min(3, {
     message: "请输入密码"
-  }),
+  }).optional(),
   workspace_id: z.string(),
   user_type: z.number(),
   mqtt_username: z.string(),
@@ -46,10 +47,7 @@ const formSchema = z.object({
     required_error: "请分配角色",
     invalid_type_error: "角色必须是数字"
   }),
-  organ: z.coerce.number({
-    required_error: "请选择所属部门",
-    invalid_type_error: "部门必须是数字"
-  })
+  organ: z.array(z.number()).default([])
 });
 
 const MANAGE_HTTP_PREFIX = "/manage/api/v1";
@@ -93,6 +91,16 @@ const MembersDataTable = () => {
       accessorKey: "create_time",
       header: "创建时间",
     },
+    {
+      header: "操作",
+      cell: ({row}) => <div className={"flex"}>
+        <Edit
+          size={16}
+          className="cursor-pointer hover:text-[#43ABFF] transition-colors"
+          onClick={() => handleEdit(row.original)}
+        />
+      </div>
+    }
   ];
 
   const {post} = useAjax();
@@ -104,6 +112,7 @@ const MembersDataTable = () => {
   );
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
+  const [currentUser, setCurrentUser] = useState<UserItem | null>(null);
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -127,7 +136,25 @@ const MembersDataTable = () => {
     mqtt_username: "admin",
     mqtt_password: "admin",
     role: 0,
-    organ: 0
+    organ: []
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setOpen(open);
+    if (!open) {
+      setCurrentUser(null);
+      form.reset(defaultValues);
+    }
+  };
+
+  const handleEdit = (user: UserItem) => {
+    setCurrentUser(user);
+    form.reset({
+      ...user,
+      user_type: user.user_type === "Web" ? 1 : 2,
+      password: undefined
+    });
+    setOpen(true);
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -140,11 +167,15 @@ const MembersDataTable = () => {
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log("values", values);
-    const res: any = await post(`${MANAGE_HTTP_PREFIX}/users/save`, values);
+    const body = currentUser ? {
+      ...values,
+      id: currentUser.id,
+      ...(values.password ? {} : { password: undefined })
+    } : values;
+    const res: any = await post(`${MANAGE_HTTP_PREFIX}/users/save`, body);
     if (res.data.code === 0) {
       toast({
-        description: "用户创建成功！"
+        description: `${currentUser ? "更新" : "创建"}用户成功！`
       });
       form.reset(defaultValues);
       setOpen(false);
@@ -181,7 +212,7 @@ const MembersDataTable = () => {
           {/*<Button className={"bg-[#43ABFF]"}>重置</Button>*/}
         </div>
         <div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger>
               <Button className={"bg-[#43ABFF] w-24"}>添加</Button>
             </DialogTrigger>
@@ -203,7 +234,7 @@ const MembersDataTable = () => {
                     )}
                     name={"name"}
                   />
-                  <FormField
+                  {!currentUser && <FormField
                     control={form.control}
                     render={({field}) => (
                       <FormItem className={"grid grid-cols-4 items-center gap-4"}>
@@ -214,8 +245,8 @@ const MembersDataTable = () => {
                       </FormItem>
                     )}
                     name={"username"}
-                  />
-                  <FormField
+                  />}
+                  {!currentUser && <FormField
                     control={form.control}
                     render={({field}) => (
                       <FormItem className={"grid grid-cols-4 items-center gap-4"}>
@@ -226,7 +257,7 @@ const MembersDataTable = () => {
                       </FormItem>
                     )}
                     name={"password"}
-                  />
+                  />}
                   <FormField
                     control={form.control}
                     render={({field: {value, onChange, ...field}}) => (
@@ -286,7 +317,7 @@ const MembersDataTable = () => {
                     name={"role"}
                   />
                   <DialogFooter>
-                    <Button type="submit">创建</Button>
+                    <Button type="submit">确认</Button>
                   </DialogFooter>
                 </form>
               </Form>

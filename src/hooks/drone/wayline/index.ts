@@ -119,7 +119,7 @@ export const removePyramid = () => {
 };
 
 // 添加棱锥和中心线
-export const addPyramid = ({position, direction,sideAndDistance}: {
+export const addPyramid = ({position, direction, sideAndDistance}: {
   position: {
     longitude: number, latitude: number, height: number
   }
@@ -139,7 +139,7 @@ export const addPyramid = ({position, direction,sideAndDistance}: {
       id: "center-line",
       polyline: {
         positions: new Cesium.CallbackProperty(() => {
-          const {side,distance} = sideAndDistance
+          const {distance} = sideAndDistance;
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
           // let direction = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3())  // 方向单位向量
@@ -158,7 +158,7 @@ export const addPyramid = ({position, direction,sideAndDistance}: {
       id: "bottom-polygon",
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
-          const {side,distance} = sideAndDistance
+          const {side, distance} = sideAndDistance;
           const positions = [];
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
@@ -188,7 +188,7 @@ export const addPyramid = ({position, direction,sideAndDistance}: {
       id: "left-polygon",
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
-          const {side,distance} = sideAndDistance
+          const {side, distance} = sideAndDistance;
           let positions = [];
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
@@ -228,7 +228,7 @@ export const addPyramid = ({position, direction,sideAndDistance}: {
       id: "right-polygon",
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
-          const {side,distance} = sideAndDistance
+          const {side, distance} = sideAndDistance;
           let positions = [];
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
@@ -268,7 +268,7 @@ export const addPyramid = ({position, direction,sideAndDistance}: {
       id: "front-polygon",
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
-          const {side,distance} = sideAndDistance
+          const {side, distance} = sideAndDistance;
           let positions = [];
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
@@ -308,7 +308,7 @@ export const addPyramid = ({position, direction,sideAndDistance}: {
       id: "top-polygon",
       polygon: {
         hierarchy: new Cesium.CallbackProperty(() => {
-          const {side,distance} = sideAndDistance
+          const {side, distance} = sideAndDistance;
           let positions = [];
           const {longitude, latitude, height} = position;
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
