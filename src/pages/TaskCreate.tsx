@@ -1,4 +1,3 @@
-import GMap from "@/components/drone/public/GMap.tsx";
 import {Camera, CircleMinus, CirclePlus, Minus, Rocket, User, X} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 import {Input} from "@/components/ui/input.tsx";
@@ -318,7 +317,7 @@ const TaskCreate = () => {
   );
   const BindDeviceList = () => (<>
     {!bindingDevices || bindingDevices.list.length === 0 ? <div className={"content-center py-8 text-[#d0d0d0]"}>
-      暂无数据
+      暂无设备
     </div> : bindingDevices.list.map(device =>
       <div key={device.device_sn}
            onClick={() => {

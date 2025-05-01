@@ -19,7 +19,7 @@ const Members = () => {
     },
     {
       name: "角色管理",
-      table: <Table/>
+      table: <RoleDataTable/>
     },
     {
       name: "用户管理",

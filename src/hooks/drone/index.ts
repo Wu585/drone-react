@@ -126,6 +126,17 @@ export interface Device {
   firmware_status: number;
   thing_version: string;
   id: number;
+  insurance: string;
+  insurance_file_key: string;
+  insurance_begin_time: number;
+  insurance_end_time: number;
+  maintenanceRecords: {
+    device_sn: string
+    maintenance_type: number
+    maintenance_time: number
+    flight_count: number
+    maintenance_desc: string
+  }[];
 }
 
 export interface ChildDevice {
@@ -167,6 +178,13 @@ export const useBindingDevice = (workspace_id: string, body: Pagination & {
   const url = `${HTTP_PREFIX}/devices/${workspace_id}/devices/bound`;
   const key = body ? [url, body] as const : null;
   return useSWR(key, async ([path, body]) => (await get<Resource<BindingDevice>>(path, body)).data.data);
+};
+
+// 获取文件地址
+export const useFileUrl = (fileId: string) => {
+  const {post} = useAjax();
+  const key = fileId ? [`${OPERATION_HTTP_PREFIX}/file/getUrl?key=${fileId}`] : false;
+  return useSWR(key, async ([path]) => (await post<Resource<string>>(path)).data.data);
 };
 
 /**
@@ -350,6 +368,15 @@ export interface UserItem {
   role: number;
   workspace_id: string;
   organs: number[];
+  resources: {
+    create_time: string;
+    id: number
+    name: string
+    parent: number
+    type: number
+    uu_key: string
+    url: string
+  }[];
 }
 
 interface MembersData {

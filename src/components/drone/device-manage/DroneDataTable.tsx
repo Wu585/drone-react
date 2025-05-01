@@ -18,9 +18,10 @@ import {toast} from "@/components/ui/use-toast.ts";
 import {EditDeviceDialog, EditDeviceFormValues} from "./EditDeviceDialog";
 
 const HTTP_PREFIX = "/manage/api/v1";
-const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
 const DroneDataTable = () => {
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+
   const [currentDevice, setCurrentDevice] = useState<Device | null>(null);
   const [open, setOpen] = useState(false);
   const {put} = useAjax();

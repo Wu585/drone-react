@@ -75,7 +75,7 @@ const DebugPanel = ({sn, onClose}: Props) => {
       height: realTimeDeviceInfo.dock.basic_osd.height
     };
     const res: any = await post(`${CMD_API_PREFIX}/devices/${sn}/jobs/${DeviceCmd.RtkCalibration}`, {
-      device: [
+      devices: [
         {
           sn,
           type: 1,

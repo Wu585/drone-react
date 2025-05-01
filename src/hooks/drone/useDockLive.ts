@@ -3,6 +3,7 @@ import AgoraRTC, {IAgoraRTCClient, IAgoraRTCRemoteUser} from "agora-rtc-sdk-ng";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useCapacity} from "@/hooks/drone/index.ts";
 import {useAjax} from "@/lib/http.ts";
+import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 
 export const AGORA_APP_ID = "066e9b3262924e5680048ed3472c3070";
 const MANAGE_HTTP_PREFIX = "/manage/api/v1";
@@ -14,6 +15,7 @@ export const useDockLive = (ele: string, dockSn: string, cameraIndex?: string) =
   // dock流畅度
   const [dockPosition, setDockPosition] = useState("0");
   const [currentMode, setCurrentMode] = useState("normal");
+  const realtimeInfo = useRealTimeDeviceInfo()
   const [agoraLiveParam, setAgoraLiveParam] = useState({
     channel: "",
     token: ""
@@ -47,6 +49,9 @@ export const useDockLive = (ele: string, dockSn: string, cameraIndex?: string) =
       // onStopLiveStream();
     };
   }, []);
+
+  console.log('realtimeInfo');
+  console.log(realtimeInfo);
 
   const dockCamera = capacityData?.find(item => item.sn === dockSn);
   console.log('dockCamera');

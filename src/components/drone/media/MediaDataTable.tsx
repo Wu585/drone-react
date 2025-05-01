@@ -50,7 +50,6 @@ import {getMediaType} from "@/hooks/drone/order";
 import {useNavigate} from "react-router-dom";
 import {useMapLoadMedia} from "@/hooks/drone/map-photo";
 
-const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
 const fallbackData: FileItem[] = [];
@@ -287,6 +286,8 @@ interface Props {
 }
 
 const MediaDataTable = ({onChangeDir}: Props) => {
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+
   const {get} = useAjax();
   const navigate = useNavigate();
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());

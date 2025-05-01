@@ -9,7 +9,7 @@ import {zhCN} from "date-fns/locale";
 import {Calendar} from "@/components/ui/calendar.tsx";
 
 interface Props {
-  date: Date[] | undefined;
+  date?: Date[] | undefined;
   setDate: (date: Date[] | undefined) => void;
   className?: string;
 }

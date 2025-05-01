@@ -104,7 +104,7 @@ const WorkOrderDataTable = () => {
   const [open, setOpen] = useState(false);
 
   const {data: currentUser} = useCurrentUser();
-  const {post} = useAjax()
+  const {post} = useAjax();
   const isGly = currentUser?.role === 3;
   const urlFix = isGly ? "page" : "pageByOperator";
   const [currentOrder, setCurrentOrder] = useState<WorkOrder | null>(null);
@@ -293,7 +293,7 @@ const WorkOrderDataTable = () => {
       multiple
       autoUpload>
       <div className="space-y-4">
-        <div className="mb-4 text-right">
+        <div className="mb-4 text-right space-x-2">
           <Dialog open={open} onOpenChange={(value) => {
             console.log("Dialog onOpenChange:", value);
             if (!value) {
@@ -428,7 +428,7 @@ const WorkOrderDataTable = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button onClick={onExportOrder}>导出工单报告</Button>
+          <Button className={"bg-[#43ABFF] w-24"} onClick={onExportOrder}>导出工单报告</Button>
         </div>
 
         <div className="rounded-md border border-[#0A81E1] overflow-hidden">

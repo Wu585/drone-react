@@ -111,8 +111,8 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
   const longitude = form.watch("longitude");
 
   // 格式化经纬度，保留三位小数
-  const formattedLatitude = typeof latitude === "number" ? latitude.toFixed(3) : "";
-  const formattedLongitude = typeof longitude === "number" ? longitude.toFixed(3) : "";
+  const formattedLatitude = typeof latitude === "number" ? latitude.toFixed(5) : "";
+  const formattedLongitude = typeof longitude === "number" ? longitude.toFixed(5) : "";
 
   useEffect(() => {
     !isPreview && pickPosition(({longitude, latitude}) => {

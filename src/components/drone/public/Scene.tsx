@@ -1,16 +1,11 @@
 import {useEffect} from "react";
 import {findMapLayer, resetView} from "@/lib/view.ts";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
-import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-source.ts";
-import {getImageUrl} from "@/lib/utils.ts";
-import {selfFacilityList} from "@/components/facilities/FacilityProperty.tsx";
-import bmssPoint from "@/assets/images/bmss-point.png";
 import dockPng from "@/assets/images/drone/dock.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
 import {useConnectMqtt} from "@/hooks/drone/useConnectMqtt.ts";
-import {useAddAllElements} from "@/hooks/drone/elements";
 
 const mapLayerList = [
   {

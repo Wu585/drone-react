@@ -60,6 +60,9 @@ const TaskList = () => {
           </div>
           <div>
             <Button className={"mx-4 mt-2 bg-[#43ABFF] hover:bg-[#43ABFF]"} onClick={() => navigate("/task-create")}>
+              <span>申请任务</span>
+            </Button>
+            <Button className={"mx-4 mt-2 bg-[#43ABFF] hover:bg-[#43ABFF]"} onClick={() => navigate("/task-create")}>
               <span>创建任务</span>
             </Button>
             <Button className={"mx-4 mt-2 bg-[#43ABFF] hover:bg-[#43ABFF]"} onClick={onGenerateReports}>

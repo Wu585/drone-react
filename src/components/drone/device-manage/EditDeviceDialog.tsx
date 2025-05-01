@@ -1,12 +1,12 @@
-import { Device } from "@/hooks/drone";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useEffect } from "react";
+import {Device} from "@/hooks/drone";
+import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {z} from "zod";
+import {useEffect} from "react";
 
 export interface EditDeviceFormValues {
   nickname: string;
@@ -19,22 +19,22 @@ const editDeviceFormSchema = z.object({
 export interface EditDeviceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  device: Device | null;
+  device?: Device;
   title?: string;
   label?: string;
   placeholder?: string;
   onSubmit: (values: EditDeviceFormValues) => Promise<void>;
 }
 
-export const EditDeviceDialog = ({ 
-  open, 
-  onOpenChange, 
-  device, 
-  title = "设备编辑",
-  label = "设备名称：",
-  placeholder = "输入设备名称",
-  onSubmit 
-}: EditDeviceDialogProps) => {
+export const EditDeviceDialog = ({
+                                   open,
+                                   onOpenChange,
+                                   device,
+                                   title = "设备编辑",
+                                   label = "设备名称：",
+                                   placeholder = "输入设备名称",
+                                   onSubmit
+                                 }: EditDeviceDialogProps) => {
   const form = useForm<EditDeviceFormValues>({
     resolver: zodResolver(editDeviceFormSchema),
     defaultValues: {
@@ -44,7 +44,7 @@ export const EditDeviceDialog = ({
 
   useEffect(() => {
     if (device) {
-      form.reset({ nickname: device.nickname || "" });
+      form.reset({nickname: device.nickname || ""});
     }
   }, [device, form]);
 
@@ -92,4 +92,4 @@ export const EditDeviceDialog = ({
       </DialogContent>
     </Dialog>
   );
-}; 
+};

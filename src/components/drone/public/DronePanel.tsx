@@ -36,21 +36,18 @@ import {useDockLive} from "@/hooks/drone/useDockLive.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
 import DebugPanel from "@/components/drone/public/DebugPanel.tsx";
 import {copyToClipboard} from "@/hooks/drone/media";
+import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
 
 const DronePanel = () => {
   const osdVisible = useSceneStore(state => state.osdVisible);
-  console.log('osdVisible');
-  console.log(osdVisible);
   const setOsdVisible = useSceneStore(state => state.setOsdVisible);
   const {visible, hide, show} = useVisible();
   const {visible: debugPanelvisible, hide: hideDebugPanel, show: showDebugPanel} = useVisible();
   const navigate = useNavigate();
   const deviceInfo = useRealTimeDeviceInfo();
-  console.log('deviceInfo');
-  console.log(deviceInfo);
   const [takeOffType, setTakeOffType] = useState<"take-off" | "fly-to">("take-off");
   const {sendDockControlCmd} = useDockControl();
   const {visible: dockVideoVisible, show: showDockVideo, hide: hideDockVideo} = useVisible();
@@ -283,29 +280,36 @@ const DronePanel = () => {
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <div className={"grid grid-cols-12"}>
-              <span
+            <div className={"flex justify-between"}>
+              <PermissionButton
+                permissionKey={"Collection_LiveStream"}
                 onClick={() => dockVideoVisible ? onStopLiveStream() : onStartLiveStream()}
-                className={cn("col-span-8 rounded-[2px] cursor-pointer content-center py-[2px] bg-[#104992]/[.85]",
+                className={cn("h-[24px] rounded-[2px] px-20 cursor-pointer content-center py-[2px] bg-[#104992]/[.85]",
                   dockVideoVisible ? "border-[#43ABFF] border-[1px]" : "")}>
                 机场直播
-              </span>
-              <span className={"col-span-4 content-center flex justify-end space-x-2"}>
+              </PermissionButton>
+              <div className={"col-span-4 content-center flex justify-end space-x-4"}>
                 {dockVideoVisible && (
-                  <div className={"flex space-x-2"}>
-                    <Maximize2
-                      size={17}
-                      className="cursor-pointer"
-                      onClick={toggleDockFullscreen}
-                    />
-                    <Forward size={17} className="cursor-pointer" onClick={onShareDockLink}/>
+                  <div className={"flex h-[24px] space-x-4"}>
+                    <Button className={"px-0 bg-transparent h-[24px]"} onClick={toggleDockFullscreen}>
+                      <Maximize2
+                        size={17}
+                      />
+                    </Button>
+                    <PermissionButton className={"bg-transparent h-[24px] px-0"} permissionKey={"Button_LiveShare"}
+                                      onClick={onShareDockLink}>
+                      <Forward size={17} onClick={onShareDockLink}/>
+                    </PermissionButton>
                   </div>
                 )}
-                <Settings onClick={() => {
-                  hide();
-                  showDebugPanel();
-                }} className={"cursor-pointer"} size={17}/>
-              </span>
+                <PermissionButton className={"h-[24px] bg-transparent px-0"} permissionKey={"Collection_DeviceDebug"}
+                                  onClick={() => {
+                                    hide();
+                                    showDebugPanel();
+                                  }}>
+                  <Settings size={17}/>
+                </PermissionButton>
+              </div>
             </div>
             <div
               className={cn(
@@ -585,11 +589,11 @@ const DronePanel = () => {
                 <Button key={cmdItem.cmdKey} onClick={() => sendControlCmd(cmdItem)}
                         className={"bg-[#104992]/[.85] h-6 w-14"}>{cmdItem.operateText}</Button>)}
             </div>
-            <div className={"content-center space-x-4 bg-[#104992]/[.85] px-2 py-[2px] cursor-pointer"}
+            <PermissionButton permissionKey={"Button_EnterVirtualCockpit"} className={"content-center space-x-4 h-[24px] bg-[#104992]/[.85] px-2 py-[2px] cursor-pointer"}
                  onClick={onClickCockpit}>
               <Airplay size={16}/>
               <span>虚拟座舱</span>
-            </div>
+            </PermissionButton>
           </div>
         </div>
       </div>

@@ -23,9 +23,6 @@ const Tsa = () => {
     setOsdVisible
   } = useSceneStore();
 
-  console.log('deviceState');
-  console.log(deviceState);
-
   const {post} = useAjax();
   const {onlineDocks} = useOnlineDocks();
   const realTime = useRealTimeDeviceInfo();

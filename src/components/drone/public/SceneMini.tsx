@@ -1,5 +1,8 @@
-import {useEffect} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {findMapLayer} from "@/lib/view.ts";
+import {Slider} from "@/components/ui/slider.tsx";
+import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group.tsx";
+import {Bold, Italic, Underline} from "lucide-react";
 
 const mapLayerList = [
   {
@@ -28,9 +31,30 @@ interface Props {
     pitch: number
   };
   onChangeHp?: (hp: Props["hp"]) => void;
+  onZoomChange?: (value: number) => void;
+  onChangeMode?: (mode: string) => void;
 }
 
-const SceneMini = ({initialPosition, onCameraChange, hp, onChangeHp}: Props) => {
+const SceneMini = ({initialPosition, onCameraChange, hp, onChangeHp, onZoomChange, onChangeMode}: Props) => {
+  const [zoomValue, setZoomValue] = useState(5);
+
+  // 计算绿色边框样式
+  const greenBorderStyle = useMemo(() => {
+    // 宽度映射: zoom 5->20 映射到 width 20->5
+    const width = -1 * zoomValue + 25;
+
+    // 位置映射: zoom 5->20 映射到 position 140->170
+    // m = (y2-y1)/(x2-x1) = (170-140)/(20-5) = 2
+    // b = y1 - mx1 = 140 - (2 * 5) = 130
+    const position = 2 * zoomValue + 130;
+
+    return {
+      width: `${width}px`,
+      height: `${width}px`,
+      position: `${position}px`,
+    };
+  }, [zoomValue]);
+
   useEffect(() => {
     window.viewer2 = new Cesium.Viewer("cesiumContainerMini", {
       shadows: false,
@@ -148,29 +172,88 @@ const SceneMini = ({initialPosition, onCameraChange, hp, onChangeHp}: Props) => 
     };
   }, []);
 
+  const _onZoomChange = (value: number[]) => {
+    setZoomValue(value[0]);
+    onZoomChange?.(value[0]);
+  };
+
+  const _onChangeMode = (value: string) => {
+    onChangeMode?.(value);
+  };
+
   return (
     <div className="relative h-full">
-      <div id="cesiumContainerMini" className="h-full rounded-lg border-[1px] border-white"></div>
+      <div id="cesiumContainerMini" className="h-full border-[1px] border-white"></div>
 
-      {/* 红色边框角 */}
+      {/* 红色边框角 - 固定大小和位置 */}
       <div
-        className="absolute w-[100px] h-[80px] z-[2] left-[60px] top-[40px] border-t-2 border-l-2 border-red-500 pointer-events-none"></div>
+        className="absolute w-[100px] h-[80px] z-[2] left-[60px] top-[40px] border-t-2 border-l-2 border-red-500 pointer-events-none"/>
       <div
-        className="absolute w-[100px] h-[80px] z-[2] right-[60px] top-[40px] border-t-2 border-r-2 border-red-500 pointer-events-none"></div>
+        className="absolute w-[100px] h-[80px] z-[2] right-[60px] top-[40px] border-t-2 border-r-2 border-red-500 pointer-events-none"/>
       <div
-        className="absolute w-[100px] h-[80px] z-[2] right-[60px] bottom-[40px] border-b-2 border-r-2 border-red-500 pointer-events-none"></div>
+        className="absolute w-[100px] h-[80px] z-[2] right-[60px] bottom-[40px] border-b-2 border-r-2 border-red-500 pointer-events-none"/>
       <div
-        className="absolute w-[100px] h-[80px] z-[2] left-[60px] bottom-[40px] border-b-2 border-l-2 border-red-500 pointer-events-none"></div>
+        className="absolute w-[100px] h-[80px] z-[2] left-[60px] bottom-[40px] border-b-2 border-l-2 border-red-500 pointer-events-none"/>
 
-      {/* 绿色边框角 */}
+      {/* 绿色边框角 - 动态大小和位置 */}
       <div
-        className="absolute w-[50px] h-[40px] z-[2] left-[120px] top-[100px] border-t-2 border-l-2 border-green-500 pointer-events-none"></div>
+        className="absolute z-[2] border-t-2 border-l-2 border-green-500 pointer-events-none"
+        style={{
+          width: greenBorderStyle.width,
+          height: greenBorderStyle.height,
+          left: greenBorderStyle.position,
+          top: `${parseInt(greenBorderStyle.position) - 25}px`,
+        }}
+      />
       <div
-        className="absolute w-[50px] h-[40px] z-[2] right-[120px] top-[100px] border-t-2 border-r-2 border-green-500 pointer-events-none"></div>
+        className="absolute z-[2] border-t-2 border-r-2 border-green-500 pointer-events-none"
+        style={{
+          width: greenBorderStyle.width,
+          height: greenBorderStyle.height,
+          right: greenBorderStyle.position,
+          top: `${parseInt(greenBorderStyle.position) - 25}px`,
+        }}
+      />
       <div
-        className="absolute w-[50px] h-[40px] z-[2] right-[120px] bottom-[100px] border-b-2 border-r-2 border-green-500 pointer-events-none"></div>
+        className="absolute z-[2] border-b-2 border-r-2 border-green-500 pointer-events-none"
+        style={{
+          width: greenBorderStyle.width,
+          height: greenBorderStyle.height,
+          right: greenBorderStyle.position,
+          bottom: `${parseInt(greenBorderStyle.position) - 25}px`,
+        }}
+      />
       <div
-        className="absolute w-[50px] h-[40px] z-[2] left-[120px] bottom-[100px] border-b-2 border-l-2 border-green-500 pointer-events-none"></div>
+        className="absolute z-[2] border-b-2 border-l-2 border-green-500 pointer-events-none"
+        style={{
+          width: greenBorderStyle.width,
+          height: greenBorderStyle.height,
+          left: greenBorderStyle.position,
+          bottom: `${parseInt(greenBorderStyle.position) - 25}px`,
+        }}
+      />
+
+      <ToggleGroup className={"absolute left-1/2 -translate-x-1/2 top-2 bg-gray-500"}
+                   type="single"
+                   onValueChange={_onChangeMode}
+                   defaultValue={"wide"}
+      >
+        <ToggleGroupItem value="wide" aria-label="Toggle bold">
+          广角
+        </ToggleGroupItem>
+        <ToggleGroupItem value="zoom" aria-label="Toggle italic">
+          变焦
+        </ToggleGroupItem>
+      </ToggleGroup>
+
+      <Slider
+        onValueChange={_onZoomChange}
+        min={5}
+        max={20}
+        defaultValue={[5]}
+        orientation={"vertical"}
+        className={"absolute right-4 top-12 border-2 h-[200px] w-[12px] bg-gray-500 border-none rounded-lg"}
+      />
     </div>
   );
 };

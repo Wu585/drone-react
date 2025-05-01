@@ -349,12 +349,12 @@ const CreateWayLine = () => {
   // 点击选中某个航点图标
   useEffect(() => {
     const handler: any = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-    handler.setInputAction(({position}: { position: any }) => {
+    handler.setInputAction(() => {
       const selectedEntity: any = viewer.selectedEntity;
       if (!selectedEntity) return;
       const id = +selectedEntity.id + 1;
       setSelectedWaypointId(id);
-      getCustomSource("waylines-create")?.entities.values.forEach(item => {
+      /*getCustomSource("waylines-create")?.entities.values.forEach(item => {
         if (item.billboard) {
           item.billboard.color = Cesium.Color.WHITE;
         }
@@ -362,7 +362,7 @@ const CreateWayLine = () => {
       const entity = getCustomSource("waylines-create")?.entities.getById(selectedEntity.id);
       if (entity && entity.billboard) {
         entity.billboard.color = Cesium.Color.YELLOW;
-      }
+      }*/
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
     return () => {
@@ -653,6 +653,24 @@ const CreateWayLine = () => {
           });
           break;
         }
+        case "KeyC": { // 升高
+          // pyramidPositionRef.current.position.longitude = dronePositionRef.current.longitude = longitude;
+          // pyramidPositionRef.current.position.latitude = dronePositionRef.current.latitude = latitude;
+          pyramidPositionRef.current.position.height = dronePositionRef.current.height += 0.5;
+          setMiniSceneCameraPosition({
+            ...miniSceneCameraPosition, height: pyramidPositionRef.current.position.height
+          });
+          break;
+        }
+        case "KeyZ": { // 升高
+          // pyramidPositionRef.current.position.longitude = dronePositionRef.current.longitude = longitude;
+          // pyramidPositionRef.current.position.latitude = dronePositionRef.current.latitude = latitude;
+          pyramidPositionRef.current.position.height = dronePositionRef.current.height -= 0.5;
+          setMiniSceneCameraPosition({
+            ...miniSceneCameraPosition, height: pyramidPositionRef.current.position.height
+          });
+          break;
+        }
         case "KeyQ": { // 左旋转
           const oldHeading = dronePositionRef.current.heading || 0;
           dronePositionRef.current.heading = oldHeading - rotateSpeed;
@@ -747,6 +765,58 @@ const CreateWayLine = () => {
     }));
   }, [waypoints, form, takeoffPoint, takeoffPointEndHeight, globalHeight, takeOffSecurityHeight, fly_to_wayline_mode]);
 
+  const onZoomChange = (zoom: number) => {
+    if (!pyramidPositionRef.current) return;
+    // 线性映射公式: y = mx + b
+    // zoom: 5 -> 20 映射到 side: 50 -> 20
+    // m = (y2-y1)/(x2-x1) = (20-50)/(20-5) = -2
+    // b = y1 - mx1 = 50 - (-2 * 5) = 60
+    const side = -2 * zoom + 60;
+    pyramidPositionRef.current.sideAndDistance.side = side;
+    removePyramid();
+    addPyramid(pyramidPositionRef.current);
+  };
+
+  const onChangeMode = (mode: string) => {
+    if (mode === "zoom" && pyramidPositionRef.current && miniSceneCameraPosition) {
+      const {position, direction, sideAndDistance} = pyramidPositionRef.current;
+      const {longitude, latitude, height} = position;
+
+      // 计算相机位置 - 降低高度到30米
+      setMiniSceneCameraPosition({
+        longitude,
+        latitude,
+        height: 30
+      });
+
+      // 计算相机朝向
+      // 使用中心线的方向来计算heading
+      const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
+      const centerPosition = Cesium.Cartesian3.add(
+        topPosition,
+        Cesium.Cartesian3.multiplyByScalar(direction, sideAndDistance.distance, new Cesium.Cartesian3()),
+        new Cesium.Cartesian3()
+      );
+
+      // 计算heading角度
+      const cartographic = Cesium.Cartographic.fromCartesian(centerPosition);
+      const centerLongitude = Cesium.Math.toDegrees(cartographic.longitude);
+      const centerLatitude = Cesium.Math.toDegrees(cartographic.latitude);
+
+      // 计算方位角
+      const heading = Math.atan2(
+        centerLongitude - longitude,
+        centerLatitude - latitude
+      );
+
+      // 设置相机角度 - 添加一定的俯仰角以获得更好的视角
+      setMiniSceneCameraHp({
+        heading: heading,
+        pitch: -0.3 // 约-17度的俯仰角
+      });
+    }
+  };
+
   useEffect(() => {
     if (!takeoffPoint) return;
     // 只有起飞点 无航点
@@ -780,11 +850,12 @@ const CreateWayLine = () => {
       const longitude = waypoints[index].longitude;
       const latitude = waypoints[index].latitude;
       const height = waypoints[index].useGlobalHeight ? globalHeight : waypoints[index].height!;
+      const heading = waypoints[index].actions?.find(action => action.func === "rotateYaw")?.param || 0;
       dronePositionRef.current = {
         longitude,
         latitude,
         height,
-        heading: 0
+        heading
       };
       const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
       const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
@@ -794,7 +865,7 @@ const CreateWayLine = () => {
           latitude,
           height,
         },
-        direction: Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
+        direction: pyramidPositionRef.current?.direction || Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
         sideAndDistance: {
           side: 50,
           distance: 200
@@ -1206,10 +1277,9 @@ const CreateWayLine = () => {
                           className="p-1 hover:bg-[#4c4c4c] rounded"
                           onClick={() => {
                             // 编辑航点
-                            console.log("waypoints");
-                            console.log(waypoints);
                             setWayPointOpen(true);
                             setCurrentWayPoint(waypoint);
+                            setSelectedWaypointId(index + 1);
                           }}>
                           编辑
                         </button>
@@ -2447,16 +2517,18 @@ const CreateWayLine = () => {
             </Popover>
           </div>
         </header>
-        <div className={"flex-1 relative"}>
+        <div className={"flex-1 relative overflow-hidden"}>
           <Scene/>
-          <div className={"absolute bottom-0 right-[80px] w-[360px] h-[280px] overflow-hidden"}>
-            {/*<Compass/>*/}
+          <div className={"absolute bottom-0 right-[80px] w-[360px] h-[280px]"}>
             {miniSceneCameraPosition && <SceneMini onCameraChange={onCameraChange}
                                                    hp={miniSceneCameraHp}
                                                    onChangeHp={setMiniSceneCameraHp}
-                                                   initialPosition={miniSceneCameraPosition}/>}
+                                                   initialPosition={miniSceneCameraPosition}
+                                                   onZoomChange={onZoomChange}
+                                                   onChangeMode={onChangeMode}
+            />}
           </div>
-          <div className={"absolute bottom-0 right-[580px] w-[360px] h-[280px] overflow-hidden"}>
+          <div className={"absolute bottom-12 left-1/2 -translate-x-1/2 overflow-hidden"}>
             {miniSceneCameraPosition && <Compass heading={miniSceneCameraHp?.heading || 0}/>}
           </div>
           <div className={"absolute right-0 bottom-0 z-100"}>
