@@ -12,7 +12,7 @@ import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
 import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePicker.tsx";
-import {useMemo, useState, useEffect} from "react";
+import {useMemo} from "react";
 import {Device, useFileUrl} from "@/hooks/drone";
 import {useAjax} from "@/lib/http.ts";
 import dayjs from "dayjs";
@@ -65,36 +65,27 @@ const InsuranceSheet = ({open, onOpenChange, device}: Props) => {
     insurance_file_key: ""
   };
 
-  console.log("defaultValues");
-  console.log(defaultValues);
-
   const {data: pdfUrl} = useFileUrl(device?.insurance_file_key || "");
-  console.log("pdfUrl");
-  console.log(pdfUrl);
 
   const form = useForm<insuranceFormValues>({
     resolver: zodResolver(insuranceSchema),
-    defaultValues
+    defaultValues,
+    values: {
+      device_sn: device?.device_sn || "",
+      insurance: device?.insurance || "",
+      insurance_time: {
+        insurance_begin_time: device?.insurance_begin_time ? dayjs(device?.insurance_begin_time).format("YYYY-MM-DD HH:mm:ss") : "",
+        insurance_end_time: device?.insurance_end_time ? dayjs(device?.insurance_end_time).format("YYYY-MM-DD HH:mm:ss") : ""
+      },
+      insurance_file_key: device?.insurance_file_key || ""
+    }
   });
 
-  useEffect(() => {
-    device && form.reset({
-      device_sn: device.device_sn || "",
-      insurance: device.insurance || "",
-      insurance_time: {
-        insurance_begin_time: device.insurance_begin_time ? dayjs(device.insurance_begin_time).format("YYYY-MM-DD HH:mm:ss") : "",
-        insurance_end_time: device.insurance_end_time ? dayjs(device.insurance_end_time).format("YYYY-MM-DD HH:mm:ss") : ""
-      },
-      insurance_file_key: device.insurance || ""
-    });
-  }, [device, form]);
-
-  const [fileName, setFileName] = useState("");
-
-  const insurance_time = form.watch("insurance_time");
+  const insurance_time = form.getValues("insurance_time");
 
   const dateRange = useMemo(() => {
-    if (!insurance_time.insurance_begin_time || !insurance_time.insurance_end_time) return [];
+    if (!insurance_time.insurance_begin_time || !insurance_time.insurance_end_time) return;
+
     const begin_time = dayjs(insurance_time.insurance_begin_time).toDate();
     const end_time = dayjs(insurance_time.insurance_end_time).toDate();
     return [begin_time, end_time];
@@ -112,9 +103,8 @@ const InsuranceSheet = ({open, onOpenChange, device}: Props) => {
     });
   };
 
-  useItemFinishListener(async ({uploadResponse, file}) => {
+  useItemFinishListener(async ({uploadResponse}) => {
     if (uploadResponse?.data?.data) {
-      setFileName(file.name);
       form.setValue("insurance_file_key", uploadResponse?.data?.data);
       toast({
         description: "上传成功！"
@@ -205,7 +195,7 @@ const InsuranceSheet = ({open, onOpenChange, device}: Props) => {
               />
               <FormField
                 control={form.control}
-                render={() => (
+                render={({field}) => (
                   <FormItem className="grid grid-cols-4 items-center gap-4">
                     <FormLabel className="text-right">
                       保单文件
@@ -215,7 +205,7 @@ const InsuranceSheet = ({open, onOpenChange, device}: Props) => {
                         <div className="relative">
                           <Input
                             disabled
-                            value={fileName}
+                            value={field.value}
                             readOnly
                             placeholder="请选择PDF文件"
                             className="pr-24"

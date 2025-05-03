@@ -150,7 +150,10 @@ const DockDataTable = () => {
             <BookImage
               size={16}
               className="cursor-pointer hover:text-[#43ABFF] transition-colors"
-              onClick={() => setMaintainanceSheetVisible(true)}
+              onClick={() => {
+                setMaintainanceSheetVisible(true);
+                setCurrentDock(row.original);
+              }}
             />
           </div>
         );
@@ -217,27 +220,28 @@ const DockDataTable = () => {
           onSubmit={handleSubmit}
         />
         <InsuranceSheet device={currentDock} open={insuranceSheetVisible} onOpenChange={setInsuranceSheetVisible}/>
-        <MaintainanceSheet open={maintainanceSheetVisible} onOpenChange={setMaintainanceSheetVisible}/>
+        <MaintainanceSheet device={currentDock} open={maintainanceSheetVisible}
+                           onOpenChange={setMaintainanceSheetVisible}/>
         <div className="flex-1 overflow-hidden border border-[#43ABFF] rounded">
-          <Table>            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="border-b border-[#43ABFF]">
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      className="bg-[#0A81E1]/70 text-white font-medium h-12"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
+          <Table> <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="border-b border-[#43ABFF]">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className="bg-[#0A81E1]/70 text-white font-medium h-12"
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
             <TableBody className="bg-[#0A4088]/70">
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (

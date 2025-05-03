@@ -21,7 +21,7 @@ const NewCommonDateRangePicker: FC<Props> = ({date, setDate, className}) => {
   }));
 
   useEffect(() => {
-    if (!date) {
+    if (!date || date.length !== 2) {
       setDateRange(undefined);
     } else if (date.length === 2) {
       setDateRange({
@@ -32,7 +32,7 @@ const NewCommonDateRangePicker: FC<Props> = ({date, setDate, className}) => {
   }, [date]);
 
   const handleSelect = (range: DateRange | undefined) => {
-    console.log('range');
+    console.log("range");
     console.log(range);
     setDateRange(range);
     if (range?.from && range?.to) {
