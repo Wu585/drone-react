@@ -17,6 +17,10 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import DatePicker from "@/components/public/DatePicker.tsx";
+import {useAjax} from "@/lib/http.ts";
+import {HTTP_PREFIX} from "@/api/manage.ts";
+import {ELocalStorageKey} from "@/types/enum.ts";
+import {toast} from "@/components/ui/use-toast.ts";
 
 interface Props {
   open: boolean;
@@ -39,7 +43,9 @@ const formSchema = z.object({
 type MaintainanceFormValues = z.infer<typeof formSchema>;
 
 const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   useInitialConnectWebSocket();
+  const {post} = useAjax();
   const deviceState = useSceneStore(state => state.deviceState);
   // console.log("deviceState");
   // console.log(deviceState);
@@ -62,6 +68,26 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
   const onSubmit = async (values: MaintainanceFormValues) => {
     console.log("values");
     console.log(values);
+    const maintenanceTime = dayjs(values.maintenance_time).valueOf();
+    console.log("maintenanceTime");
+    console.log(maintenanceTime);
+    const flightCount = currentDock ? currentDock.work_osd.job_number : 0;
+    const body = {
+      device_sn: deviceSn,
+      maintenance_type: values.maintenance_type,
+      maintenance_time: maintenanceTime,
+      flight_count: flightCount
+    };
+    try {
+      const res: any = await post(`${HTTP_PREFIX}/devices/${workspaceId}/maintenance`, body);
+      if (res.data.code === 0) {
+        toast({
+          description: "保养记录创建成功！"
+        });
+      }
+    } catch (err) {
+
+    }
   };
 
   return (
@@ -73,7 +99,7 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
         <div className="grid gap-4 py-4 border-2 px-2">
           <div className={"flex justify-between"}>
             <div>机场数据</div>
-            <div>sn: {device?.device_sn}</div>
+            <div>sn: {deviceSn}</div>
           </div>
           <div className={"grid grid-cols-3"}>
             <div className={"flex flex-col items-center justify-center"}>
@@ -210,8 +236,58 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
           <div>
             <div className={"flex items-center"}>
               <h3>保养项目</h3>
-              <Button>保养记录</Button>
-              <Button>添加记录</Button>
+              <Dialog>
+                <DialogTrigger>
+                  <Button className={"text-blue-500"} variant={"link"}>添加记录</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogTitle>添加记录</DialogTitle>
+                  <Form {...form}>
+                    <form className={"space-y-4"} onSubmit={form.handleSubmit(onSubmit)}>
+                      <FormField
+                        control={form.control}
+                        render={({field}) =>
+                          <FormItem className="grid grid-cols-4 items-center gap-x-4 space-y-0">
+                            <FormLabel className="text-right">
+                              保养类型
+                            </FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value.toString()}>
+                              <FormControl>
+                                <SelectTrigger className={"col-span-3"}>
+                                  <SelectValue placeholder="选择保养类型"/>
+                                  <FormMessage/>
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value={Maintainance.RoutineMaintenance.toString()}>常规保养</SelectItem>
+                                <SelectItem value={Maintainance.DeepMaintenance.toString()}>深度保养</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>}
+                        name={"maintenance_type"}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="maintenance_time"
+                        render={({field}) => (
+                          <FormItem className="grid grid-cols-4 items-center gap-x-4 space-y-0">
+                            <FormLabel className="text-right">保养时间</FormLabel>
+                            <div className={"col-span-3"}>
+                              <DatePicker className={"text-black hover:text-black justify-center"}
+                                          date={field.value}
+                                          setDate={field.onChange}/>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                      <DialogFooter>
+                        <Button type={"submit"}>确认</Button>
+                      </DialogFooter>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+              <Button className={"text-blue-500"} variant={"link"}>保养记录</Button>
             </div>
             <SheetDescription>为了保障机场的使用安全，请根据保养规则定期进行机场保养服务。</SheetDescription>
             <div className={"grid grid-cols-2"}>

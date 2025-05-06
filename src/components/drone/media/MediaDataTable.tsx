@@ -49,6 +49,7 @@ import UploadButton from "@rpldy/upload-button";
 import {getMediaType} from "@/hooks/drone/order";
 import {useNavigate} from "react-router-dom";
 import {useMapLoadMedia} from "@/hooks/drone/map-photo";
+import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
@@ -208,7 +209,8 @@ const InfiniteGridView = ({
               {file.type === MediaFileType.DIR ? (
                 <FolderClosed className="w-12 h-12 text-orange-400"/>
               ) : file.type === MediaFileType.VIDEO || getMediaType(file.preview_url) ? (
-                <div className="relative w-full aspect-square flex items-center justify-center bg-black/20 rounded-lg overflow-hidden">
+                <div
+                  className="relative w-full aspect-square flex items-center justify-center bg-black/20 rounded-lg overflow-hidden">
                   <video
                     loop
                     autoPlay
@@ -590,8 +592,9 @@ const MediaDataTable = ({onChangeDir}: Props) => {
         const isDownloading = downloadingIds.has(row.original.file_id);
         return (
           <div className={"flex items-center space-x-2"}>
-            {row.original.type !== MediaFileType.DIR && <span
-              className={`flex items-center ${isDownloading ? "opacity-50" : "cursor-pointer hover:opacity-80"}`}
+            {row.original.type !== MediaFileType.DIR && <PermissionButton
+              permissionKey={"Collection_MediaDownload"}
+              className={`flex items-center px-0 bg-transparent h-4 ${isDownloading ? "opacity-50" : "cursor-pointer hover:opacity-80"}`}
               onClick={() => {
                 if (!isDownloading) {
                   downloadMediaFile(workspaceId, row.original.file_id, row.original.file_name);
@@ -603,19 +606,30 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               ) : (
                 <Download size={18}/>
               )}
-            </span>}
-            <Edit
-              className="cursor-pointer hover:opacity-80"
-              size={18}
+            </PermissionButton>}
+            <PermissionButton
+              permissionKey={"Collection_MediaOperation"}
+              className={"bg-transparent h-4 px-0"}
               onClick={() => {
                 setEditingFile(row.original);
                 setInputName(row.original.file_name);
                 setIsEditDialogOpen(true);
               }}
-            />
+            >
+              <Edit
+                className="hover:opacity-80"
+                size={18}
+              />
+            </PermissionButton>
+
             <Dialog>
               <DialogTrigger asChild>
-                <Trash className={"cursor-pointer hover:opacity-80"} size={18}/>
+                <PermissionButton
+                  className={"bg-transparent h-4 px-0"}
+                  permissionKey={"Collection_MediaOperation"}
+                >
+                  <Trash className={"hover:opacity-80"} size={18}/>
+                </PermissionButton>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -909,12 +923,13 @@ const MediaDataTable = ({onChangeDir}: Props) => {
           {getSelectedFileIds().length > 0 && <>
             <Dialog>
               <DialogTrigger disabled={table.getSelectedRowModel().rows.length === 0}>
-                <Button
+                <PermissionButton
+                  permissionKey={"Collection_MediaOperation"}
                   disabled={table.getSelectedRowModel().rows.length === 0}
                   className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"
                 >
                   删除
-                </Button>
+                </PermissionButton>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -932,12 +947,13 @@ const MediaDataTable = ({onChangeDir}: Props) => {
             </Dialog>
             <Dialog>
               <DialogTrigger disabled={table.getSelectedRowModel().rows.length === 0}>
-                <Button
+                <PermissionButton
+                  permissionKey={"Collection_MediaOperation"}
                   disabled={table.getSelectedRowModel().rows.length === 0}
                   className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"
                 >
                   移动
-                </Button>
+                </PermissionButton>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -952,9 +968,13 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               </DialogContent>
             </Dialog>
             <Dialog open={createOrderVisible} onOpenChange={setCreateOrderVisible}>
-              <Button onClick={onClickCreateOrder} className={"bg-[#43ABFF] w-24 h-[36px]"}>
+              <PermissionButton
+                permissionKey={"Button_CreateTicket"}
+                onClick={onClickCreateOrder}
+                className={"bg-[#43ABFF] w-24 h-[36px]"}
+              >
                 创建工单
-              </Button>
+              </PermissionButton>
               <DialogContent className="max-w-screen-lg bg-[#0A4088]/[.7] text-white border-none">
                 <DialogHeader className={""}>
                   <DialogTitle>创建工单</DialogTitle>
@@ -973,14 +993,26 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"} onClick={onLoadMap}>地图加载</Button>
+            <PermissionButton
+              permissionKey={"Collection_MediaVisual"}
+              className={"bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"}
+              onClick={onLoadMap}>
+              地图加载
+            </PermissionButton>
           </>}
-          <UploadButton>
-            <Button type={"button"} className={"bg-[#43ABFF] h-[36px]"}>上传文件</Button>
-          </UploadButton>
+          <PermissionButton permissionKey={"Collection_MediaUpload"} className={"bg-[#43ABFF] h-[36px]"}>
+            <UploadButton>
+              上传文件
+            </UploadButton>
+          </PermissionButton>
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]">创建文件夹</Button>
+              <PermissionButton
+                permissionKey={"Collection_MediaOperation"}
+                className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"
+              >
+                创建文件夹
+              </PermissionButton>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>

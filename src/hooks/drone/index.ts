@@ -277,6 +277,8 @@ export interface Task {
   media_count: number // 媒体数量
   uploading: boolean // 是否正在上传媒体
   uploaded_count: number // 已上传媒体数量
+  contact: string,
+  contactPhone: string
 }
 
 export const useWaylinJobs = (workspaceId: string, body: Pagination) => {
@@ -289,6 +291,27 @@ export const useWaylinJobs = (workspaceId: string, body: Pagination) => {
   }>>(path, {
     ...body
   })).data.data);
+};
+
+export const useApplyWaylinJobs = (body: Pagination) => {
+  const {post} = useAjax();
+  const url = `${HTTP_PREFIX_Wayline}/wayline-job-audit/page`;
+  const key = body ? [url, body] as const : null;
+  return useSWR(key, async ([path, body]) => (await post<Resource<{
+    list: Task[]
+    pagination: Pagination
+  }>>(path, {
+    ...body
+  })).data.data);
+};
+
+export const useApplyWaylinJobById = (id: number | string | null) => {
+  const {get} = useAjax();
+  const key = id ? [`${HTTP_PREFIX_Wayline}/wayline-job-audit/${id}`] : null;
+  return useSWR(key, async ([path]) => (await get<Resource<{
+    list: Task[]
+    pagination: Pagination
+  }>>(path)).data.data);
 };
 
 interface Video {
@@ -832,4 +855,20 @@ export const useWaylineById = (waylineId: string) => {
   const {get} = useAjax();
   const key = waylineId ? [`/wayline/api/v1/common/get?waylineId=${waylineId}`] : null;
   return useSWR(key, async ([path]) => (await get<Resource<WaylineData>>(path)).data.data);
+};
+
+export const usePermission = () => {
+  const {data: currentUser} = useCurrentUser();
+  const permissions = currentUser?.resources.map(item => item.uu_key) || [];
+
+  const hasPermission = (permissionKey: string) => {
+    return permissions.includes(permissionKey);
+  };
+
+  return {hasPermission};
+};
+
+// 查询保养记录
+export const useMaintainanceList = () => {
+
 };

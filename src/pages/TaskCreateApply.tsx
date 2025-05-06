@@ -1,5 +1,5 @@
-import {Camera, CircleMinus, CirclePlus, Minus, Rocket, User, X} from "lucide-react";
-import {useNavigate} from "react-router-dom";
+import {Camera, CircleMinus, CirclePlus, Minus, Plus, Rocket, User, X} from "lucide-react";
+import {useNavigate, useSearchParams} from "react-router-dom";
 import {Input} from "@/components/ui/input.tsx";
 import {useVisible} from "@/hooks/public/utils.ts";
 import {cn} from "@/lib/utils.ts";
@@ -7,7 +7,7 @@ import {useEffect, useState} from "react";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {
   CreatePlan,
-  Device, HTTP_PREFIX_Wayline,
+  Device, HTTP_PREFIX_Wayline, useApplyWaylinJobById,
   useBindingDevice,
   useDeleteWalineFile,
   useDownloadWayline, useWaylineById,
@@ -34,19 +34,20 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group.tsx";
 import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePicker.tsx";
-import {DateRange} from "react-day-picker";
 import {TimePickerDemo} from "@/components/public/TimePickerDemo.tsx";
 import {useAjax} from "@/lib/http.ts";
 import Scene from "@/components/drone/public/Scene.tsx";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import {waylinePointConfig} from "@/lib/wayline.ts";
 import {toast} from "@/components/ui/use-toast.ts";
+import {Textarea} from "@/components/ui/textarea.tsx";
+import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 
 const formSchema = z.object({
   name: z.string()
     .min(1, {message: "请输入任务名称"})
     .max(20, {message: "长度应为1到20"}),
-  file_id: z.string().nonempty({message: "请选择路线"}),
+  file_id: z.string().optional(),
   dock_sn: z.string().nonempty({message: "请选择设备"}),
   task_type: z.nativeEnum(TaskType, {message: "请选择任务策略"}),
   select_execute_date: z.union([
@@ -63,7 +64,10 @@ const formSchema = z.object({
   min_battery_capacity: z.coerce.number()
     .min(50, {message: "电量不能小于50%"})
     .max(100, {message: "电量不能大于100%"}),
-  min_storage_capacity: z.coerce.number().optional()
+  min_storage_capacity: z.coerce.number().optional(),
+  remark: z.string().optional(),
+  contact: z.string().optional(),
+  contact_phone: z.string().optional(),
 }).refine(
   (data) => {
     // 如果是定时或连续任务，必须选择日期
@@ -76,7 +80,7 @@ const formSchema = z.object({
   {
     message: "请选择日期范围",
     path: ["select_execute_date"], // 指定错误消息显示在哪个字段下
-  }
+  },
 );
 
 const defaultValue = {
@@ -93,13 +97,19 @@ const defaultValue = {
   min_storage_capacity: undefined,
 };
 
-const TaskCreate = () => {
+const TaskCreateApply = () => {
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const {visible: selectPanelVisible, show, hide} = useVisible();
   const {post} = useAjax();
   const [selectedWayline, setSelectedWayline] = useState<WaylineItem | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [searchParams] = useSearchParams();
+  const id = searchParams.get("id");
+  console.log('id');
+  console.log(id);
+
+  const {data: currentApplyWaylineJob} = useApplyWaylinJobById(id)
 
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
@@ -129,9 +139,9 @@ const TaskCreate = () => {
   }, [bindingDevices]);
 
   const onerr = (err) => {
-    console.log('err===');
+    console.log("err");
     console.log(err);
-  }
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("values");
@@ -173,7 +183,7 @@ const TaskCreate = () => {
     console.log(createPlanBody);
 
     try {
-      await post(`${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/flight-tasks`, createPlanBody as any);
+      await post(`${HTTP_PREFIX_Wayline}/wayline-job-audit/save`, createPlanBody as any);
     } catch (error: any) {
       console.error("Create plan failed:", error);
       toast({
@@ -184,13 +194,6 @@ const TaskCreate = () => {
       navigate("/task-list");
     }
   };
-
-  const [date, setDate] = useState<DateRange | undefined>();
-
-  useEffect(() => {
-    console.log("date");
-    console.log(date);
-  }, [date]);
 
   const handleAddTime = () => {
     const currentTimes = form.getValues("select_time");
@@ -275,10 +278,20 @@ const TaskCreate = () => {
                 <span className={"cursor-pointer"}>...</span>
               </PopoverTrigger>
               <PopoverContent className={"w-24 flex flex-col "}>
-                <Button variant={"ghost"} onClick={() => downloadWayline(line.id, line.name)}>下载</Button>
+                <PermissionButton
+                  permissionKey={"Collection_WaylineCreateEdit"}
+                  variant={"ghost"}
+                  onClick={() => navigate(`/create-wayline?id=${line.id}`)}
+                >
+                  编辑
+                </PermissionButton>
+                <PermissionButton permissionKey={"Collection_WaylineDownload"} variant={"ghost"}
+                                  onClick={() => downloadWayline(line.id, line.name)}>下载</PermissionButton>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant={"ghost"}>删除</Button>
+                    <PermissionButton
+                      permissionKey={"Collection_WaylineDelete"}
+                      variant={"ghost"}>删除</PermissionButton>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
@@ -339,7 +352,7 @@ const TaskCreate = () => {
     <div className={"w-full h-full flex text-[16px]"}>
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit,onerr)}
+          onSubmit={form.handleSubmit(onSubmit, onerr)}
           className={cn("w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0", selectPanelVisible ? "" : "rounded-tr-lg rounded-br-lg")}>
           <div
             className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-[14px] justify-between text-[14px]"}>
@@ -625,6 +638,48 @@ const TaskCreate = () => {
                   </FormItem>;
                 }}
               />
+              <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"space-y-4"}>
+                    <FormLabel>描述：</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder={""}
+                             className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF] resize-none"}/>
+                    </FormControl>
+                    <FormMessage/>
+                  </FormItem>
+                )}
+                name={"remark"}
+              />
+              <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"space-y-4"}>
+                    <FormLabel>联系人：</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder={""}
+                             className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                    </FormControl>
+                    <FormMessage/>
+                  </FormItem>
+                )}
+                name={"contact"}
+              />
+              <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"space-y-4"}>
+                    <FormLabel>联系电话：</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder={""}
+                             className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                    </FormControl>
+                    <FormMessage/>
+                  </FormItem>
+                )}
+                name={"contact_phone"}
+              />
               <div className={"text-right"}>
                 <Button className={"bg-[#43ABFF] px-8 my-4"} type={"submit"}>创建</Button>
               </div>
@@ -634,6 +689,7 @@ const TaskCreate = () => {
       </Form>
       {selectPanelVisible && <div className={"w-[266px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r " +
         "from-[#074578]/[.5] to-[#0B142E]/[.9] rounded-tr-lg rounded-br-lg border-l-0 relative text-sm"}>
+        <Plus className={"absolute right-8 top-2 cursor-pointer"} onClick={()=>navigate("/create-wayline")}/>
         <X className={"absolute right-2 top-2 cursor-pointer"} onClick={hide}/>
         <div className={"border-b-[#265C9A] border-b-[1px] p-4"}>{title}</div>
         <div className={"p-4 space-y-2 h-[calc(100vh-180px)] overflow-y-auto"}>
@@ -648,5 +704,5 @@ const TaskCreate = () => {
   );
 };
 
-export default TaskCreate;
+export default TaskCreateApply;
 

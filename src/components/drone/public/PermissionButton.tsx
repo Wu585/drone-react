@@ -1,4 +1,4 @@
-import {useCurrentUser} from "@/hooks/drone";
+import {usePermission} from "@/hooks/drone";
 import {Button} from "@/components/ui/button.tsx";
 import {ComponentPropsWithoutRef, forwardRef} from "react";
 
@@ -9,12 +9,9 @@ interface PermissionButtonProps extends ComponentPropsWithoutRef<typeof Button> 
 
 const PermissionButton = forwardRef<HTMLButtonElement, PermissionButtonProps>(
   ({permissionKey, children, ...props}, ref) => {
-    const {data: currentUser} = useCurrentUser();
-    const permissions = currentUser?.resources.map(item => item.uu_key) || [];
+    const {hasPermission} = usePermission();
 
-    if (!permissions.includes(permissionKey)) {
-      return null;
-    }
+    if (!hasPermission(permissionKey)) return null;
 
     return (
       <Button ref={ref} {...props}>

@@ -27,6 +27,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   device?: Device;
+  onSuccess?: () => void;
 }
 
 const insuranceSchema = z.object({
@@ -51,7 +52,7 @@ const insuranceSchema = z.object({
 
 type insuranceFormValues = z.infer<typeof insuranceSchema>;
 
-const InsuranceSheet = ({open, onOpenChange, device}: Props) => {
+const InsuranceSheet = ({open, onOpenChange, device, onSuccess}: Props) => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const {post} = useAjax();
 
@@ -126,6 +127,7 @@ const InsuranceSheet = ({open, onOpenChange, device}: Props) => {
       toast({
         description: "保险信息更新成功！"
       });
+      onSuccess?.();
     }
   };
 

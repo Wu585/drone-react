@@ -9,7 +9,7 @@ import {useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {
   HTTP_PREFIX_Wayline,
-  useCurrentUser,
+  useCurrentUser, usePermission,
   useWorkOrderById,
   useWorkOrderList,
   WorkOrder
@@ -38,6 +38,7 @@ import DistributeDialog from "@/components/drone/work-order/DistributeDialog.tsx
 import Feedback from "@/components/drone/work-order/Feedback.tsx";
 import Audit from "@/components/drone/work-order/Audit.tsx";
 import Complete from "@/components/drone/work-order/Complete.tsx";
+import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -105,7 +106,8 @@ const WorkOrderDataTable = () => {
 
   const {data: currentUser} = useCurrentUser();
   const {post} = useAjax();
-  const isGly = currentUser?.role === 3;
+  const {hasPermission} = usePermission();
+  const isGly = hasPermission("Collection_TicketReview");
   const urlFix = isGly ? "page" : "pageByOperator";
   const [currentOrder, setCurrentOrder] = useState<WorkOrder | null>(null);
 
@@ -180,8 +182,9 @@ const WorkOrderDataTable = () => {
       cell: ({row}) => {
         return (
           <span className={`flex items-center space-x-2`}>
-            {isGly && row.original.status === 0 && <Edit
-              className={"w-4 cursor-pointer"}
+            {isGly && row.original.status === 0 && <PermissionButton
+              permissionKey={"Collection_TicketCreateEdit"}
+              className={"h-4 bg-transparent px-0"}
               onClick={() => {
                 // setDistributeOpen(true);
                 stepper.goTo(getStepByStatus(row.original.status));
@@ -189,7 +192,9 @@ const WorkOrderDataTable = () => {
                 setOpen(true);
                 setOrderType("edit");
               }}
-            />}
+            >
+              <Edit className={"w-4"}/>
+            </PermissionButton>}
             {(isGly && row.original.status === 0) &&
               <DistributeDialog onConfirm={mutate} currentWorkOrderId={row.original.id}/>}
             <Eye className={"w-4"} onClick={() => {
@@ -302,7 +307,8 @@ const WorkOrderDataTable = () => {
             setOpen(value);
           }}>
             <DialogTrigger asChild>
-              <Button
+              <PermissionButton
+                permissionKey={"Collection_TicketCreateEdit"}
                 className={"bg-[#43ABFF] w-24"}
                 onClick={() => {
                   setCurrentOrder(null);
@@ -311,7 +317,7 @@ const WorkOrderDataTable = () => {
                 }}
               >
                 创建
-              </Button>
+              </PermissionButton>
             </DialogTrigger>
             <DialogContent className="max-w-screen-lg bg-[#0A4088]/[.7] text-white border-none">
               <DialogHeader className={""}>
@@ -428,7 +434,10 @@ const WorkOrderDataTable = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button className={"bg-[#43ABFF] w-24"} onClick={onExportOrder}>导出工单报告</Button>
+          <PermissionButton
+            permissionKey={"Collection_TicketExport"}
+            className={"bg-[#43ABFF] w-24"}
+            onClick={onExportOrder}>导出工单报告</PermissionButton>
         </div>
 
         <div className="rounded-md border border-[#0A81E1] overflow-hidden">

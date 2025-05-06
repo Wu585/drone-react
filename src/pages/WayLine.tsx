@@ -6,7 +6,6 @@ import {useDeleteWalineFile, useDownloadWayline, useWaylineById, useWaylines, Wa
 import {useEffect, useState} from "react";
 import {DEVICE_NAME} from "@/types/device.ts";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
-import {Button} from "@/components/ui/button.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
 import {CURRENT_CONFIG} from "@/lib/config.ts";
 import {getAuthToken} from "@/lib/http.ts";
@@ -26,6 +25,7 @@ import {waylinePointConfig} from "@/lib/wayline.ts";
 import takeOffPng from "@/assets/images/drone/wayline/takeoff.svg";
 import {calculateHaversineDistance} from "@/lib/utils.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
+import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 
 const HTTP_PREFIX_Wayline = "wayline/api/v1";
 
@@ -64,12 +64,12 @@ const WayLine = () => {
   // 计算航线长度
   useEffect(() => {
     if (!currentWaylineData) return;
-    const takeoffPoint = currentWaylineData.take_off_ref_point.split(",");
+    const takeoffPoint = currentWaylineData.take_off_ref_point?.split(",");
     const posArr = [];
-    if (takeoffPoint.length > 1) {
+    if (takeoffPoint && takeoffPoint.length > 1) {
       posArr.push({longitude: +takeoffPoint[1], latitude: +takeoffPoint[0]});
     }
-    currentWaylineData.route_point_list.forEach(point => posArr.push({
+    currentWaylineData.route_point_list?.forEach(point => posArr.push({
       longitude: point.longitude,
       latitude: point.latitude,
     }));
@@ -90,7 +90,7 @@ const WayLine = () => {
     console.log("currentWaylineData");
     console.log(currentWaylineData);
     if (!currentWaylineData) return;
-    const takeoffPoint = currentWaylineData.take_off_ref_point.split(",");
+    const takeoffPoint = currentWaylineData.take_off_ref_point?.split(",");
     console.log("takeoffPoint");
     console.log(takeoffPoint);
 
@@ -103,8 +103,8 @@ const WayLine = () => {
 
     if (currentWaylineData && currentWaylineData.route_point_list && currentWaylineData.route_point_list.length > 0) {
       getCustomSource("waylines-preview")?.entities.removeAll();
-      const takeoffPoint = currentWaylineData.take_off_ref_point.split(",");
-      if (takeoffPoint.length > 1) {
+      const takeoffPoint = currentWaylineData.take_off_ref_point?.split(",");
+      if (takeoffPoint && takeoffPoint.length > 1) {
         const [takeoffLat, takeoffLon, takeoffHei] = takeoffPoint;
         getCustomSource("waylines-preview")?.entities.add({
           position: Cesium.Cartesian3.fromDegrees(+takeoffLon, +takeoffLat, +takeoffHei),
@@ -193,20 +193,28 @@ const WayLine = () => {
         <div
           className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between"}>
           <span>航线列表</span>
-          <div className={"flex space-x-2"}>
-            <Plus onClick={() => navigate("/create-wayline")} size={16} className={"cursor-pointer"}/>
-            <Uploady
-              isSuccessfulCall={(x) => onComplete(x)}
-              destination={{
-                url: `${CURRENT_CONFIG.baseURL}${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/waylines/file/upload`,
-                headers: {
-                  [ELocalStorageKey.Token]: getAuthToken()
-                }
-              }}>
-              <UploadButton>
-                <Upload className={"cursor-pointer"} size={16}/>
-              </UploadButton>
-            </Uploady>
+          <div className={"flex space-x-4 h-8 items-center"}>
+            <PermissionButton
+              permissionKey={"Collection_WaylineCreateEdit"}
+              onClick={() => navigate("/create-wayline")}
+              className={"bg-transparent px-0"}
+            >
+              <Plus size={16}/>
+            </PermissionButton>
+            <PermissionButton permissionKey={"Collection_WaylineImport"} className={"bg-transparent px-0"}>
+              <Uploady
+                isSuccessfulCall={(x) => onComplete(x)}
+                destination={{
+                  url: `${CURRENT_CONFIG.baseURL}${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/waylines/file/upload`,
+                  headers: {
+                    [ELocalStorageKey.Token]: getAuthToken()
+                  }
+                }}>
+                <UploadButton>
+                  <Upload size={16}/>
+                </UploadButton>
+              </Uploady>
+            </PermissionButton>
           </div>
         </div>
         <div className={"px-[12px] py-4 space-y-2 h-[calc(100vh-180px)] overflow-y-auto"}>
@@ -228,11 +236,20 @@ const WayLine = () => {
                     <span className={"cursor-pointer"}>...</span>
                   </PopoverTrigger>
                   <PopoverContent className={"w-24 flex flex-col "}>
-                    <Button variant={"ghost"} onClick={() => navigate(`/create-wayline?id=${line.id}`)}>编辑</Button>
-                    <Button variant={"ghost"} onClick={() => downloadWayline(line.id, line.name)}>下载</Button>
+                    <PermissionButton
+                      permissionKey={"Collection_WaylineCreateEdit"}
+                      variant={"ghost"}
+                      onClick={() => navigate(`/create-wayline?id=${line.id}`)}
+                    >
+                      编辑
+                    </PermissionButton>
+                    <PermissionButton permissionKey={"Collection_WaylineDownload"} variant={"ghost"}
+                                      onClick={() => downloadWayline(line.id, line.name)}>下载</PermissionButton>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant={"ghost"}>删除</Button>
+                        <PermissionButton
+                          permissionKey={"Collection_WaylineDelete"}
+                          variant={"ghost"}>删除</PermissionButton>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>

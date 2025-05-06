@@ -481,7 +481,7 @@ const MapPhoto = () => {
         from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0 rounded-tr-lg rounded-br-lg flex flex-col">
         <div
           className="flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between">
-          <span>地图照片</span>
+          <div className={"h-8"}>地图照片</div>
         </div>
         <div className="flex-1 px-[12px] py-4 space-y-2 overflow-y-auto">
           {/* 渲染文件夹列表 */}

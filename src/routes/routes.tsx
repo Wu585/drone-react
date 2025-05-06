@@ -19,6 +19,7 @@ import CreateWayLine from "@/pages/CreateWayLine.tsx";
 import Elements from "@/pages/Elements.tsx";
 import VideoShare from "@/pages/VideoShare.tsx";
 import MapPhoto from "@/pages/MapPhoto.tsx";
+import TaskCreateApply from "@/pages/TaskCreateApply.tsx";
 
 const Login = lazy(() => import("@/pages/hgyq/Login.tsx"));
 
@@ -82,6 +83,10 @@ export const routes: RouteObject[] = [
       {
         path: "task-list",
         element: <TaskList/>
+      },
+      {
+        path: "task-create-apply",
+        element: <TaskCreateApply/>
       },
       {
         path: "task-create",

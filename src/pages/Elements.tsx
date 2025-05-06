@@ -44,6 +44,8 @@ import {
 } from "@/components/ui/sheet";
 import ElementInfo, {Element} from "@/components/drone/elements/ElementInfo.tsx";
 import {MapElementEnum} from "@/types/map.ts";
+import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
+import {usePermission} from "@/hooks/drone";
 
 const GroupItem = ({
                      group,
@@ -110,15 +112,17 @@ const GroupItem = ({
           className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 absolute right-2">
           <Dialog open={showEdit} onOpenChange={setShowEdit}>
             <DialogTrigger asChild>
-              <button
+              <PermissionButton
+                size={"sm"}
+                permissionKey={"Collection_AnnotationEdit"}
                 onClick={(e) => {
                   e.stopPropagation();
                   setEditName(group.name);
                 }}
-                className="p-1 hover:bg-[#43ABFF]/20 rounded"
+                className="p-1 hover:bg-[#43ABFF]/20 rounded bg-transparent w-8 h-8"
               >
                 <Pencil className="h-4 w-4 text-white"/>
-              </button>
+              </PermissionButton>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -148,14 +152,16 @@ const GroupItem = ({
           {/* 删除按钮 */}
           <Dialog>
             <DialogTrigger asChild>
-              <button
+              <PermissionButton
+                size={"sm"}
+                permissionKey={"Collection_AnnotationEdit"}
                 onClick={(e) => {
                   e.stopPropagation();
                 }}
-                className="p-1 hover:bg-red-500/20 rounded"
+                className="p-1 hover:bg-red-500/20 rounded w-8 h-8 bg-transparent"
               >
                 <Trash2 className="h-4 w-4 text-red-500"/>
-              </button>
+              </PermissionButton>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -208,30 +214,37 @@ const GroupItem = ({
                     className="w-40 text-sm text-white truncate">{element.name}</span>
               <div
                 className={"opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 absolute right-2"}>
-                {element.visual ? <Eye className="p-1 hover:bg-[#43ABFF]/20 rounded" onClick={() => {
-                    onVisibleChange?.(group.id, element.id, false);
-                  }}/> :
-                  <EyeOff className="p-1 hover:bg-[#43ABFF]/20 rounded" onClick={() => {
-                    onVisibleChange?.(group.id, element.id, true);
-                  }}/>}
+                <PermissionButton
+                  permissionKey={"Collection_AnnotationVisibility"}
+                  className={"w-6 h-6 p-1 bg-transparent hover:bg-[#43ABFF]/20 rounded"}
+                >
+                  {element.visual ? <Eye onClick={() => {
+                      onVisibleChange?.(group.id, element.id, false);
+                    }}/> :
+                    <EyeOff onClick={() => {
+                      onVisibleChange?.(group.id, element.id, true);
+                    }}/>}
+                </PermissionButton>
                 {/* 编辑按钮 */}
-                <button
+                <PermissionButton
+                  permissionKey={"Collection_AnnotationEdit"}
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
                   }}
-                  className="p-1 hover:bg-[#43ABFF]/20 rounded"
+                  className="p-1 hover:bg-[#43ABFF]/20 rounded bg-transparent h-6 w-6"
                 >
-                  <Pencil onClick={() => onClickEdit(element as ElementParam)} className="h-4 w-4 text-white"/>
-                </button>
-                <button
+                  <Pencil onClick={() => onClickEdit(element as ElementParam)} className=""/>
+                </PermissionButton>
+                <PermissionButton
+                  permissionKey={"Collection_AnnotationEdit"}
                   onClick={(e) => {
                     e.stopPropagation();
                   }}
-                  className="p-1 hover:bg-red-500/20 rounded"
+                  className="p-1 hover:bg-[#43ABFF]/20 rounded bg-transparent h-6 w-6 text-red-500"
                 >
                   <Trash2 onClick={() => onDeleteElement(element.id)} className="h-4 w-4 text-red-500"/>
-                </button>
+                </PermissionButton>
               </div>
             </div>
           ))}
@@ -405,6 +418,8 @@ const Elements = () => {
     return topLevel.map(group => renderGroup(group));
   };
 
+  const {hasPermission} = usePermission();
+
   return (
     <div className="h-full flex">
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -455,11 +470,13 @@ const Elements = () => {
         from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0 rounded-tr-lg rounded-br-lg flex flex-col">
         <div
           className="flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between">
-          <span>地图标注</span>
+          <div className={"h-8"}>地图标注</div>
           <div className="flex space-x-2">
             <Dialog>
               <DialogTrigger asChild>
-                <FolderPlus size={18} className="cursor-pointer text-orange-400"/>
+                <PermissionButton permissionKey={"Collection_AnnotationEdit"} className={"py-0 h-8 bg-transparent"}>
+                  <FolderPlus size={18} className="cursor-pointer text-orange-400"/>
+                </PermissionButton>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -486,12 +503,12 @@ const Elements = () => {
       </div>
       <div className="flex-1 min-w-0 ml-[20px] border-[2px] rounded-lg border-[#43ABFF] relative">
         <Scene/>
-        <div className="absolute right-6 top-80">
+        {hasPermission("Collection_AnnotationEdit") && <div className="absolute right-6 top-80">
           <DrawPanel
             onSuccess={() => mutate()}
             groupId={hasChild ? selectedId : selectedParentId}
           />
-        </div>
+        </div>}
         <div className="absolute right-0 bottom-0 z-[30]">
           <MapChange/>
         </div>

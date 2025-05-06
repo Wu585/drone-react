@@ -13,6 +13,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {Button} from "@/components/ui/button.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
+import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 
 interface Props {
   onOpen?: () => void;
@@ -53,7 +54,12 @@ const DistributeDialog = ({onOpen, currentWorkOrderId, onConfirm}: Props) => {
   return (
     <Dialog>
       <DialogTrigger>
-        <Forward className={"w-4 cursor-pointer"} onClick={onOpen}/>
+        <PermissionButton
+          className={"w-4 h-4 bg-transparent px-0"}
+          onClick={onOpen}
+          permissionKey={"Collection_TicketAssign"}>
+          <Forward/>
+        </PermissionButton>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

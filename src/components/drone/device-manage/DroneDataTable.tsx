@@ -22,7 +22,7 @@ const HTTP_PREFIX = "/manage/api/v1";
 const DroneDataTable = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
-  const [currentDevice, setCurrentDevice] = useState<Device | null>(null);
+  const [currentDevice, setCurrentDevice] = useState<Device>();
   const [open, setOpen] = useState(false);
   const {put} = useAjax();
 

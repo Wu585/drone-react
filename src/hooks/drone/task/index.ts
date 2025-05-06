@@ -16,7 +16,7 @@ export const groupTasksByDate = (tasks: Task[]) => {
   const groups: { [key: string]: Task[] } = {};
 
   tasks.forEach(task => {
-    const date = task.begin_time.split(" ")[0]; // 获取日期部分
+    const date = task.begin_time?.split(" ")[0]; // 获取日期部分
     if (!groups[date]) {
       groups[date] = [];
     }

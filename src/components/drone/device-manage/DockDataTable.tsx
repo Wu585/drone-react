@@ -28,6 +28,7 @@ const DockDataTable = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
   const [currentDock, setCurrentDock] = useState<Device>();
+  const [currentDockId, setCurrentDockId] = useState<number>();
   const [open, setOpen] = useState(false);
   const [insuranceSheetVisible, setInsuranceSheetVisible] = useState(false);
   const [maintainanceSheetVisible, setMaintainanceSheetVisible] = useState(false);
@@ -145,6 +146,7 @@ const DockDataTable = () => {
               onClick={() => {
                 setInsuranceSheetVisible(true);
                 setCurrentDock(row.original);
+                setCurrentDockId(row.original.id);
               }}
             />
             <BookImage
@@ -178,6 +180,8 @@ const DockDataTable = () => {
     total: 0,
     domain: EDeviceTypeName.Dock
   });
+
+  const currentDevice = data?.list.find(item => item.id === currentDockId);
 
   const table = useReactTable({
     data: data?.list || [],
@@ -219,7 +223,12 @@ const DockDataTable = () => {
           placeholder="输入机场名称"
           onSubmit={handleSubmit}
         />
-        <InsuranceSheet device={currentDock} open={insuranceSheetVisible} onOpenChange={setInsuranceSheetVisible}/>
+        <InsuranceSheet
+          device={currentDevice}
+          open={insuranceSheetVisible}
+          onOpenChange={setInsuranceSheetVisible}
+          onSuccess={() => mutate()}
+        />
         <MaintainanceSheet device={currentDock} open={maintainanceSheetVisible}
                            onOpenChange={setMaintainanceSheetVisible}/>
         <div className="flex-1 overflow-hidden border border-[#43ABFF] rounded">

@@ -1,37 +1,43 @@
 import TopBar from "@/components/drone/public/TopBar.tsx";
-import {Link, Outlet, useLocation} from "react-router-dom";
+import {Link, Outlet, useLocation, useNavigate} from "react-router-dom";
 import {cn} from "@/lib/utils.ts";
 import {BookText, Film, Image, LayoutList, MapPin, Proportions, Send, Waypoints} from "lucide-react";
+import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 
 const menuList = [
   {
     name: "tsa",
     icon: <Send size={20}/>,
-    href: "/tsa"
+    href: "/tsa",
+    permission: "Collection_DeviceDetail"
   },
   {
     name: "elements",
     icon: <MapPin size={20}/>,
     href: "/elements",
-    activeHref: "elements"
+    activeHref: "elements",
+    permission: "Collection_AnnotationView"
   },
   {
     name: "map-photo",
     icon: <Image size={20}/>,
     href: "/map-photo",
-    activeHref: "map-photo"
+    activeHref: "map-photo",
+    permission: "Collection_MediaVisual"
   },
   {
     name: "wayline",
     icon: <Waypoints size={20}/>,
     href: "/wayline",
-    activeHref: "wayline"
+    activeHref: "wayline",
+    permission: "Collection_WaylineView"
   },
   {
     name: "task",
     icon: <LayoutList size={20}/>,
     href: "/task-list",
-    activeHref: "task"
+    activeHref: "task",
+    permission: "Collection_PlanView"
   },
   /*{
     name: "flight-area",
@@ -43,13 +49,15 @@ const menuList = [
     name: "media",
     icon: <Film size={20}/>,
     href: "/media",
-    activeHref: "media"
+    activeHref: "media",
+    permission: "Collection_MediaView"
   },
   {
     name: "work-order",
     icon: <BookText size={20}/>,
     href: "/work-order",
-    activeHref: "work-order"
+    activeHref: "work-order",
+    permission: "Collection_TicketView"
   },
   // {
   //   name: "members",
@@ -60,11 +68,13 @@ const menuList = [
   {
     name: "device-manage",
     icon: <Proportions size={20}/>,
-    href: "/device-manage"
+    href: "/device-manage",
+    permission: "Collection_DeviceDetail"
   }
 ];
 
 const Layout = () => {
+  const navigate = useNavigate();
   const {pathname} = useLocation();
   console.log("pathname");
   console.log(pathname);
@@ -79,14 +89,15 @@ const Layout = () => {
           <aside className="w-[50px] border-[1px] border-[#43ABFF] rounded-l-lg border-r-0">
             <div className="w-[50px] bg-[#0059BF]/[.5] h-full">
               {menuList.map((item, index) =>
-                <Link
-                  key={item.href}
-                  className={cn("content-center py-[16px] cursor-pointer",
-                    pathname.includes(item.name) ? "bg-[#43ABFF]" : "",
-                    index === 0 ? "rounded-tl-lg" : "")}
-                  to={item.href}>
+                <PermissionButton permissionKey={item.permission} variant={"link"}
+                                  className={cn("content-center py-[32px] cursor-pointer text-white w-[50px] rounded-none",
+                                    pathname.includes(item.name) ? "bg-[#43ABFF]" : "",
+                                    index === 0 ? "rounded-tl-lg" : "rounded-none")}
+                                  onClick={() => navigate(item.href)}
+                >
                   {item.icon}
-                </Link>)}
+                </PermissionButton>
+              )}
             </div>
           </aside>}
         <div className="flex-1">
