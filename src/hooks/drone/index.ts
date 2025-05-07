@@ -240,6 +240,7 @@ export const useDeleteWalineFile = (workspaceId: string) => {
 };
 
 export interface CreatePlan {
+  id?: number
   name: string,
   file_id: string,
   dock_sn: string,
@@ -299,20 +300,63 @@ export const useApplyWaylinJobs = (body: Pagination) => {
   const url = `${HTTP_PREFIX_Wayline}/wayline-job-audit/page`;
   const key = body ? [url, body] as const : null;
   return useSWR(key, async ([path, body]) => (await post<Resource<{
-    list: Task[]
+    list: ApplyTask[]
     pagination: Pagination
   }>>(path, {
     ...body
   })).data.data);
 };
 
+export enum ApplyTaskStatus {
+  PENDING_REVIEW,
+  APPROVED,
+  REJECTED
+}
+
+export const applyTaskStatusMap = {
+  [ApplyTaskStatus.PENDING_REVIEW]: {
+    name: "待审核",
+    color: "text-yellow-500"
+  },
+  [ApplyTaskStatus.APPROVED]: {
+    name: "已通过",
+    color: "text-green-500"
+  },
+  [ApplyTaskStatus.REJECTED]: {
+    name: "已驳回",
+    color: "text-red-500"
+  },
+};
+
+export interface ApplyTask {
+  id: number;
+  name: string;
+  file_id: string;
+  wayline_name: string;
+  dock_sn: string;
+  dock_name: string;
+  workspace_id: string;
+  wayline_type: WaylineType;
+  task_type: TaskType;
+  status: ApplyTaskStatus;
+  username: string;
+  rth_altitude: number;
+  out_of_control_action: number;
+  type: number;
+  contact: string;
+  contact_phone: string;
+  min_battery_capacity: number;
+  min_storage_capacity: number;
+  task_days: number[];
+  task_periods: [number, number][];
+  create_time: number;
+}
+
+
 export const useApplyWaylinJobById = (id: number | string | null) => {
   const {get} = useAjax();
   const key = id ? [`${HTTP_PREFIX_Wayline}/wayline-job-audit/${id}`] : null;
-  return useSWR(key, async ([path]) => (await get<Resource<{
-    list: Task[]
-    pagination: Pagination
-  }>>(path)).data.data);
+  return useSWR(key, async ([path]) => (await get<Resource<ApplyTask>>(path)).data.data);
 };
 
 interface Video {

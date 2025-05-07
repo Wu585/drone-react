@@ -42,6 +42,7 @@ import {waylinePointConfig} from "@/lib/wayline.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {Textarea} from "@/components/ui/textarea.tsx";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
+import dayjs from "dayjs";
 
 const formSchema = z.object({
   name: z.string()
@@ -83,14 +84,14 @@ const formSchema = z.object({
   },
 );
 
-const defaultValue = {
+const defaultValues = {
   name: "",
   file_id: "", // Initially empty, will be set later
   dock_sn: "", // Initially empty, will be set later
   task_type: TaskType.Immediate,
-  select_execute_date: [new Date(), new Date()],
-  select_time_number: 1,
+  select_execute_date: undefined,
   select_time: [[]],
+  select_time_number: 1,
   rth_altitude: 100,
   out_of_control_action: OutOfControlAction.ReturnToHome,
   min_battery_capacity: 90,
@@ -106,10 +107,9 @@ const TaskCreateApply = () => {
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
-  console.log('id');
-  console.log(id);
-
-  const {data: currentApplyWaylineJob} = useApplyWaylinJobById(id)
+  const {data: currentApplyWaylineJob} = useApplyWaylinJobById(id);
+  console.log("currentApplyWaylineJob");
+  console.log(currentApplyWaylineJob);
 
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
@@ -130,13 +130,18 @@ const TaskCreateApply = () => {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValue
+    defaultValues,
+    values: currentApplyWaylineJob ? {
+      ...currentApplyWaylineJob,
+      select_execute_date: currentApplyWaylineJob.task_days?.length ?
+        [dayjs.unix(currentApplyWaylineJob.task_days[0]).toDate(), dayjs.unix(currentApplyWaylineJob.task_days[currentApplyWaylineJob.task_days.length - 1]).toDate()] :
+        undefined,
+      select_time: currentApplyWaylineJob.task_periods?.map(period =>
+        period.map(timestamp => new Date(timestamp * 1000))
+      ) || [[]],
+      select_time_number: currentApplyWaylineJob.task_periods?.length || 1,
+    } : defaultValues
   });
-
-  useEffect(() => {
-    console.log("bindingDevices");
-    console.log(bindingDevices);
-  }, [bindingDevices]);
 
   const onerr = (err) => {
     console.log("err");
@@ -182,6 +187,10 @@ const TaskCreateApply = () => {
     console.log("createPlanBody");
     console.log(createPlanBody);
 
+    if(currentApplyWaylineJob){
+      createPlanBody.id = currentApplyWaylineJob.id
+    }
+
     try {
       await post(`${HTTP_PREFIX_Wayline}/wayline-job-audit/save`, createPlanBody as any);
     } catch (error: any) {
@@ -212,6 +221,22 @@ const TaskCreateApply = () => {
   };
 
   const {data: currentWaylineData} = useWaylineById(selectedWayline?.id || "");
+
+  useEffect(() => {
+    if (currentApplyWaylineJob && currentApplyWaylineJob.file_id) {
+      const wayline = waylines?.list.find(item => item.id === currentApplyWaylineJob.file_id);
+      if (!wayline) return;
+      setSelectedWayline(wayline);
+    }
+  }, [currentApplyWaylineJob, waylines]);
+
+  useEffect(() => {
+    if (currentApplyWaylineJob && currentApplyWaylineJob.dock_sn) {
+      const device = bindingDevices?.list.find(item => item.device_sn === currentApplyWaylineJob.dock_sn);
+      if (!device) return;
+      setSelectedDevice(device);
+    }
+  }, [currentApplyWaylineJob, bindingDevices]);
 
   useEffect(() => {
     console.log("currentWaylineData");
@@ -448,7 +473,7 @@ const TaskCreateApply = () => {
                   return <FormItem>
                     <FormLabel>任务策略：</FormLabel>
                     <FormControl>
-                      <ToggleGroup defaultValue={field.value.toString()}
+                      <ToggleGroup value={field.value.toString()}
                                    onValueChange={(value) => {
                                      field.onChange(+value);
                                    }} type="single"
@@ -509,7 +534,7 @@ const TaskCreateApply = () => {
                       </FormLabel>
                       <FormControl>
                         <div className="space-y-2">
-                          {form.watch("select_time").map((timeGroup, index) => (
+                          {form.watch("select_time")?.map((timeGroup, index) => (
                             <div key={index} className="flex items-center space-x-2">
                               <TimePickerDemo
                                 date={timeGroup[0]}
@@ -645,7 +670,7 @@ const TaskCreateApply = () => {
                     <FormLabel>描述：</FormLabel>
                     <FormControl>
                       <Textarea {...field} placeholder={""}
-                             className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF] resize-none"}/>
+                                className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF] resize-none"}/>
                     </FormControl>
                     <FormMessage/>
                   </FormItem>
@@ -681,7 +706,7 @@ const TaskCreateApply = () => {
                 name={"contact_phone"}
               />
               <div className={"text-right"}>
-                <Button className={"bg-[#43ABFF] px-8 my-4"} type={"submit"}>创建</Button>
+                <Button className={"bg-[#43ABFF] px-8 my-4"} type={"submit"}>确认</Button>
               </div>
             </div>
           </div>
@@ -689,7 +714,7 @@ const TaskCreateApply = () => {
       </Form>
       {selectPanelVisible && <div className={"w-[266px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r " +
         "from-[#074578]/[.5] to-[#0B142E]/[.9] rounded-tr-lg rounded-br-lg border-l-0 relative text-sm"}>
-        <Plus className={"absolute right-8 top-2 cursor-pointer"} onClick={()=>navigate("/create-wayline")}/>
+        <Plus className={"absolute right-8 top-2 cursor-pointer"} onClick={() => navigate("/create-wayline")}/>
         <X className={"absolute right-2 top-2 cursor-pointer"} onClick={hide}/>
         <div className={"border-b-[#265C9A] border-b-[1px] p-4"}>{title}</div>
         <div className={"p-4 space-y-2 h-[calc(100vh-180px)] overflow-y-auto"}>

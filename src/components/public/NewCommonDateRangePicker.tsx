@@ -15,21 +15,33 @@ interface Props {
 }
 
 const NewCommonDateRangePicker: FC<Props> = ({date, setDate, className}) => {
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => ({
-    from: date?.[0],
-    to: date?.[1]
-  }));
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    if (!date || date.length !== 2) return undefined;
+    return {
+      from: date[0],
+      to: date[1]
+    };
+  });
 
   useEffect(() => {
     if (!date || date.length !== 2) {
-      setDateRange(undefined);
+      if (dateRange !== undefined) {
+        setDateRange(undefined);
+      }
     } else if (date.length === 2) {
-      setDateRange({
-        from: date[0],
-        to: date[1]
-      });
+      const newFrom = date[0]?.getTime();
+      const newTo = date[1]?.getTime();
+      const currentFrom = dateRange?.from?.getTime();
+      const currentTo = dateRange?.to?.getTime();
+
+      if (newFrom !== currentFrom || newTo !== currentTo) {
+        setDateRange({
+          from: date[0],
+          to: date[1]
+        });
+      }
     }
-  }, [date]);
+  }, [date?.map(d => d?.getTime()).join(',')]);
 
   const handleSelect = (range: DateRange | undefined) => {
     console.log("range");

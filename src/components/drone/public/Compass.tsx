@@ -74,7 +74,7 @@ const Compass = ({heading}: Props) => {
 
         {/* 内环 */}
         <div
-          className="absolute w-[80px] aspect-square bg-neutral-200 bg-[url('@/assets/images/world.svg')] bg-no-repeat bg-center bg-[length:80%] rounded-full"
+          className="absolute w-[80px] aspect-square bg-neutral-200 bg-no-repeat bg-center bg-[length:80%] rounded-full"
         />
 
         {/* 刻度面板 */}

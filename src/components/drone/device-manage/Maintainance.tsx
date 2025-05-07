@@ -183,7 +183,7 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
 
   // 飞行器保养记录
   const {data: deviceChildrenMaintainanceList, mutate: mutateChildDeviceMaintainanceList} = useMaintainanceList({
-    device_sn: device?.children.device_sn || "",
+    device_sn: device?.children?.device_sn || "",
     workspace_id: workspaceId,
     page: 1,
     page_size: 1000
