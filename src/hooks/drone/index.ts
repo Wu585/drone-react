@@ -67,6 +67,7 @@ export interface Pagination {
   name?: string;
   parent?: number;
   total?: number;
+  status?: 0 | 1 | 2;
 }
 
 export interface WaylineItem {
@@ -868,7 +869,27 @@ export const usePermission = () => {
   return {hasPermission};
 };
 
-// 查询保养记录
-export const useMaintainanceList = () => {
+interface Maintenance {
+  device_sn: string;
+  maintenance_type: number;
+  maintenance_time: number;
+  flight_count: number;
+  maintenance_desc: string;
+}
 
+interface MaintenanceListData {
+  list: Maintenance[];
+  pagination: Pagination;
+}
+
+// 查询保养记录
+export const useMaintainanceList = (body: {
+  workspace_id: string,
+  device_sn: string,
+  page: number,
+  page_size: number
+}) => {
+  const {get} = useAjax();
+  const key = body ? [`${HTTP_PREFIX}/devices/${body.workspace_id}/devices/${body.device_sn}/maintenance?page=${body.page}&page_size=${body.page_size}`] : null;
+  return useSWR(key, async ([path]) => (await get<Resource<MaintenanceListData>>(path)).data.data);
 };

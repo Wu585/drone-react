@@ -133,9 +133,9 @@ const InsuranceSheet = ({open, onOpenChange, device, onSuccess}: Props) => {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
+      <SheetContent className="bg-[#072E62] border-l border-[#43ABFF] text-white sm:max-w-[500px]">
         <SheetHeader>
-          <SheetTitle>保险信息</SheetTitle>
+          <SheetTitle className="text-lg font-medium text-white">保险信息</SheetTitle>
         </SheetHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -144,62 +144,67 @@ const InsuranceSheet = ({open, onOpenChange, device, onSuccess}: Props) => {
                 control={form.control}
                 render={({field}) =>
                   <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">
+                    <FormLabel className="text-right text-[#D0D0D0]">
                       设备SN
                     </FormLabel>
                     <FormControl>
-                      <div className={"col-span-3"}>
-                        <Input {...field} disabled/>
-                        <FormMessage/>
+                      <div className="col-span-3">
+                        <Input {...field} 
+                          disabled 
+                          className="bg-[#0A4088]/70 border-[#43ABFF]/30 text-[#D0D0D0]"
+                        />
+                        <FormMessage className="text-red-500"/>
                       </div>
                     </FormControl>
                   </FormItem>
                 }
-                name={"device_sn"}
+                name="device_sn"
               />
               <FormField
                 control={form.control}
                 render={({field}) =>
                   <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">
+                    <FormLabel className="text-right text-[#D0D0D0]">
                       保单号
                     </FormLabel>
                     <FormControl>
-                      <div className={"col-span-3"}>
-                        <Input {...field} className=""/>
-                        <FormMessage/>
+                      <div className="col-span-3">
+                        <Input {...field} 
+                          className="bg-[#0A4088]/70 border-[#43ABFF]/30 text-[#D0D0D0]"
+                        />
+                        <FormMessage className="text-red-500"/>
                       </div>
                     </FormControl>
                   </FormItem>
                 }
-                name={"insurance"}
+                name="insurance"
               />
               <FormField
                 control={form.control}
                 render={() =>
                   <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">
+                    <FormLabel className="text-right text-[#D0D0D0]">
                       有效期
                     </FormLabel>
                     <FormControl>
-                      <div className={"col-span-3"}>
+                      <div className="col-span-3">
                         <NewCommonDateRangePicker
                           date={dateRange}
                           setDate={onSelectDate}
-                          className={"text-black hover:text-black"}
+                          className="bg-[#0A4088]/70 border-[#43ABFF]/30 text-[#D0D0D0]"
                         />
-                        <FormMessage/>
+                        <FormMessage className="text-red-500"/>
                       </div>
                     </FormControl>
                   </FormItem>
                 }
-                name={"insurance_time"}
+                name="insurance_time"
               />
               <FormField
                 control={form.control}
                 render={({field}) => (
                   <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">
+                    <FormLabel className="text-right text-[#D0D0D0]">
                       保单文件
                     </FormLabel>
                     <FormControl>
@@ -210,13 +215,13 @@ const InsuranceSheet = ({open, onOpenChange, device, onSuccess}: Props) => {
                             value={field.value}
                             readOnly
                             placeholder="请选择PDF文件"
-                            className="pr-24"
+                            className="bg-[#0A4088]/70 border-[#43ABFF]/30 text-[#D0D0D0] pr-24"
                           />
                           <UploadButton
                             onClick={e => e.preventDefault()}
                             className="absolute right-0 top-0 h-full px-3 bg-[#43ABFF] hover:bg-[#43ABFF]/80 text-white rounded-r"
                           >
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center gap-2">
                               <UploadCloud size={16}/>
                               <span>上传</span>
                             </div>
@@ -228,13 +233,13 @@ const InsuranceSheet = ({open, onOpenChange, device, onSuccess}: Props) => {
                               href={pdfUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[#43ABFF] hover:text-[#43ABFF]/80 text-sm flex items-center space-x-1"
+                              className="text-[#43ABFF] hover:text-[#43ABFF]/80 text-sm flex items-center gap-1"
                             >
                               <span>当前保单</span>
                             </a>
                           </div>
                         )}
-                        <FormMessage/>
+                        <FormMessage className="text-red-500"/>
                       </div>
                     </FormControl>
                   </FormItem>
@@ -243,7 +248,12 @@ const InsuranceSheet = ({open, onOpenChange, device, onSuccess}: Props) => {
               />
             </div>
             <SheetFooter>
-              <Button type="submit">保存</Button>
+              <Button 
+                type="submit"
+                className="bg-[#43ABFF] hover:bg-[#43ABFF]/80 text-white"
+              >
+                保存
+              </Button>
             </SheetFooter>
           </form>
         </Form>
