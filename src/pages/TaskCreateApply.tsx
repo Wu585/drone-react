@@ -184,9 +184,6 @@ const TaskCreateApply = () => {
       createPlanBody.wayline_type = selectedWayline.template_types[0];
     }
 
-    console.log("createPlanBody");
-    console.log(createPlanBody);
-
     if(currentApplyWaylineJob){
       createPlanBody.id = currentApplyWaylineJob.id
     }

@@ -9,7 +9,7 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {ApplyTask, ApplyTaskStatus, applyTaskStatusMap, useApplyWaylinJobs} from "@/hooks/drone";
 import {TaskType, TaskTypeMap} from "@/types/task.ts";
@@ -186,7 +186,7 @@ const TaskDataTable = () => {
       }
     } catch (err) {
       toast({
-        description: "审核失败！",
+        description: "审核失败，任务未创建！",
         variant: "destructive"
       });
     }
@@ -208,11 +208,6 @@ const TaskDataTable = () => {
     page_size: pagination.pageSize,
     total: 0,
   });
-
-  useEffect(() => {
-    console.log("data==");
-    console.log(data);
-  }, [data]);
 
   const table = useReactTable({
     data: data?.list || [],
