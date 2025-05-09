@@ -332,32 +332,59 @@ const WorkOrderDataTable = () => {
       multiple
       autoUpload>
       <div className="space-y-4">
-        <div className="mb-4 text-right space-x-4 flex justify-end">
-          <Input
-            className={"bg-transparent w-48 border-[#43ABFF] border-[1px]"}
-            onChange={(e) => handleQueryParamsChange({ name: e.target.value })}
-            placeholder={"请输入事件名称"}
-            value={queryParams.name}
-          />
-          <div className={"w-64"}>
+        <div className="mb-4 text-right space-x-4 flex justify-end items-center">
+          <div className={"flex items-center"}>
+            <Label>事件名称：</Label>
+            <Input
+              className={"bg-transparent w-48 border-[#43ABFF] border-[1px]"}
+              onChange={(e) => handleQueryParamsChange({name: e.target.value})}
+              placeholder={"请输入事件名称"}
+              value={queryParams.name}
+            />
+          </div>
+          <div className={"flex items-center whitespace-nowrap w-80"}>
+            <Label>日期范围：</Label>
             <NewCommonDateRangePicker className={""}/>
           </div>
-          <Select
-            onValueChange={(value) => handleQueryParamsChange({
-              warning_level: value === "all" ? undefined : Number(value) as WarnLevel
-            })}
-            value={queryParams.warning_level?.toString() || "all"}
-          >
-            <SelectTrigger className="w-[180px] bg-transparent border-[#43ABFF] border-[1px]">
-              <SelectValue placeholder="告警等级"/>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部</SelectItem>
-              {Object.entries(warnLevelMap).map(([key, value]) => (
-                <SelectItem key={key} value={key}>{value}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className={"flex items-center whitespace-nowrap"}>
+            <Label>事件状态：</Label>
+            <Select
+              onValueChange={(value) => handleQueryParamsChange({
+                warning_level: value === "all" ? undefined : Number(value) as WarnLevel
+              })}
+              value={queryParams.warning_level?.toString() || "all"}
+            >
+              <SelectTrigger className="w-[180px] bg-transparent border-[#43ABFF] border-[1px]">
+                <SelectValue placeholder="告警等级"/>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部</SelectItem>
+                {Object.entries(warnLevelMap).map(([key, value]) => (
+                  <SelectItem key={key} value={key}>{value}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className={"flex items-center whitespace-nowrap"}>
+            <Label>告警等级：</Label>
+            <Select
+              onValueChange={(value) => handleQueryParamsChange({
+                warning_level: value === "all" ? undefined : Number(value) as WarnLevel
+              })}
+              value={queryParams.warning_level?.toString() || "all"}
+            >
+              <SelectTrigger className="w-[180px] bg-transparent border-[#43ABFF] border-[1px]">
+                <SelectValue placeholder="告警等级"/>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部</SelectItem>
+                {Object.entries(warnLevelMap).map(([key, value]) => (
+                  <SelectItem key={key} value={key}>{value}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <Dialog open={open} onOpenChange={(value) => {
             console.log("Dialog onOpenChange:", value);
             if (!value) {
