@@ -225,11 +225,39 @@ const WorkOrderDataTable = () => {
   });
 
   const [queryParams, setQueryParams] = useState({
-    page: pagination.pageIndex + 1,
-    page_size: pagination.pageSize,
+    page: 1,
+    page_size: 10,
     tab: 0,
-    warning_level: undefined
+    warning_level: undefined as WarnLevel | undefined,
+    name: ""
   });
+
+  // 处理分页变化
+  const handlePaginationChange = (updaterOrValue: PaginationState | ((old: PaginationState) => PaginationState)) => {
+    const newPagination = typeof updaterOrValue === 'function'
+      ? updaterOrValue(pagination)
+      : updaterOrValue;
+
+    setPagination(newPagination);
+    setQueryParams(prev => ({
+      ...prev,
+      page: newPagination.pageIndex + 1,
+      page_size: newPagination.pageSize
+    }));
+  };
+
+  // 处理查询参数变化
+  const handleQueryParamsChange = (newParams: Partial<typeof queryParams>) => {
+    setQueryParams(prev => ({
+      ...prev,
+      ...newParams,
+      page: 1 // 当筛选条件改变时，重置到第一页
+    }));
+    setPagination(prev => ({
+      ...prev,
+      pageIndex: 0 // 重置到第一页
+    }));
+  };
 
   const {data, mutate} = useWorkOrderList(queryParams, urlFix);
 
@@ -242,7 +270,7 @@ const WorkOrderDataTable = () => {
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPagination,
+    onPaginationChange: handlePaginationChange,
     manualPagination: true,
     rowCount: data?.pagination.total,
     state: {
@@ -307,25 +335,27 @@ const WorkOrderDataTable = () => {
         <div className="mb-4 text-right space-x-4 flex justify-end">
           <Input
             className={"bg-transparent w-48 border-[#43ABFF] border-[1px]"}
-            onChange={(e) =>
-              setQueryParams(prevState => ({
-                ...prevState,
-                name: e.target.value
-              }))}
+            onChange={(e) => handleQueryParamsChange({ name: e.target.value })}
             placeholder={"请输入事件名称"}
+            value={queryParams.name}
           />
           <div className={"w-64"}>
             <NewCommonDateRangePicker className={""}/>
           </div>
-          <Select onValueChange={(value) => setQueryParams(prevState => ({
-            ...prevState,
-            warning_level: +value
-          }))}>
+          <Select
+            onValueChange={(value) => handleQueryParamsChange({
+              warning_level: value === "all" ? undefined : Number(value) as WarnLevel
+            })}
+            value={queryParams.warning_level?.toString() || "all"}
+          >
             <SelectTrigger className="w-[180px] bg-transparent border-[#43ABFF] border-[1px]">
-              <SelectValue defaultValue={""} placeholder="告警等级"/>
+              <SelectValue placeholder="告警等级"/>
             </SelectTrigger>
             <SelectContent>
-              {Object.keys(warnLevelMap).map(item => <SelectItem value={item}>{warnLevelMap[item]}</SelectItem>)}
+              <SelectItem value="all">全部</SelectItem>
+              {Object.entries(warnLevelMap).map(([key, value]) => (
+                <SelectItem key={key} value={key}>{value}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Dialog open={open} onOpenChange={(value) => {
