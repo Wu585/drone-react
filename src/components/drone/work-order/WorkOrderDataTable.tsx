@@ -39,6 +39,9 @@ import Feedback from "@/components/drone/work-order/Feedback.tsx";
 import Audit from "@/components/drone/work-order/Audit.tsx";
 import Complete from "@/components/drone/work-order/Complete.tsx";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
+import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePicker.tsx";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
+import {Input} from "@/components/ui/input.tsx";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -221,11 +224,14 @@ const WorkOrderDataTable = () => {
     pageSize: 10,
   });
 
-  const {data, mutate} = useWorkOrderList({
+  const [queryParams, setQueryParams] = useState({
     page: pagination.pageIndex + 1,
     page_size: pagination.pageSize,
     tab: 0,
-  }, urlFix);
+    warning_level: undefined
+  });
+
+  const {data, mutate} = useWorkOrderList(queryParams, urlFix);
 
   const table = useReactTable({
     data: data?.list || [],
@@ -298,7 +304,30 @@ const WorkOrderDataTable = () => {
       multiple
       autoUpload>
       <div className="space-y-4">
-        <div className="mb-4 text-right space-x-2">
+        <div className="mb-4 text-right space-x-4 flex justify-end">
+          <Input
+            className={"bg-transparent w-48 border-[#43ABFF] border-[1px]"}
+            onChange={(e) =>
+              setQueryParams(prevState => ({
+                ...prevState,
+                name: e.target.value
+              }))}
+            placeholder={"请输入事件名称"}
+          />
+          <div className={"w-64"}>
+            <NewCommonDateRangePicker className={""}/>
+          </div>
+          <Select onValueChange={(value) => setQueryParams(prevState => ({
+            ...prevState,
+            warning_level: +value
+          }))}>
+            <SelectTrigger className="w-[180px] bg-transparent border-[#43ABFF] border-[1px]">
+              <SelectValue defaultValue={""} placeholder="告警等级"/>
+            </SelectTrigger>
+            <SelectContent>
+              {Object.keys(warnLevelMap).map(item => <SelectItem value={item}>{warnLevelMap[item]}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Dialog open={open} onOpenChange={(value) => {
             console.log("Dialog onOpenChange:", value);
             if (!value) {

@@ -10,7 +10,7 @@ import {Calendar} from "@/components/ui/calendar.tsx";
 
 interface Props {
   date?: Date[] | undefined;
-  setDate: (date: Date[] | undefined) => void;
+  setDate?: (date: Date[] | undefined) => void;
   className?: string;
 }
 
@@ -36,9 +36,9 @@ const NewCommonDateRangePicker: FC<Props> = ({date, setDate, className}) => {
     console.log(range);
     setDateRange(range);
     if (range?.from && range?.to) {
-      setDate([range.from, range.to]);
+      setDate?.([range.from, range.to]);
     } else if (!range) {
-      setDate(undefined);
+      setDate?.(undefined);
     }
   };
 
