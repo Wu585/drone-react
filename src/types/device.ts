@@ -302,7 +302,7 @@ export interface DeviceOsd {
   gear: number,
   mode_code: number,
   height: string,
-  home_distance: number,
+  home_distance: number | string,
   horizontal_speed: string,
   vertical_speed: string,
   wind_speed: string,

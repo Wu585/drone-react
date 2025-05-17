@@ -17,16 +17,17 @@ import BookOrderPage from "@/pages/BookOrderPage.tsx";
 import TestStep from "@/pages/TestStep.tsx";
 import CreateWayLine from "@/pages/CreateWayLine.tsx";
 import Elements from "@/pages/Elements.tsx";
-import VideoShare from "@/pages/VideoShare.tsx";
 import MapPhoto from "@/pages/MapPhoto.tsx";
 import TaskCreateApply from "@/pages/TaskCreateApply.tsx";
+import VideoShareRtc from "@/pages/VideoShareRtc.tsx";
+import AlgorithmConfig from "@/pages/AlgorithmConfig.tsx";
 
 const Login = lazy(() => import("@/pages/hgyq/Login.tsx"));
 
 export const routes: RouteObject[] = [
   {
     path: "/video-share",
-    element: <VideoShare/>
+    element: <VideoShareRtc/>
   },
   {
     path: "/login",
@@ -111,6 +112,10 @@ export const routes: RouteObject[] = [
       {
         path: "device-manage",
         element: <DeviceManage/>
+      },
+      {
+        path: "algorithm-config",
+        element: <AlgorithmConfig/>
       },
       {
         path: "wayline",

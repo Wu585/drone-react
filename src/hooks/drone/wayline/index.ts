@@ -740,7 +740,7 @@ export const moveDroneToTarget = (targetPosition: { longitude: number, latitude:
   };
 
   // 开始动画
-  animate();
+  // animate();
 
   // 返回距离（米）
   return distance;

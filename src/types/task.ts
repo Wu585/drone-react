@@ -3,8 +3,8 @@ import {commonColor} from "@/types/device.ts";
 
 export enum TaskType {
   Immediate = 0, // 立即执行
-  Timed = 1, // 单次定时任务
-  Condition = 2,
+  Timed = 1, // 重复定时任务
+  Condition = 2, // 连续执行
 }
 
 export const TaskTypeMap = {

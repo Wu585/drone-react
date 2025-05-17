@@ -9,11 +9,11 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {Task, useWaylinJobs} from "@/hooks/drone";
+import {HTTP_PREFIX_Wayline, Task, useBindingDevice, useWaylinJobs} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {TaskStatus, TaskTypeMap} from "@/types/task.ts";
+import {TaskStatus, TaskStatusMap, TaskType, TaskTypeMap} from "@/types/task.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
 import {cn} from "@/lib/utils.ts";
@@ -33,9 +33,14 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog.tsx";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
+import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePicker.tsx";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
+import {Input} from "@/components/ui/input.tsx";
+import {EDeviceTypeName} from "@/hooks/drone/device.ts";
+import dayjs from "dayjs";
 
 const TaskDataTable = () => {
-  const {delete: deleteClient, put} = useAjax();
+  const {delete: deleteClient, put, post} = useAjax();
 
   const columns: ColumnDef<Task>[] = [
     {
@@ -231,21 +236,71 @@ const TaskDataTable = () => {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
 
+  const {data: dockList} = useBindingDevice(workspaceId, {
+    page: 1,
+    page_size: 1000,
+    domain: EDeviceTypeName.Dock
+  });
+
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
 
-  const {data} = useWaylinJobs(workspaceId, {
-    page: pagination.pageIndex + 1,
-    page_size: pagination.pageSize,
-    total: 0
+  // 处理分页变化
+  const handlePaginationChange = (updaterOrValue: PaginationState | ((old: PaginationState) => PaginationState)) => {
+    const newPagination = typeof updaterOrValue === "function"
+      ? updaterOrValue(pagination)
+      : updaterOrValue;
+
+    setPagination(newPagination);
+    setQueryParams(prev => ({
+      ...prev,
+      page: newPagination.pageIndex + 1,
+      page_size: newPagination.pageSize
+    }));
+  };
+
+  const [queryParams, setQueryParams] = useState({
+    page: 1,
+    page_size: 10,
+    start_time: "",
+    end_time: "",
+    task_type: undefined as TaskType | undefined,
+    dock_sn: "",
+    keyword: "",
+    status: undefined as TaskStatus | undefined
   });
 
-  useEffect(() => {
-    console.log("data==");
-    console.log(data);
-  }, [data]);
+  const {data} = useWaylinJobs(workspaceId, queryParams);
+
+  const onChangeDateRange = (dateRange?: Date[]) => {
+    if (dateRange?.length !== 2) {
+      return handleQueryParamsChange({
+        start_time: "",
+        end_time: "",
+      });
+    }
+    const newParams = {
+      start_time: dayjs(dateRange[0]).format("YYYY-MM-DD HH:mm:ss"),
+      end_time: dayjs(dateRange[1]).format("YYYY-MM-DD HH:mm:ss"),
+    };
+
+    handleQueryParamsChange(newParams);
+  };
+
+  // 处理查询参数变化
+  const handleQueryParamsChange = (newParams: Partial<typeof queryParams>) => {
+    setQueryParams(prev => ({
+      ...prev,
+      ...newParams,
+      page: 1 // 当筛选条件改变时，重置到第一页
+    }));
+    setPagination(prev => ({
+      ...prev,
+      pageIndex: 0 // 重置到第一页
+    }));
+  };
 
   const table = useReactTable({
     data: data?.list || [],
@@ -256,22 +311,129 @@ const TaskDataTable = () => {
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPagination,
+    onPaginationChange: handlePaginationChange,
     manualPagination: true,
     rowCount: data?.pagination.total,
     state: {
       columnFilters,
       columnVisibility,
       rowSelection,
-      pagination: pagination,
+      pagination
     },
   });
 
+  const onGenerateReports = async () => {
+    try {
+      const res: any = await post(
+        `${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/flight-reports/generate`,
+        queryParams,
+        // 设置响应类型为 blob
+        {responseType: "blob"}
+      );
+
+      // 创建 Blob 对象
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      });
+
+      // 创建下载链接
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `飞行报告_${dayjs().format("YYYY-MM-DD_HH-mm-ss")}.xlsx`; // 设置文件名
+
+      // 触发下载
+      document.body.appendChild(link);
+      link.click();
+
+      // 清理
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error("下载报告失败:", error);
+      toast({
+        variant: "destructive",
+        description: "下载报告失败"
+      });
+    }
+  };
+
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-end">
         <div className="flex items-center space-x-2">
-          {/* 保持原有的工具栏内容 */}
+          <div className={"flex items-center whitespace-nowrap w-80"}>
+            <Label>执行时间：</Label>
+            <NewCommonDateRangePicker setDate={onChangeDateRange} className={""}/>
+          </div>
+          <div className={"flex items-center"}>
+            <Label>名称：</Label>
+            <Input
+              className={"bg-transparent w-36 border-[#43ABFF] border-[1px]"}
+              onChange={(e) => handleQueryParamsChange({keyword: e.target.value})}
+              placeholder={"请输入名称"}
+              value={queryParams.keyword}
+            />
+          </div>
+          <div className={"flex items-center whitespace-nowrap"}>
+            <Label>机场：</Label>
+            <Select
+              onValueChange={(value) => handleQueryParamsChange({
+                dock_sn: value === "all" ? undefined : value
+              })}
+              value={queryParams.dock_sn || "all"}
+            >
+              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
+                <SelectValue placeholder="机场"/>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部</SelectItem>
+                {dockList?.list.map(dock => <SelectItem value={dock.device_sn}>{dock.nickname}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className={"flex items-center whitespace-nowrap"}>
+            <Label>执行状态：</Label>
+            <Select
+              onValueChange={(value) => handleQueryParamsChange({
+                status: value === "all" ? undefined : Number(value) as TaskStatus
+              })}
+              value={queryParams.status?.toString() || "all"}
+            >
+              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
+                <SelectValue placeholder="执行状态"/>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部</SelectItem>
+                {Object.entries(TaskStatusMap).map(([key, value]) => (
+                  <SelectItem key={key} value={key}>{value}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className={"flex items-center whitespace-nowrap"}>
+            <Label>任务类型：</Label>
+            <Select
+              onValueChange={(value) => handleQueryParamsChange({
+                task_type: value === "all" ? undefined : Number(value) as TaskType
+              })}
+              value={queryParams.task_type?.toString() || "all"}
+            >
+              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
+                <SelectValue placeholder="任务类型"/>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部</SelectItem>
+                {Object.entries(TaskTypeMap).map(([key, value]) => (
+                  <SelectItem key={key} value={key}>{value}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]"} onClick={onGenerateReports}>
+            <span>导出飞行报告</span>
+          </Button>
         </div>
       </div>
 

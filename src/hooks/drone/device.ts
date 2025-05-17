@@ -56,10 +56,9 @@ export enum EDeviceTypeName {
   Dock = 3,
 }
 
-export const useRealTimeDeviceInfo = () => {
+export const useRealTimeDeviceInfo = (dockSn?: string, droneSn?: string) => {
   const str: string = "--";
   const deviceState = useSceneStore(state => state.deviceState);
-  const osdVisible = useSceneStore(state => state.osdVisible);
 
   const [deviceInfo, setDeviceInfo] = useState({
     gateway: {
@@ -97,34 +96,34 @@ export const useRealTimeDeviceInfo = () => {
     const {currentType, currentSn, gatewayInfo, deviceInfo: deviceStateInfo, dockInfo} = deviceState;
 
     if (currentType === EDeviceTypeName.Gateway && gatewayInfo[currentSn]) {
-      if (osdVisible.visible && osdVisible.gateway_sn !== "") {
+      if (dockSn) {
         setDeviceInfo(prev => ({
           ...prev,
-          gateway: gatewayInfo[osdVisible.gateway_sn!]
+          gateway: gatewayInfo[dockSn]
         }));
       }
     }
 
     if (currentType === EDeviceTypeName.Aircraft && deviceStateInfo[currentSn]) {
-      if (osdVisible.visible && osdVisible.sn !== "") {
+      if (droneSn) {
         setDeviceInfo(prev => ({
           ...prev,
-          device: deviceStateInfo[osdVisible.sn!]
+          device: deviceStateInfo[droneSn]
         }));
       }
     }
 
     if (currentType === EDeviceTypeName.Dock && dockInfo[currentSn]) {
-      if (osdVisible.visible && osdVisible.is_dock && osdVisible.gateway_sn !== "") {
-        const currentDock = dockInfo[osdVisible.gateway_sn!];
+      if (dockSn) {
+        const currentDock = dockInfo[dockSn];
         setDeviceInfo(prev => ({
           ...prev,
           dock: currentDock,
-          device: deviceStateInfo[(currentDock?.basic_osd?.sub_device?.device_sn ?? osdVisible.sn)!]
+          device: deviceStateInfo[(currentDock?.basic_osd?.sub_device?.device_sn ?? dockSn)!]
         }));
       }
     }
-  }, [deviceState, osdVisible]); // 依赖项包含 deviceState 和 osdVisible
+  }, [dockSn, droneSn, deviceState]); // 依赖项包含 deviceState 和 osdVisible
 
   return deviceInfo;
 };

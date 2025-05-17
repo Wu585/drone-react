@@ -1,7 +1,7 @@
 import {X} from "lucide-react";
 import {Switch} from "@/components/ui/switch.tsx";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
 import {EDockModeCode} from "@/types/device.ts";
 import {useAjax} from "@/lib/http.ts";
 import {cmdList, DeviceCmd, DeviceCmdItem} from "@/types/device-cmd.ts";
@@ -20,8 +20,9 @@ const CMD_API_PREFIX = "/control/api/v1";
 
 const DebugPanel = ({sn, onClose}: Props) => {
   const {post} = useAjax();
-  const realTimeDeviceInfo = useRealTimeDeviceInfo();
   const devicesCmdExecuteInfo = useSceneStore(state => state.devicesCmdExecuteInfo);
+  const osdVisible = useSceneStore(state => state.osdVisible);
+  const realTimeDeviceInfo = useRealTimeDeviceInfo(osdVisible.gateway_sn, osdVisible.sn);
   console.log("devicesCmdExecuteInfo");
   console.log(devicesCmdExecuteInfo);
   const newCmdList = cmdList.map(cmdItem => Object.assign({}, cmdItem));
@@ -42,10 +43,15 @@ const DebugPanel = ({sn, onClose}: Props) => {
   }, [realTimeDeviceInfo]);
 
   const onSwitchDebug = async (mode: boolean) => {
-    const res: any = await post(`${CMD_API_PREFIX}/devices/${sn}/jobs/${mode ? DeviceCmd.DebugModeOpen : DeviceCmd.DebugModeClose}`);
-    if (res.data.code === 0) {
+    try {
+      await post(`${CMD_API_PREFIX}/devices/${sn}/jobs/${mode ? DeviceCmd.DebugModeOpen : DeviceCmd.DebugModeClose}`);
       toast({
         description: mode ? "开启debug模式" : "关闭debug模式"
+      });
+    } catch (err: any) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
       });
     }
   };
@@ -74,20 +80,31 @@ const DebugPanel = ({sn, onClose}: Props) => {
       latitude: realTimeDeviceInfo.dock.basic_osd.latitude,
       height: realTimeDeviceInfo.dock.basic_osd.height
     };
-    const res: any = await post(`${CMD_API_PREFIX}/devices/${sn}/jobs/${DeviceCmd.RtkCalibration}`, {
-      devices: [
-        {
-          sn,
-          type: 1,
-          module: "3",
-          data: {
-            longitude: position.longitude,
-            latitude: position.latitude,
-            height: position.height
+    try {
+      await post(`${CMD_API_PREFIX}/devices/${sn}/jobs/${DeviceCmd.RtkCalibration}`, {
+        devices: [
+          {
+            sn,
+            type: 1,
+            module: "3",
+            data: {
+              longitude: position.longitude,
+              latitude: position.latitude,
+              height: position.height
+            }
           }
-        }
-      ]
-    });
+        ]
+      });
+      toast({
+        description: "标定成功"
+      });
+    } catch (err) {
+      toast({
+        description: "标定失败!",
+        variant: "destructive"
+      });
+    }
+
   };
 
   return (
@@ -103,7 +120,7 @@ const DebugPanel = ({sn, onClose}: Props) => {
             <h3>设备远程调试模式</h3>
             <Switch checked={debugStatus} onCheckedChange={onSwitchDebug}
                     className={"data-[state=checked]:bg-[#43ABFF]"}/>
-            <Button onClick={onResetPosition}>一键标定</Button>
+            <Button onClick={onResetPosition} className={"bg-[#43ABFF] h-8"}>一键标定</Button>
           </div>
           <div className={"grid grid-cols-2 gap-4"}>
             {newCmdList.map(item => <div key={item.cmdKey}

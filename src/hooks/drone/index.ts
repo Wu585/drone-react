@@ -67,7 +67,11 @@ export interface Pagination {
   name?: string;
   parent?: number;
   total?: number;
-  status?: 0 | 1 | 2;
+  status?: 0 | 1 | 2 | TaskStatus;
+  start_time?: string;
+  type?: number;
+  dock_sn?: string;
+  keyword?: string;
 }
 
 export interface WaylineItem {
@@ -284,10 +288,10 @@ export interface Task {
 }
 
 export const useWaylinJobs = (workspaceId: string, body: Pagination) => {
-  const {get} = useAjax();
+  const {post} = useAjax();
   const url = `${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/jobs`;
   const key = body ? [url, body] as const : null;
-  return useSWR(key, async ([path, body]) => (await get<Resource<{
+  return useSWR(key, async ([path, body]) => (await post<Resource<{
     list: Task[]
     pagination: Pagination
   }>>(path, {
@@ -763,6 +767,24 @@ export interface WorkOrder {
   create_time: string; // ISO 8601 date string
   update_time: string; // ISO 8601 date string
 }
+
+export const eventMap = {
+  0: "公共设施",
+  1: "道路交通",
+  2: "环卫环保",
+  3: "园林绿化",
+  4: "其它设施",
+  5: "环卫市容",
+  6: "设施管理",
+  7: "突发事件",
+  8: "街面秩序",
+  9: "市场监管",
+  10: "房屋管理",
+  11: "农村管理",
+  12: "街面治安",
+  13: "重点保障",
+  14: "其他事件",
+} as const;
 
 // 查询工单列表
 export const useWorkOrderList = (body: {

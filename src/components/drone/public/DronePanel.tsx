@@ -10,7 +10,7 @@ import {
   ThermometerSun,
   X,
   Zap,
-  Maximize2, Forward
+  Forward, CircleStop
 } from "lucide-react";
 import yjqfPng from "@/assets/images/drone/yjqf.png";
 import {useSceneStore} from "@/store/useSceneStore.ts";
@@ -23,7 +23,7 @@ import KeyboardControl from "@/components/drone/public/KeyboardControl.tsx";
 import {useNavigate} from "react-router-dom";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
-import {memo, useState} from "react";
+import {memo, useRef, useState} from "react";
 import {useMqtt} from "@/hooks/drone/use-mqtt.ts";
 import {KeyCode, useManualControl} from "@/hooks/drone/useManualControl.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
@@ -32,11 +32,10 @@ import {Button} from "@/components/ui/button.tsx";
 import {useDockControl} from "@/hooks/drone/useDockControl.ts";
 import {DeviceCmdItem, noDebugCmdList} from "@/types/device-cmd.ts";
 import {useFlightControl} from "@/hooks/drone/useFlightControl.ts";
-import {useDockLive} from "@/hooks/drone/useDockLive.ts";
-import {useFullscreen} from "@/hooks/useFullscreen";
 import DebugPanel from "@/components/drone/public/DebugPanel.tsx";
 import {copyToClipboard} from "@/hooks/drone/media";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
+import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -47,7 +46,7 @@ const DronePanel = () => {
   const {visible, hide, show} = useVisible();
   const {visible: debugPanelvisible, hide: hideDebugPanel, show: showDebugPanel} = useVisible();
   const navigate = useNavigate();
-  const deviceInfo = useRealTimeDeviceInfo();
+  const deviceInfo = useRealTimeDeviceInfo(osdVisible.gateway_sn, osdVisible.sn);
   const [takeOffType, setTakeOffType] = useState<"take-off" | "fly-to">("take-off");
   const {sendDockControlCmd} = useDockControl();
   const {visible: dockVideoVisible, show: showDockVideo, hide: hideDockVideo} = useVisible();
@@ -120,46 +119,17 @@ const DronePanel = () => {
     }
   };
 
+  const dockVideoRef = useRef<HTMLVideoElement>(null);
   const {
-    onStartLiveStream: start,
-    onStopLiveStream: stop,
-    agoraLiveParam: dockAgoraLiveParam
-  } = useDockLive("player", osdVisible.gateway_sn || "");
+    startLive: startDockLive,
+    stopLive: stopDockLive
+  } = useDeviceLive(dockVideoRef.current, osdVisible.gateway_sn, osdVisible.gateway_sn);
+  const droneVideoRef = useRef<HTMLVideoElement>(null);
   const {
-    onStartLiveStream: startDrone,
-    onStopLiveStream: stopDrone,
-    agoraLiveParam: droneAgoraLiveParam
-  } = useDockLive("player2", osdVisible.sn || "");
+    startLive: startDroneLive,
+    stopLive: stopDroneLive
+  } = useDeviceLive(droneVideoRef.current, osdVisible.gateway_sn, osdVisible.sn);
 
-  // 开启机场直播
-  const onStartLiveStream = async () => {
-    showDockVideo();  // 先显示播放器容器
-    await start();
-  };
-  // 停止机场直播
-  const onStopLiveStream = async () => {
-    hideDockVideo();
-    await stop();
-    toast({
-      description: "机场停止直播"
-    });
-  };
-
-  const onStartDroneLiveStream = async () => {
-    showDroneVideo();
-    await startDrone();
-  };
-
-  const onStopDroneLiveStream = async () => {
-    hideDroneVideo();
-    await stopDrone();
-    toast({
-      description: "无人机停止直播"
-    });
-  };
-
-
-  const dockStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
   const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
 
   const onPintoDock = () => {
@@ -168,18 +138,6 @@ const DronePanel = () => {
       duration: 1
     });
   };
-
-  // 使用全屏 hooks - 分别为机场和飞行器视频创建实例
-  const {
-    isFullscreen: isDockFullscreen,
-    toggleFullscreen: toggleDockFullscreen,
-    exitFullscreen: exitDockFullscreen
-  } = useFullscreen("player");
-  const {
-    isFullscreen: isDroneFullscreen,
-    toggleFullscreen: toggleDroneFullscreen,
-    exitFullscreen: exitDroneFullscreen
-  } = useFullscreen("player2");
 
   const onPointDrone = () => {
     if (!deviceInfo.device) return;
@@ -191,7 +149,7 @@ const DronePanel = () => {
 
   const onShareDockLink = async () => {
     const base = import.meta.env.MODE === "development" ? "localhost:5173/#/" : "http://36.152.38.220:8920/#/";
-    const url = `${base}video-share?channel=${dockAgoraLiveParam.channel}&token=${encodeURIComponent(dockAgoraLiveParam.token)}`;
+    const url = `${base}video-share?sn=${osdVisible.gateway_sn}`;
     await copyToClipboard(url);
     toast({
       description: "直播链接已复制到粘贴板！"
@@ -200,7 +158,7 @@ const DronePanel = () => {
 
   const onShareDroneLink = async () => {
     const base = import.meta.env.MODE === "development" ? "localhost:5173/#/" : "http://36.152.38.220:8920/#/";
-    const url = `${base}video-share?channel=${droneAgoraLiveParam.channel}&token=${encodeURIComponent(droneAgoraLiveParam.token)}`;
+    const url = `${base}video-share?sn=${osdVisible.sn}`;
     await copyToClipboard(url);
     toast({
       description: "直播链接已复制到粘贴板！"
@@ -283,7 +241,14 @@ const DronePanel = () => {
             <div className={"flex justify-between"}>
               <PermissionButton
                 permissionKey={"Collection_LiveStream"}
-                onClick={() => dockVideoVisible ? onStopLiveStream() : onStartLiveStream()}
+                onClick={() => {
+                  if (dockVideoVisible) {
+                    hideDockVideo();
+                  } else {
+                    showDockVideo();
+                    startDockLive();
+                  }
+                }}
                 className={cn("h-[24px] rounded-[2px] px-20 cursor-pointer content-center py-[2px] bg-[#104992]/[.85]",
                   dockVideoVisible ? "border-[#43ABFF] border-[1px]" : "")}>
                 机场直播
@@ -291,8 +256,13 @@ const DronePanel = () => {
               <div className={"col-span-4 content-center flex justify-end space-x-4"}>
                 {dockVideoVisible && (
                   <div className={"flex h-[24px] space-x-4"}>
-                    <Button className={"px-0 bg-transparent h-[24px]"} onClick={toggleDockFullscreen}>
-                      <Maximize2
+                    <Button
+                      className={"px-0 bg-transparent h-[24px]"}
+                      onClick={() => {
+                        hideDockVideo();
+                        stopDockLive();
+                      }}>
+                      <CircleStop
                         size={17}
                       />
                     </Button>
@@ -311,22 +281,14 @@ const DronePanel = () => {
                 </PermissionButton>
               </div>
             </div>
-            <div
+            <video
+              ref={dockVideoRef}
+              controls
+              autoPlay
               className={cn(
-                "relative",
                 dockVideoVisible ? "h-48" : "h-0",
-                isDockFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black"
               )}
-              id="player"
-            >
-              {isDockFullscreen && (
-                <X
-                  className="absolute top-4 right-4 cursor-pointer text-white z-10"
-                  size={24}
-                  onClick={exitDockFullscreen}
-                />
-              )}
-            </div>
+            />
           </div>
         </div>
         <div className={"flex text-[12px] border-b-[1px] border-[#104992]/[.85] mr-[4px]"}>
@@ -351,7 +313,15 @@ const DronePanel = () => {
               ) : (
                 <>
                   <span
-                    onClick={() => droneVideoVisible ? onStopDroneLiveStream() : onStartDroneLiveStream()}
+                    // onClick={() => droneVideoVisible ? onStopDroneLiveStream() : onStartDroneLiveStream()}
+                    onClick={() => {
+                      if (droneVideoVisible) {
+                        hideDroneVideo();
+                      } else {
+                        showDroneVideo();
+                        startDroneLive(false);
+                      }
+                    }}
                     className={cn("col-span-8 border-[#43ABFF] rounded-[2px] cursor-pointer content-center py-[2px] bg-[#104992]/[.85]",
                       droneVideoVisible ? "border-[#43ABFF] border-[1px]" : "")}>
                     飞行器直播
@@ -359,10 +329,13 @@ const DronePanel = () => {
                   <div className={"col-span-4 content-center flex justify-end space-x-2"}>
                     {droneVideoVisible && (
                       <div className={"flex space-x-2"}>
-                        <Maximize2
+                        <CircleStop
                           size={17}
                           className="cursor-pointer"
-                          onClick={toggleDroneFullscreen}
+                          onClick={() => {
+                            hideDroneVideo();
+                            stopDroneLive(false);
+                          }}
                         />
                         <Forward size={17} className="cursor-pointer" onClick={onShareDroneLink}/>
                       </div>
@@ -386,25 +359,14 @@ const DronePanel = () => {
                 </>
               )}
             </div>
-            <div
+            <video
+              ref={droneVideoRef}
+              controls
+              autoPlay
               className={cn(
-                "relative",
-                deviceStatus !== EModeCode[EModeCode.Disconnected] && droneVideoVisible ? "h-48" : "h-0",
-                isDroneFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black"
+                deviceStatus !== EModeCode[EModeCode.Disconnected] && droneVideoVisible ? "h-64" : "h-0"
               )}
-              id="player2"
-            >
-              {isDroneFullscreen && (
-                <X
-                  className="absolute top-4 right-4 cursor-pointer text-white z-10"
-                  size={24}
-                  onClick={exitDroneFullscreen}
-                />
-              )}
-            </div>
-            {/*  <DeviceVideo className={"video-js vjs-default-skin"}/>*/}
-            {/*</div>}*/}
-            {/*<div className={"h-48 border-2"} id={"player2"}></div>*/}
+            />
           </div>
         </div>
         <div
@@ -589,8 +551,9 @@ const DronePanel = () => {
                 <Button key={cmdItem.cmdKey} onClick={() => sendControlCmd(cmdItem)}
                         className={"bg-[#104992]/[.85] h-6 w-14"}>{cmdItem.operateText}</Button>)}
             </div>
-            <PermissionButton permissionKey={"Button_EnterVirtualCockpit"} className={"content-center space-x-4 h-[24px] bg-[#104992]/[.85] px-2 py-[2px] cursor-pointer"}
-                 onClick={onClickCockpit}>
+            <PermissionButton permissionKey={"Button_EnterVirtualCockpit"}
+                              className={"content-center space-x-4 h-[24px] bg-[#104992]/[.85] px-2 py-[2px] cursor-pointer"}
+                              onClick={onClickCockpit}>
               <Airplay size={16}/>
               <span>虚拟座舱</span>
             </PermissionButton>

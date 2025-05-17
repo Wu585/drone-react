@@ -8,7 +8,6 @@ import {
 import {useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {
-  HTTP_PREFIX_Wayline,
   useCurrentUser, usePermission,
   useWorkOrderById,
   useWorkOrderList,
@@ -17,7 +16,7 @@ import {
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
-import {Edit, Eye, Trash} from "lucide-react";
+import {Edit, Eye} from "lucide-react";
 import {getAuthToken, useAjax} from "@/lib/http.ts";
 import {
   Dialog,
@@ -42,6 +41,7 @@ import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePicker.tsx";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {Input} from "@/components/ui/input.tsx";
+import {toast} from "@/components/ui/use-toast.ts";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -70,6 +70,8 @@ const eventMap = {
   13: "重点保障",
   14: "其他事件",
 } as const;
+
+type EventMap = keyof typeof eventMap
 
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
@@ -229,12 +231,16 @@ const WorkOrderDataTable = () => {
     page_size: 10,
     tab: 0,
     warning_level: undefined as WarnLevel | undefined,
-    name: ""
+    name: "",
+    status: undefined as OrderStatus | undefined,
+    order_type: undefined as EventMap | undefined,
+    found_time_begin: "",
+    found_time_end: "",
   });
 
   // 处理分页变化
   const handlePaginationChange = (updaterOrValue: PaginationState | ((old: PaginationState) => PaginationState)) => {
-    const newPagination = typeof updaterOrValue === 'function'
+    const newPagination = typeof updaterOrValue === "function"
       ? updaterOrValue(pagination)
       : updaterOrValue;
 
@@ -244,6 +250,21 @@ const WorkOrderDataTable = () => {
       page: newPagination.pageIndex + 1,
       page_size: newPagination.pageSize
     }));
+  };
+
+  const onChangeDateRange = (dateRange?: Date[]) => {
+    if (dateRange?.length !== 2) {
+      return handleQueryParamsChange({
+        found_time_begin: "",
+        found_time_end: "",
+      });
+    }
+    const newParams = {
+      found_time_begin: dayjs(dateRange[0]).format("YYYY-MM-DD HH:mm:ss"),
+      found_time_end: dayjs(dateRange[1]).format("YYYY-MM-DD HH:mm:ss"),
+    };
+
+    handleQueryParamsChange(newParams);
   };
 
   // 处理查询参数变化
@@ -294,8 +315,8 @@ const WorkOrderDataTable = () => {
     console.log("currentUser");
     console.log(currentUser);
     const res: any = await post(
-      `${OPERATION_HTTP_PREFIX}/order/${13}/exprotReport`,
-      {},
+      `${OPERATION_HTTP_PREFIX}/order/${13}/exportReport`,
+      queryParams,
       // 设置响应类型为 blob
       {responseType: "blob"}
     );
@@ -318,6 +339,7 @@ const WorkOrderDataTable = () => {
     // 清理
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
+
   };
 
   return (
@@ -332,34 +354,53 @@ const WorkOrderDataTable = () => {
       multiple
       autoUpload>
       <div className="space-y-4">
-        <div className="mb-4 text-right space-x-4 flex justify-end items-center">
+        <div className="mb-4 text-right space-x-2 flex justify-end items-center">
+          <div className={"flex items-center whitespace-nowrap w-80"}>
+            <Label>日期范围：</Label>
+            <NewCommonDateRangePicker setDate={onChangeDateRange} className={""}/>
+          </div>
           <div className={"flex items-center"}>
             <Label>事件名称：</Label>
             <Input
-              className={"bg-transparent w-48 border-[#43ABFF] border-[1px]"}
+              className={"bg-transparent w-36 border-[#43ABFF] border-[1px]"}
               onChange={(e) => handleQueryParamsChange({name: e.target.value})}
               placeholder={"请输入事件名称"}
               value={queryParams.name}
             />
           </div>
-          <div className={"flex items-center whitespace-nowrap w-80"}>
-            <Label>日期范围：</Label>
-            <NewCommonDateRangePicker className={""}/>
-          </div>
           <div className={"flex items-center whitespace-nowrap"}>
             <Label>事件状态：</Label>
             <Select
               onValueChange={(value) => handleQueryParamsChange({
-                warning_level: value === "all" ? undefined : Number(value) as WarnLevel
+                status: value === "all" ? undefined : Number(value) as OrderStatus
               })}
-              value={queryParams.warning_level?.toString() || "all"}
+              value={queryParams.status?.toString() || "all"}
             >
-              <SelectTrigger className="w-[180px] bg-transparent border-[#43ABFF] border-[1px]">
-                <SelectValue placeholder="告警等级"/>
+              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
+                <SelectValue placeholder="事件状态"/>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部</SelectItem>
-                {Object.entries(warnLevelMap).map(([key, value]) => (
+                {Object.entries(OrderStatusMap).map(([key, value]) => (
+                  <SelectItem key={key} value={key}>{value}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className={"flex items-center whitespace-nowrap"}>
+            <Label>事件类型：</Label>
+            <Select
+              onValueChange={(value) => handleQueryParamsChange({
+                order_type: value === "all" ? undefined : Number(value) as EventMap
+              })}
+              value={queryParams.order_type?.toString() || "all"}
+            >
+              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
+                <SelectValue placeholder="事件类型"/>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部</SelectItem>
+                {Object.entries(eventMap).map(([key, value]) => (
                   <SelectItem key={key} value={key}>{value}</SelectItem>
                 ))}
               </SelectContent>
@@ -373,7 +414,7 @@ const WorkOrderDataTable = () => {
               })}
               value={queryParams.warning_level?.toString() || "all"}
             >
-              <SelectTrigger className="w-[180px] bg-transparent border-[#43ABFF] border-[1px]">
+              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
                 <SelectValue placeholder="告警等级"/>
               </SelectTrigger>
               <SelectContent>

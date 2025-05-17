@@ -1,7 +1,7 @@
 import TopBar from "@/components/drone/public/TopBar.tsx";
-import {Link, Outlet, useLocation, useNavigate} from "react-router-dom";
+import {Outlet, useLocation, useNavigate} from "react-router-dom";
 import {cn} from "@/lib/utils.ts";
-import {BookText, Film, Image, LayoutList, MapPin, Proportions, Send, Waypoints} from "lucide-react";
+import {BookText, Cog, Film, Image, LayoutList, MapPin, Proportions, Send, Waypoints} from "lucide-react";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 
 const menuList = [
@@ -70,6 +70,12 @@ const menuList = [
     icon: <Proportions size={20}/>,
     href: "/device-manage",
     permission: "Collection_DeviceDetail"
+  },
+  {
+    name: "algorithm-config",
+    icon: <Cog size={20}/>,
+    href: "/algorithm-config",
+    permission: "Collection_DeviceDetail"
   }
 ];
 
@@ -89,7 +95,7 @@ const Layout = () => {
           <aside className="w-[50px] border-[1px] border-[#43ABFF] rounded-l-lg border-r-0">
             <div className="w-[50px] bg-[#0059BF]/[.5] h-full">
               {menuList.map((item, index) =>
-                <PermissionButton permissionKey={item.permission} variant={"link"}
+                <PermissionButton key={item.name} permissionKey={item.permission} variant={"link"}
                                   className={cn("content-center py-[32px] cursor-pointer text-white w-[50px] rounded-none",
                                     pathname.includes(item.name) ? "bg-[#43ABFF]" : "",
                                     index === 0 ? "rounded-tl-lg" : "rounded-none")}

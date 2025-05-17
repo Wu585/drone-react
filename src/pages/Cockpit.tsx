@@ -58,6 +58,7 @@ import {useFullscreen} from "@/hooks/useFullscreen";
 import TsaScene from "@/components/drone/public/TsaScene.tsx";
 import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
 import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
+import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -107,9 +108,8 @@ const Cockpit = () => {
   const [searchParams] = useSearchParams();
   const dockSn = searchParams.get("gateway_sn") || "";
   const deviceSn = searchParams.get("sn") || "";
-  console.log('deviceSn');
-  console.log(deviceSn);
-  const deviceInfo = useRealTimeDeviceInfo();
+  const instanceId = searchParams.get("instance_id") || "";
+  const deviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
   const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -136,6 +136,41 @@ const Cockpit = () => {
       });
     }
   };
+
+  const dockVideoRef = useRef<HTMLVideoElement>(null);
+  const droneCloudVideoRef = useRef<HTMLVideoElement>(null);
+  const droneFpvVideoRef = useRef<HTMLVideoElement>(null);
+
+  const {
+    startLive: startDockLive,
+    stopLive: stopDockLive,
+    updateClarity: updateDockClarity
+  } = useDeviceLive(dockVideoRef.current, dockSn, deviceSn);
+
+  const {
+    startLive: startDroneLive,
+    stopLive: stopDroneLive,
+    updateClarity: updateDroneClarity
+  } = useDeviceLive(droneCloudVideoRef.current, dockSn, deviceSn);
+
+  const {
+    startLive: startFpvLive,
+    stopLive: stopFpvLive,
+    updateClarity: updateFpvClarity,
+    droneVideoId: fpvDroneVideoId
+  } = useDeviceLive(droneFpvVideoRef.current, dockSn, deviceSn, true);
+
+  useEffect(() => {
+    startDockLive();
+  }, [startDockLive]);
+
+  useEffect(() => {
+    startDroneLive(false);
+  }, [startDroneLive]);
+
+  useEffect(() => {
+    startFpvLive(false);
+  }, [startFpvLive]);
 
   const deviceType = onlineDocks.find(item => item.sn === deviceSn);
 
@@ -166,17 +201,17 @@ const Cockpit = () => {
     await switchDeviceVideoMode(mode);
   };
 
-  useEffect(() => {
-    onStartLiveStream();
-  }, [dockVideoId]);
+  // useEffect(() => {
+  //   onStartLiveStream();
+  // }, [dockVideoId]);
 
-  useEffect(() => {
-    onStartDroneLive();
-  }, [droneVideoId]);
+  // useEffect(() => {
+  //   onStartDroneLive();
+  // }, [droneVideoId]);
 
-  useEffect(() => {
-    startFpv();
-  }, [fpvVideoId]);
+  // useEffect(() => {
+  //   startFpv();
+  // }, [fpvVideoId]);
 
   // 添加 FPV 全屏控制
   const {
@@ -189,23 +224,19 @@ const Cockpit = () => {
 
   // 处理机场直播显示/隐藏的切换
   const handleDockLiveToggle = async () => {
-    if (showDockLive) {
-      // 如果当前是显示状态，切换到隐藏时停止直播
-      await onStopLiveStream();
-    } else {
-      // 如果当前是隐藏状态，切换到显示时开始直播
-      await onStartLiveStream();
-    }
     setShowDockLive(!showDockLive);
+    if (showDockLive) {
+      await startDockLive();
+    }
   };
 
   // 修改为双击事件处理函数
-  const handleVideoDoubleClick = async (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleVideoDoubleClick = async (event: React.MouseEvent<HTMLVideoElement>) => {
     const div = event.currentTarget;
     const rect = div.getBoundingClientRect();
 
     // 获取视频元素
-    const videoElement = div.querySelector("video");
+    const videoElement = droneCloudVideoRef.current;
     if (!videoElement) return;
 
     const videoRect = videoElement.getBoundingClientRect();
@@ -251,6 +282,9 @@ const Cockpit = () => {
           x: normalizedX,
           y: normalizedY,
         },
+      });
+      toast({
+        description: "获取云台控制权成功"
       });
     } catch (error) {
       toast({
@@ -385,6 +419,11 @@ const Cockpit = () => {
     };
   }, [dragTimer]);
 
+  const [fpvOrAi, setFpvOrAi] = useState("fpv");
+  const onGroupChange = (value: string) => {
+    setFpvOrAi(value);
+  };
+
   return (
     <FitScreen width={1920} height={1080} mode="full">
       <Form {...form}>
@@ -413,8 +452,7 @@ const Cockpit = () => {
                     <DropdownMenuContent align="end" className="w-16">
                       <DropdownMenuLabel>清晰度</DropdownMenuLabel>
                       <DropdownMenuRadioGroup
-                        value={dockPosition}
-                        onValueChange={onChangeClarity}>
+                        onValueChange={(value) => updateDockClarity(+value)}>
                         {clarityList.map(item =>
                           <DropdownMenuRadioItem key={item.value}
                                                  value={item.value.toString()}>{item.label}</DropdownMenuRadioItem>)}
@@ -423,7 +461,7 @@ const Cockpit = () => {
                   </DropdownMenu>
                   <RefreshCcw
                     className={"cursor-pointer"}
-                    onClick={() => onStartLiveStream()}
+                    onClick={() => startDockLive()}
                     size={16}
                   />
                 </div>
@@ -431,7 +469,12 @@ const Cockpit = () => {
             </div>
             {showDockLive && (
               <div className={"w-[360px] h-[186px] ml-[30px]"}>
-                <div className={"h-[180px] w-full"} id={"player1"}></div>
+                <video
+                  ref={dockVideoRef}
+                  controls
+                  autoPlay
+                  className={"h-[180px] w-full"}
+                />
               </div>
             )}
             <div className={cn(
@@ -662,8 +705,10 @@ const Cockpit = () => {
           <div className={"col-span-3 z-50"}>
             <div className={"h-[596px] bg-center-video mt-[52px] bg-full-size content-center relative"}>
               {deviceStatus !== EModeCode[EModeCode.Disconnected] ? (
-                <div
-                  className={"w-[930px] aspect-video rounded-[80px] overflow-hidden cursor-crosshair"}
+                <video
+                  ref={droneCloudVideoRef}
+                  autoPlay
+                  className={"w-[830px] rounded-[40px] overflow-hidden cursor-crosshair aspect-video"}
                   id={"player2"}
                   onDoubleClick={handleVideoDoubleClick}
                   onWheel={handleWheel}
@@ -725,7 +770,8 @@ const Cockpit = () => {
                     <img src={czsd} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0]"}>垂直速度</span>
-                      <span className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.vertical_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
+                      <span
+                        className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.vertical_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
                     </div>
                   </div>
                   <div className={"flex space-x-4"}>
@@ -733,7 +779,8 @@ const Cockpit = () => {
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span
                         className={"text-[12px] text-[#D0D0D0]"}>水平速度</span>
-                      <span className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device?.horizontal_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
+                      <span
+                        className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device?.horizontal_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
                     </div>
                   </div>
                 </div>
@@ -742,21 +789,24 @@ const Cockpit = () => {
                     <img src={asl} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0]"}>ASL</span>
-                      <span className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height).toFixed(2) + " m"}</span>
+                      <span
+                        className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height).toFixed(2) + " m"}</span>
                     </div>
                   </div>
                   <div className={"flex space-x-4"}>
                     <img src={alt} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0] whitespace-nowrap"}>ALT</span>
-                      <span className={"whitespace-nowrap"}>{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " m" : str}</span>
+                      <span
+                        className={"whitespace-nowrap"}>{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " m" : str}</span>
                     </div>
                   </div>
                   <div className={"flex space-x-4"}>
                     <img src={windSpeed} alt=""/>
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0]"}>风速</span>
-                      <span className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.wind_speed === str ? str : (parseFloat(deviceInfo.device?.wind_speed) / 10).toFixed(2) + " m/s"}</span>
+                      <span
+                        className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.wind_speed === str ? str : (parseFloat(deviceInfo.device?.wind_speed) / 10).toFixed(2) + " m/s"}</span>
                     </div>
                   </div>
                   <div className={"flex space-x-4"}>
@@ -764,7 +814,7 @@ const Cockpit = () => {
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0]"}>距起始点距离</span>
                       <span className={"whitespace-nowrap"}>
-                        {!deviceInfo.device || deviceInfo.device.home_distance.toString() === str ? str : (+deviceInfo.device?.home_distance).toFixed(2) + ' m'}
+                        {!deviceInfo.device || deviceInfo.device.home_distance.toString() === str ? str : (+deviceInfo.device?.home_distance).toFixed(2) + " m"}
                         {/*{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}*/}
                       </span>
                     </div>
@@ -816,38 +866,63 @@ const Cockpit = () => {
           </div>
           <div className={"col-span-1 pt-[100px]"}>
             <div className="flex items-center  mr-[60px] z-50 relative">
-              <CockpitTitle title={"FPV直播"}/>
+              <CockpitTitle
+                title={!fpvDroneVideoId ? "AI识别" : undefined}
+                groupValue={fpvOrAi}
+                groupList={fpvDroneVideoId ? [
+                  {
+                    name: "FPV直播",
+                    value: "fpv"
+                  },
+                  {
+                    name: "AI识别",
+                    value: "ai"
+                  }
+                ] : undefined}
+                onGroupChange={onGroupChange}
+              />
               {deviceStatus !== EModeCode[EModeCode.Disconnected] && (
                 <div className="flex items-center space-x-2">
-                  <RefreshCcw
+                  {fpvDroneVideoId && fpvOrAi === "fpv" && <RefreshCcw
                     size={17}
                     className="cursor-pointer"
-                    onClick={() => startFpv()}
-                  />
-                  <Maximize2
+                    onClick={() => startFpvLive(false)}
+                  />}
+                  {(fpvOrAi !== "fpv" || !fpvDroneVideoId) && <Maximize2
                     size={17}
                     className="cursor-pointer"
                     onClick={toggleFpvFullscreen}
-                  />
+                  />}
                 </div>
               )}
             </div>
             {deviceStatus !== EModeCode[EModeCode.Disconnected] ? (
-              <div
-                className={cn(
-                  "h-[200px] mr-[60px] z-50 my-2 relative",
-                  isFpvFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black"
-                )}
-                id={"player3"}
-              >
-                {isFpvFullscreen && (
-                  <X
-                    className="absolute top-4 right-4 cursor-pointer text-white z-10"
-                    size={24}
-                    onClick={exitFpvFullscreen}
-                  />
-                )}
-              </div>
+              fpvDroneVideoId ?
+                fpvOrAi === "fpv" ?
+                  <video
+                    ref={droneFpvVideoRef}
+                    controls
+                    autoPlay
+                    className={cn(
+                      "h-[200px] mr-[60px] z-50 my-2 relative",
+                      isFpvFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black"
+                    )}
+                  >
+                  </video>
+                  : <iframe
+                    src={`http://218.78.133.200:9090/tm?instanceId=${instanceId || "ce2bd19b-d039-4c5c-b49d-abc8a87696d5"}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}
+                    id={"player3"}></iframe>
+                : <iframe
+                  id={"player3"}
+                  src={`http://218.78.133.200:9090/tm?instanceId=${instanceId || "015b9d97-f527-492e-8068-c70ec553a45c"}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
+                  {isFpvFullscreen && (
+                    <X
+                      className="absolute top-4 right-4 cursor-pointer text-white z-10"
+                      size={24}
+                      onClick={exitFpvFullscreen}
+                    />
+                  )}
+                </iframe>
             ) : (
               <div className={"text-[#d0d0d0] h-[200px] flex items-center pl-6"}>
                 当前设备已关机，无法进行直播
@@ -862,7 +937,7 @@ const Cockpit = () => {
               <div className={"pl-[32px] space-y-2 flex flex-col justify-center"}>
                 <span>温度：</span>
                 <div className={"text-[34px]"}>
-                  {deviceInfo.dock.basic_osd?.environment_temperature}°C
+                  {deviceInfo.dock?.basic_osd?.environment_temperature}°C
                 </div>
               </div>
             </div>
@@ -872,7 +947,7 @@ const Cockpit = () => {
                 <div className={"flex flex-col"}>
                   <span>湿度</span>
                   <span className={"text-[18px] text-[#32A3FF]"}>
-                    {deviceInfo.dock.basic_osd?.humidity}
+                    {deviceInfo.dock?.basic_osd?.humidity}
                   </span>
                 </div>
               </div>
@@ -881,7 +956,7 @@ const Cockpit = () => {
                 <div className={"flex flex-col"}>
                   <span>降雨</span>
                   <span className={"text-[18px] text-[#32A3FF]"}>
-                    {RainfallEnum[deviceInfo.dock.basic_osd?.rainfall]}
+                    {RainfallEnum[deviceInfo.dock?.basic_osd?.rainfall]}
                   </span>
                 </div>
               </div>

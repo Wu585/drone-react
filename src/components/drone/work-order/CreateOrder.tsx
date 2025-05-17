@@ -16,29 +16,11 @@ import {useItemFinishListener} from "@rpldy/uploady";
 import UploadButton from "@rpldy/upload-button";
 import {UploadCloud, X} from "lucide-react";
 import {cn, uuidv4} from "@/lib/utils";
-import {WorkOrder} from "@/hooks/drone";
+import {eventMap, WorkOrder} from "@/hooks/drone";
 import {FileLike} from "@rpldy/shared";
 import {PreviewMethods, UploadPreview} from "@rpldy/upload-preview";
 import WorkOrderUploadPreview from "@/components/drone/work-order/WorkOrderUploadPreview.tsx";
 import {getMediaType} from "@/hooks/drone/order";
-
-const eventMap = {
-  0: "公共设施",
-  1: "道路交通",
-  2: "环卫环保",
-  3: "园林绿化",
-  4: "其它设施",
-  5: "环卫市容",
-  6: "设施管理",
-  7: "突发事件",
-  8: "街面秩序",
-  9: "市场监管",
-  10: "房屋管理",
-  11: "农村管理",
-  12: "街面治安",
-  13: "重点保障",
-  14: "其他事件",
-} as const;
 
 const createOrderSchema = z.object({
   name: z.string().min(1, "请输入事件名称"),

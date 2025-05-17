@@ -52,8 +52,12 @@ export const useFlightControl = () => {
           description: "Get flight control successfully"
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.log(error);
+      toast({
+        description: error.data.message,
+        variant: "destructive"
+      });
     }
   };
 

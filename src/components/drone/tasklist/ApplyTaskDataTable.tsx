@@ -56,7 +56,7 @@ const TaskDataTable = () => {
     {
       accessorKey: "task_days",
       header: "执行日期",
-      cell: ({row}) => <span>{row.original.task_days.length > 0 &&
+      cell: ({row}) => <span>{row.original.task_days?.length > 0 &&
         dayjs.unix(row.original.task_days[0]).format("YYYY-MM-DD") + "~" + dayjs.unix(row.original.task_days[row.original.task_days.length - 1]).format("YYYY-MM-DD")}</span>
     },
     {

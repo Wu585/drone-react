@@ -11,7 +11,8 @@ export const CURRENT_CONFIG = {
 
   // livestreaming
   // RTMP  Note: This IP is the address of the streaming server. If you want to see livestream on web page, you need to convert the RTMP stream to WebRTC stream.
-  rtmpURL: 'rtmp://106.14.197.27/live/', // Example: 'rtmp://192.168.1.1/live/'
+  rtmpURL: 'rtmp://36.139.117.52/live', // Example: 'rtmp://192.168.1.1/live/'
+  rtcIp: '36.139.117.52',
   // rtmpURL: 'rtmp://221.130.54.58/live/', // Example: 'rtmp://192.168.1.1/live/'
   // GB28181 Note:If you don't know what these parameters mean, you can go to Pilot2 and select the GB28181 page in the cloud platform. Where the parameters same as these parameters.
   gbServerIp: 'Please enter the server ip.',

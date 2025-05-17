@@ -1,0 +1,45 @@
+{
+  "event_id": "eventId",
+  "event_state": 0,
+  "device_name": "BM1684-180",
+  "device_id": "2f1e469a-c0a0-4883-e11e-d60e5a16faa9",
+  "task_name": "测试",
+  "task_id": "3a5aaacf-56b3-4307-8d39-337bf476bc86",
+  "app_name": "火焰烟雾A",
+  "app_id": "100001",
+  "src_name": "摄像头01",
+  "src_id": "camera01",
+  "created": 1649317910,
+  "details": [
+    {
+      "frame_id": 344,
+      "model_id": "412442175712829440",
+      "model_name": "火焰烟雾检测-v3-模型",
+      "model_thres": 0.10000000149011612,
+      "model_type": 1,
+      "regions": [],
+      "regions_with_label": {},
+      "targets": [
+        {
+          "id": 0,
+          "box": {
+            "left_top_x": 589,
+            "left_top_y": 371,
+            "right_bottom_x": 1042,
+            "right_bottom_y": 626
+          },
+          "color": [
+            255,
+            0,
+            0,
+            0
+          ],
+          "label": "smoke",
+          "prob": 0.5271,
+          "moving": false,
+          "roi_id": 0
+        }
+      ]
+    }
+  ]
+}

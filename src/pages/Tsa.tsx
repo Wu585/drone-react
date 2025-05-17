@@ -23,10 +23,14 @@ const Tsa = () => {
     setOsdVisible
   } = useSceneStore();
 
+  console.log('deviceState');
+  console.log(deviceState);
+
   const {post} = useAjax();
   const {onlineDocks} = useOnlineDocks();
-  const realTime = useRealTimeDeviceInfo();
-
+  const realTime = useRealTimeDeviceInfo(osdVisible.gateway_sn, osdVisible.sn);
+  console.log('realTime');
+  console.log(realTime);
   const switchVisible = (dock: OnlineDevice) => {
     if (dock.sn === osdVisible.sn) {
       setOsdVisible({
@@ -108,12 +112,11 @@ const Tsa = () => {
             <AccordionTrigger className={"px-[12px]"}>
               <div className={"flex content-center space-x-4"}>
                 <span>机场</span>
-                {/*<Info size={14}/>*/}
               </div>
             </AccordionTrigger>
             <AccordionContent className={"p-[12px]"}>
               {onlineDocks.map(dock =>
-                <div key={dock.sn} className={"h-[172px] bg-dock-panel bg-full-size flex flex-col"}>
+                <div className={"h-[172px] bg-dock-panel bg-full-size flex flex-col"} key={dock.gateway.sn}>
                   <div className={"flex h-full"}>
                     <div className={"flex-1"}>
                       <div className={"pl-[24px] pt-[16px]"}>
