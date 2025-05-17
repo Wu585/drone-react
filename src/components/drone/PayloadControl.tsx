@@ -18,7 +18,7 @@ import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
 
 interface Props {
-  onRefreshVideo: () => void;
+  onRefreshVideo: () => Promise<void>;
   updateVideo: (value: string) => Promise<void>;
   devicePosition: string;
   setDevicePosition: (value: string) => void;
@@ -88,7 +88,6 @@ const PayloadControl: FC<Props> = ({
 
   const videoModeList = cameraList[1]?.videos_list?.[0]?.switch_video_types || [];
 
-
   const onCameraModeSwitch = async () => {
     await post(`${API_PREFIX}/devices/${dockSn}/payload/commands`, {
       cmd: "camera_mode_switch",
@@ -103,7 +102,7 @@ const PayloadControl: FC<Props> = ({
     });
   };
 
-  const realTimeDeviceInfo = useRealTimeDeviceInfo();
+  const realTimeDeviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
 
   const currentCameraMode = realTimeDeviceInfo?.device?.cameras?.[0]?.camera_mode;
   const recordState = realTimeDeviceInfo?.device?.cameras?.[0]?.recording_state;

@@ -732,7 +732,7 @@ const Cockpit = () => {
               <div className={"absolute right-40 top-16 z-50"}>
                 <PayloadControl
                   dockSn={dockSn}
-                  onRefreshVideo={onRefreshDeviceVideo}
+                  onRefreshVideo={() => startDroneLive(false)}
                   updateVideo={updateDroneVideo}
                   devicePosition={dronePosition}
                   setDevicePosition={setDronePosition}

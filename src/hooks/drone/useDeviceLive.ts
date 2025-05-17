@@ -96,9 +96,6 @@ export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, dr
     }
   }, [deviceList, droneSn, isFpv, realtime]);
 
-  console.log("droneVideoId");
-  console.log(droneVideoId);
-
   const dockWebRtcUrl = useMemo(() => {
     if (!dockVideoId) return;
     const list = dockVideoId.split("/");
@@ -116,9 +113,6 @@ export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, dr
     }
     return `webrtc://${CURRENT_CONFIG.rtcIp}/live/${list[0]}-${list[1]}`;
   }, [droneVideoId]);
-
-  console.log("droneWebRtcUrl");
-  console.log(droneWebRtcUrl);
 
   const startLive = useCallback(async (isDock = true) => {
     if (isDock && (!dockWebRtcUrl || !dockVideoId)) {
