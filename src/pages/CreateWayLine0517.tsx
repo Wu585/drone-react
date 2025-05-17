@@ -36,15 +36,16 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog.tsx";
-import {useWaylineById} from "@/hooks/drone";
+import {useWaylineById, WaylineData} from "@/hooks/drone";
 import {
   addConnectLines,
+  addDroneModel,
   dynamicAddDroneModel,
   addLabelWithin, addPyramid, addTakeOffPoint,
   addWayPointWithIndex,
   moveDroneToTarget,
   removeDroneModel, removePyramid,
-  removeTakeoffPoint
+  removeTakeoffPoint, CreateFrustum
 } from "@/hooks/drone/wayline";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
@@ -321,7 +322,6 @@ const CreateWayLine = () => {
   const globalHeight = +form.watch("global_height"); // 提供默认值
   const takeOffSecurityHeight = +form.watch("take_off_security_height");
   const fly_to_wayline_mode = form.watch("fly_to_wayline_mode");
-  const waypoint_heading_mode = form.watch("waypoint_heading_mode");
 
   const takeoffPointEndHeight = useMemo(() => {
     if (fly_to_wayline_mode === "pointToPoint") {
@@ -368,7 +368,7 @@ const CreateWayLine = () => {
     return () => {
       handler.destroy();
     };
-  }, []);
+  }, [waypoints, globalHeight]);
 
   useEffect(() => {
     if (!selectedWaypointId) return;
@@ -469,10 +469,9 @@ const CreateWayLine = () => {
 
   const onCameraChange = useCallback((direction: any) => {
     if (pyramidPositionRef.current) {
-      // pyramidPositionRef.current.direction.x = direction.x;
-      // pyramidPositionRef.current.direction.y = direction.y;
-      // pyramidPositionRef.current.direction.z = direction.z;
-      console.log("222222");
+      pyramidPositionRef.current.direction.x = direction.x;
+      pyramidPositionRef.current.direction.y = direction.y;
+      pyramidPositionRef.current.direction.z = direction.z;
     }
   }, []);
 
@@ -858,81 +857,25 @@ const CreateWayLine = () => {
         height,
         heading
       };
-      // const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
-      // const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
-      if (selectedWaypointId === 1) {
-        const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
-        const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
-        pyramidPositionRef.current = {
-          position: {
-            longitude,
-            latitude,
-            height,
-          },
-          // direction: pyramidPositionRef.current?.direction || Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
-          direction: Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
-          sideAndDistance: {
-            side: 50,
-            distance: 200
-          }
-        };
-      } else {
-        if (waypoint_heading_mode !== "followWayline") {
-          // 视棱锥朝向朝北
-          const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
-          const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
-          pyramidPositionRef.current = {
-            position: {
-              longitude,
-              latitude,
-              height,
-            },
-            // direction: pyramidPositionRef.current?.direction || Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
-            direction: Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
-            sideAndDistance: {
-              side: 50,
-              distance: 200
-            }
-          };
-        } else {
-          // 视棱锥朝向跟随航线
-          const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
-          const lastLongitude = waypoints[selectedWaypointId - 2].longitude;
-          const lastLatitude = waypoints[selectedWaypointId - 2].latitude;
-          const lastPoiHeight = waypoints[selectedWaypointId - 2].height;
-          const forwardPosition = Cesium.Cartesian3.fromDegrees(lastLongitude, lastLatitude, lastPoiHeight);  // 正北方向
-          pyramidPositionRef.current = {
-            position: {
-              longitude,
-              latitude,
-              height,
-            },
-            // direction: pyramidPositionRef.current?.direction || Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(topPosition, forwardPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
-            direction: Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(topPosition, forwardPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
-            sideAndDistance: {
-              side: 50,
-              distance: 200
-            }
-          };
+      const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
+      const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
+      pyramidPositionRef.current = {
+        position: {
+          longitude,
+          latitude,
+          height,
+        },
+        direction: pyramidPositionRef.current?.direction || Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
+        sideAndDistance: {
+          side: 50,
+          distance: 200
         }
-      }
-      // pyramidPositionRef.current = {
-      //   position: {
-      //     longitude,
-      //     latitude,
-      //     height,
-      //   },
-      //   direction: pyramidPositionRef.current?.direction || Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
-      //   sideAndDistance: {
-      //     side: 50,
-      //     distance: 200
-      //   }
-      // };
+      };
       addPyramid(pyramidPositionRef.current);
       removeDroneModel();
       dynamicAddDroneModel(dronePositionRef.current);
     }
-  }, [takeoffPointEndHeight, takeoffPoint, globalHeight, waypoints, selectedWaypointId, waypoint_heading_mode]);
+  }, [takeoffPointEndHeight, takeoffPoint, globalHeight, waypoints, selectedWaypointId]);
 
   const addWaypointAfter = (currentIndex: number) => {
     if (!takeoffPoint) return toast({
