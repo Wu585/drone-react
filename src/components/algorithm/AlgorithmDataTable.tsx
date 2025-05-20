@@ -10,11 +10,33 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/c
 import {eventMap} from "@/hooks/drone";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
-import {AlgorithmConfig, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
+import {ALGORITHM_CONFIG_API_PREFIX, AlgorithmConfig, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
 import AlgorithmDialog from "@/components/algorithm/AlgorithmDialog.tsx";
+import {Edit, Trash} from "lucide-react";
+import {
+  AlertDialog, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog.tsx";
+import {useAjax} from "@/lib/http.ts";
+import {toast} from "@/components/ui/use-toast.ts";
+
+// 定义告警等级类型
+type WarnLevel = 1 | 2 | 3 | 4;
+
+const warnLevelMap: Record<WarnLevel, string> = {
+  1: "一般告警",
+  2: "次要告警",
+  3: "主要告警",
+  4: "紧急告警",
+} as const;
 
 const AlgorithmDataTable = () => {
   const [open, setOpen] = useState(false);
+  const [configId, setConfigId] = useState<number>();
+  const {delete: deleteClient} = useAjax();
 
   const columns: ColumnDef<AlgorithmConfig>[] = [
     {
@@ -54,6 +76,15 @@ const AlgorithmDataTable = () => {
       )
     },
     {
+      accessorKey: "warning_level",
+      header: "告警等级",
+      cell: ({row}) => (
+        <div className="truncate" title={row.getValue("warning_level")}>
+          {warnLevelMap[row.original.warning_level as WarnLevel]}
+        </div>
+      )
+    },
+    {
       accessorKey: "description",
       header: "事件描述",
       cell: ({row}) => (
@@ -62,7 +93,59 @@ const AlgorithmDataTable = () => {
         </div>
       )
     },
+    {
+      header: "操作",
+      cell: ({row}) => {
+        return (
+          <div className="flex space-x-2 items-center">
+            <Edit
+              size={16}
+              className="cursor-pointer hover:text-[#43ABFF] transition-colors"
+              onClick={() => handleEdit(row.original.id)}
+            />
+            <AlertDialog>
+              <AlertDialogTrigger>
+                <Trash
+                  size={16}
+                  className="cursor-pointer hover:text-[#43ABFF] transition-colors"
+                />
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>删除配置</AlertDialogTitle>
+                </AlertDialogHeader>
+                <AlertDialogDescription>确认删除配置吗?</AlertDialogDescription>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    className={"bg-primary text-primary-foreground"}
+                    onClick={() => onDeleteConfig(row.original.id)}>确认</AlertDialogCancel>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        );
+      }
+    },
   ];
+
+  const handleEdit = (id: number) => {
+    setOpen(true);
+    setConfigId(id);
+  };
+
+  const onDeleteConfig = async (id: number) => {
+    try {
+      await deleteClient(`${ALGORITHM_CONFIG_API_PREFIX}/${id}`);
+      toast({
+        description: "删除配置成功"
+      });
+      await mutateAlgorithmConfigList();
+    } catch (err: any) {
+      toast({
+        description: err.data.message
+      });
+    }
+  };
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     []
@@ -107,9 +190,12 @@ const AlgorithmDataTable = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <AlgorithmDialog open={open} onOpenChange={setOpen} onSuccess={onSuccess}/>
+      <AlgorithmDialog key={configId} open={open} onOpenChange={setOpen} onSuccess={onSuccess} id={configId}/>
       <div className={"text-right"}>
-        <Button onClick={() => setOpen(true)} className={"bg-[#43ABFF] w-24 mb-2"}>添加</Button>
+        <Button onClick={() => {
+          setOpen(true);
+          setConfigId(undefined);
+        }} className={"bg-[#43ABFF] w-24 mb-2"}>添加</Button>
       </div>
       <div className="flex-1 overflow-hidden border border-[#43ABFF] rounded">
         <Table>

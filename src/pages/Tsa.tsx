@@ -23,14 +23,10 @@ const Tsa = () => {
     setOsdVisible
   } = useSceneStore();
 
-  console.log('deviceState');
-  console.log(deviceState);
-
   const {post} = useAjax();
   const {onlineDocks} = useOnlineDocks();
   const realTime = useRealTimeDeviceInfo(osdVisible.gateway_sn, osdVisible.sn);
-  console.log('realTime');
-  console.log(realTime);
+
   const switchVisible = (dock: OnlineDevice) => {
     if (dock.sn === osdVisible.sn) {
       setOsdVisible({

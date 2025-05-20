@@ -34,7 +34,7 @@ const TsaScene = () => {
       viewer.imageryLayers.addImageryProvider(layer);
     });
   };
-  useInitialConnectWebSocket();
+  // useInitialConnectWebSocket();
   useConnectMqtt();
   const realTimeDeviceInfo = useRealTimeDeviceInfo();
 

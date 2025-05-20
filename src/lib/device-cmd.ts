@@ -25,7 +25,7 @@ import {DeviceInfoType} from "@/types/device.ts";
  * @returns
  */
 export function updateDeviceCmdInfoByOsd(cmdList: DeviceCmdItem[], deviceInfo: DeviceInfoType) {
-  const {device, dock, gateway} = deviceInfo || {};
+  const {device, dock} = deviceInfo || {};
   if (!cmdList || cmdList.length < 1) {
     return;
   }
@@ -293,8 +293,8 @@ export function updateDeviceCmdInfoByExecuteInfo(cmdList: DeviceCmdItem[], devic
   cmdList.forEach(cmdItem => {
     // 获取当前设备相应指令信息
     const deviceCmdExecuteInfo = deviceCmdExecuteInfos.find(cmdExecuteInfo => cmdExecuteInfo.biz_code === cmdItem.cmdKey);
-    console.log('deviceCmdExecuteInfo====----');
-    console.log(deviceCmdExecuteInfo);
+    // console.log('deviceCmdExecuteInfo====----');
+    // console.log(deviceCmdExecuteInfo);
     if (deviceCmdExecuteInfo) {
       if (cmdItem.cmdKey === DeviceCmd.DeviceReboot) { // 重启
         if (deviceCmdExecuteInfo.output.status === DeviceCmdExecuteStatus.InProgress) {

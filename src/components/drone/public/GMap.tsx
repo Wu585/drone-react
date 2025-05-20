@@ -1,6 +1,5 @@
 import {useConnectMqtt} from "@/hooks/drone/useConnectMqtt.ts";
 import {useGMapManage} from "@/hooks/drone/map/useGMapManage.ts";
-import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 import {useDeviceTsaUpdate} from "@/hooks/drone/map/useDeviceTsaUpdate.ts";
 import {useEffect} from "react";
 import {useSceneStore} from "@/store/useSceneStore.ts";
@@ -8,7 +7,6 @@ import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import {wgs84togcj02} from "@/vendor/coordtransform.ts";
 import {DeviceStatus} from "@/types/device.ts";
 import {GeojsonCoordinate} from "@/types/map.ts";
-import {Button} from "@/components/ui/button.tsx";
 
 const getGcj02 = <T extends GeojsonCoordinate | GeojsonCoordinate[]>(coordinate: T): T => {
   if (coordinate[0] instanceof Array) {
@@ -18,7 +16,6 @@ const getGcj02 = <T extends GeojsonCoordinate | GeojsonCoordinate[]>(coordinate:
 };
 
 const GMap = () => {
-  useInitialConnectWebSocket();
   useConnectMqtt();
   useGMapManage("g-container");
   const deviceStatusEvent = useSceneStore(state => state.deviceStatusEvent);

@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/sheet.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Device, useMaintainanceList} from "@/hooks/drone";
-import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import dayjs from "dayjs";
 import {Dialog, DialogClose, DialogContent, DialogFooter, DialogTitle, DialogTrigger} from "@/components/ui/dialog.tsx";
@@ -50,7 +49,6 @@ type MaintainanceFormValues = z.infer<typeof formSchema>;
 
 const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
-  useInitialConnectWebSocket();
   const {post} = useAjax();
   const deviceState = useSceneStore(state => state.deviceState);
   // console.log("deviceState");

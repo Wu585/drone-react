@@ -283,7 +283,7 @@ const TaskDataTable = () => {
     }
     const newParams = {
       start_time: dayjs(dateRange[0]).format("YYYY-MM-DD HH:mm:ss"),
-      end_time: dayjs(dateRange[1]).format("YYYY-MM-DD HH:mm:ss"),
+      end_time: dayjs(dateRange[1]).format("YYYY-MM-DD 23:59:59"),
     };
 
     handleQueryParamsChange(newParams);

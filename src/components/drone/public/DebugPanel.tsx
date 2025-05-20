@@ -1,7 +1,6 @@
 import {X} from "lucide-react";
 import {Switch} from "@/components/ui/switch.tsx";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
-import {useEffect} from "react";
 import {EDockModeCode} from "@/types/device.ts";
 import {useAjax} from "@/lib/http.ts";
 import {cmdList, DeviceCmd, DeviceCmdItem} from "@/types/device-cmd.ts";
@@ -10,6 +9,8 @@ import {Button} from "@/components/ui/button.tsx";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {updateDeviceCmdInfoByExecuteInfo, updateDeviceCmdInfoByOsd} from "@/lib/device-cmd.ts";
 import {Loader2} from "lucide-react";
+import {useDeviceTopo} from "@/hooks/drone";
+import {useMemo} from "react";
 
 interface Props {
   sn: string;
@@ -23,11 +24,19 @@ const DebugPanel = ({sn, onClose}: Props) => {
   const devicesCmdExecuteInfo = useSceneStore(state => state.devicesCmdExecuteInfo);
   const osdVisible = useSceneStore(state => state.osdVisible);
   const realTimeDeviceInfo = useRealTimeDeviceInfo(osdVisible.gateway_sn, osdVisible.sn);
-  console.log("devicesCmdExecuteInfo");
-  console.log(devicesCmdExecuteInfo);
+  const {data: deviceTopo} = useDeviceTopo();
+
+  // 判断是否有一键标定功能
+  const canResetPosition = useMemo(() => {
+    const device = deviceTopo?.find(item => item.device_sn === sn);
+    if (!device) return false;
+    return device.type === 3;
+  }, [deviceTopo, sn]);
+  // console.log("devicesCmdExecuteInfo");
+  // console.log(devicesCmdExecuteInfo);
   const newCmdList = cmdList.map(cmdItem => Object.assign({}, cmdItem));
-  console.log("newCmdList===");
-  console.log(newCmdList);
+  // console.log("newCmdList===");
+  // console.log(newCmdList);
 
   if (sn && devicesCmdExecuteInfo[sn]) {
     updateDeviceCmdInfoByExecuteInfo(newCmdList, devicesCmdExecuteInfo[sn]);
@@ -36,11 +45,6 @@ const DebugPanel = ({sn, onClose}: Props) => {
   updateDeviceCmdInfoByOsd(newCmdList, realTimeDeviceInfo);
 
   const debugStatus = realTimeDeviceInfo.dock?.basic_osd?.mode_code === EDockModeCode.Remote_Debugging;
-
-  useEffect(() => {
-    console.log("realTimeDeviceInfo");
-    console.log(realTimeDeviceInfo);
-  }, [realTimeDeviceInfo]);
 
   const onSwitchDebug = async (mode: boolean) => {
     try {
@@ -104,7 +108,6 @@ const DebugPanel = ({sn, onClose}: Props) => {
         variant: "destructive"
       });
     }
-
   };
 
   return (
@@ -120,7 +123,7 @@ const DebugPanel = ({sn, onClose}: Props) => {
             <h3>设备远程调试模式</h3>
             <Switch checked={debugStatus} onCheckedChange={onSwitchDebug}
                     className={"data-[state=checked]:bg-[#43ABFF]"}/>
-            <Button onClick={onResetPosition} className={"bg-[#43ABFF] h-8"}>一键标定</Button>
+            {canResetPosition && <Button onClick={onResetPosition} className={"bg-[#43ABFF] h-8"}>一键标定</Button>}
           </div>
           <div className={"grid grid-cols-2 gap-4"}>
             {newCmdList.map(item => <div key={item.cmdKey}

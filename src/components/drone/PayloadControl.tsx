@@ -1,6 +1,5 @@
-import {Aperture, ArrowUpDown, Camera, CloudFog, RefreshCcw, Settings, Video, Maximize2, RotateCw} from "lucide-react";
-import {useSceneStore} from "@/store/useSceneStore.ts";
-import {FC, useEffect, useState} from "react";
+import {Aperture, Camera, CloudFog, RefreshCcw, Settings, Video, Maximize2, RotateCw} from "lucide-react";
+import {FC} from "react";
 import {
   DropdownMenu,
   DropdownMenuContent, DropdownMenuItem,
@@ -8,26 +7,22 @@ import {
   DropdownMenuRadioGroup, DropdownMenuRadioItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.tsx";
-import {clarityList, VideoType, videoType, videoTypeLabel} from "@/hooks/drone/useDeviceVideo.ts";
-import {useCapacity} from "@/hooks/drone";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
 import {CameraMode} from "@/types/live-stream.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
+import {clarityList, videoTypeLabel} from "@/hooks/drone/useDeviceLive.ts";
 
 interface Props {
   onRefreshVideo: () => Promise<void>;
-  updateVideo: (value: string) => Promise<void>;
-  devicePosition: string;
-  setDevicePosition: (value: string) => void;
+  updateVideo: (value: number) => Promise<void>;
+  clarity?: number;
   deviceSn: string;
   dockSn: string;
-  currentDeviceCamera: string;
-  onChangeCamera: (value: string) => Promise<void>;
-  currentMode: "ir" | "wide" | "zoom";
-  onChangeMode: (mode: Props["currentMode"]) => Promise<void>;
+  currentMode?: "ir" | "wide" | "zoom";
+  onChangeMode: (mode?: Props["currentMode"]) => Promise<void>;
   playerId?: string;
 }
 
@@ -55,52 +50,16 @@ const gimbalResetMode = [
 const PayloadControl: FC<Props> = ({
                                      onRefreshVideo,
                                      updateVideo,
-                                     devicePosition,
-                                     setDevicePosition,
                                      deviceSn,
                                      dockSn,
-                                     currentDeviceCamera,
-                                     onChangeCamera,
-                                     currentMode,
                                      onChangeMode,
-                                     playerId = "player2"
+                                     playerId = "player2",
+                                     clarity,
+                                     currentMode
                                    }) => {
-  const osdVisible = useSceneStore(state => state.osdVisible);
-  const payloadsOptions = osdVisible.payloads;
-  const [cameraMode, setCameraMode] = useState(true);
-  const [isRecording, setIsRecording] = useState(false);
-
-  const {data: capacityData} = useCapacity();
   const {post} = useAjax();
 
   const {toggleFullscreen} = useFullscreen(playerId);
-
-  const onChangeClarity = async (value: string) => {
-    await updateVideo(value);
-    setDevicePosition(value);
-  };
-
-  const cameraList = capacityData?.find(item => item.sn === deviceSn)?.cameras_list || [];
-
-  const onChangeCurrentCamera = async (value: string) => {
-    await onChangeCamera(value);
-  };
-
-  const videoModeList = cameraList[1]?.videos_list?.[0]?.switch_video_types || [];
-
-  const onCameraModeSwitch = async () => {
-    await post(`${API_PREFIX}/devices/${dockSn}/payload/commands`, {
-      cmd: "camera_mode_switch",
-      data: {
-        payload_index: currentDeviceCamera,
-        camera_mode: cameraMode ? 0 : 1
-      }
-    });
-    setCameraMode(!cameraMode);
-    toast({
-      description: "切换相机模式成功！"
-    });
-  };
 
   const realTimeDeviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
 
@@ -142,7 +101,7 @@ const PayloadControl: FC<Props> = ({
           description: "拍照成功！"
         });
       }, 1000);
-    } catch (err) {
+    } catch (err: any) {
       toast({
         description: err.data.message,
         variant: "destructive"
@@ -175,7 +134,7 @@ const PayloadControl: FC<Props> = ({
           description: recordState ? "停止录像" : "开始录像"
         });
       }, 1000);
-    } catch (err) {
+    } catch (err: any) {
       toast({
         description: err.data.message,
         variant: "destructive"
@@ -229,8 +188,8 @@ const PayloadControl: FC<Props> = ({
         <DropdownMenuContent align="end" className="w-16">
           <DropdownMenuLabel>清晰度</DropdownMenuLabel>
           <DropdownMenuRadioGroup
-            value={devicePosition}
-            onValueChange={onChangeClarity}>
+            value={clarity?.toString() || ""}
+            onValueChange={(value) => updateVideo(+value)}>
             {clarityList.map(item =>
               <DropdownMenuRadioItem key={item.value}
                                      value={item.value.toString()}>{item.label}</DropdownMenuRadioItem>)}
@@ -251,9 +210,9 @@ const PayloadControl: FC<Props> = ({
           <DropdownMenuRadioGroup
             value={currentMode}
             onValueChange={(value) => onChangeMode(value as Props["currentMode"])}>
-            {videoModeList.map(item =>
-              <DropdownMenuRadioItem key={item}
-                                     value={item}>{videoTypeLabel[item]}</DropdownMenuRadioItem>)}
+            {Object.entries(videoTypeLabel).map(([key, value]) =>
+              <DropdownMenuRadioItem key={key}
+                                     value={key}>{value}</DropdownMenuRadioItem>)}
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -187,7 +187,7 @@ const formSchema = z.object({
     payload_position: z.coerce.number()
   }),
   take_off_ref_point: z.string(),
-  image_format: z.array(z.enum(["wide", "zoom", "ir"])).min(1, {
+  image_format: z.array(z.enum(["wide", "zoom", "ir", "visable"])).min(1, {
     message: "请至少选择一种拍照模式"
   }),
   fly_to_wayline_mode: z.enum(["safely", "pointToPoint"], {
@@ -230,7 +230,7 @@ function isNumericString(str) {
   return !isNaN(str) && !isNaN(parseFloat(str));
 }
 
-const CreateWayLine = () => {
+const CreateWayLine0517 = () => {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
   const {data: currentWaylineData} = useWaylineById(id || "");
@@ -1365,9 +1365,10 @@ const CreateWayLine = () => {
                           onValueChange={field.onChange}
                           className={"space-x-2"}
                         >
-                          <ToggleGroupItem value="wide">广角照片</ToggleGroupItem>
-                          <ToggleGroupItem value="zoom">变焦照片</ToggleGroupItem>
-                          <ToggleGroupItem value="ir">红外照片</ToggleGroupItem>
+                          <ToggleGroupItem value="wide">广角</ToggleGroupItem>
+                          <ToggleGroupItem value="zoom">变焦</ToggleGroupItem>
+                          <ToggleGroupItem value="visable">可见光</ToggleGroupItem>
+                          <ToggleGroupItem value="ir">红外</ToggleGroupItem>
                         </ToggleGroup>
                       </FormControl>
                       <FormMessage/>
@@ -2245,9 +2246,10 @@ const CreateWayLine = () => {
                                 });
                               }}
                             >
-                              <ToggleGroupItem value="wide">广角照片</ToggleGroupItem>
-                              <ToggleGroupItem value="zoom">变焦照片</ToggleGroupItem>
-                              <ToggleGroupItem value="ir">红外照片</ToggleGroupItem>
+                              <ToggleGroupItem value="wide">广角</ToggleGroupItem>
+                              <ToggleGroupItem value="zoom">变焦</ToggleGroupItem>
+                              <ToggleGroupItem value="visable">可见光</ToggleGroupItem>
+                              <ToggleGroupItem value="ir">红外</ToggleGroupItem>
                             </ToggleGroup>
                           </div>;
                         case "拍照":
@@ -2318,9 +2320,10 @@ const CreateWayLine = () => {
                                 });
                               }}
                             >
-                              <ToggleGroupItem value="wide">广角照片</ToggleGroupItem>
-                              <ToggleGroupItem value="zoom">变焦照片</ToggleGroupItem>
-                              <ToggleGroupItem value="ir">红外照片</ToggleGroupItem>
+                              <ToggleGroupItem value="wide">广角</ToggleGroupItem>
+                              <ToggleGroupItem value="zoom">变焦</ToggleGroupItem>
+                              <ToggleGroupItem value="visable">可见光</ToggleGroupItem>
+                              <ToggleGroupItem value="ir">红外</ToggleGroupItem>
                             </ToggleGroup>
                           </div>;
                         case "全景拍照":
@@ -2391,9 +2394,10 @@ const CreateWayLine = () => {
                                 });
                               }}
                             >
-                              <ToggleGroupItem value="wide">广角照片</ToggleGroupItem>
-                              <ToggleGroupItem value="zoom">变焦照片</ToggleGroupItem>
-                              <ToggleGroupItem value="ir">红外照片</ToggleGroupItem>
+                              <ToggleGroupItem value="wide">广角</ToggleGroupItem>
+                              <ToggleGroupItem value="zoom">变焦</ToggleGroupItem>
+                              <ToggleGroupItem value="visable">可见光</ToggleGroupItem>
+                              <ToggleGroupItem value="ir">红外</ToggleGroupItem>
                             </ToggleGroup>
                           </div>;
                         case "停止录像":
@@ -2571,5 +2575,5 @@ const CreateWayLine = () => {
   );
 };
 
-export default CreateWayLine;
+export default CreateWayLine0517;
 

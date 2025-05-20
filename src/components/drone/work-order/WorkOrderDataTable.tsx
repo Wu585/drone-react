@@ -41,7 +41,6 @@ import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePicker.tsx";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {Input} from "@/components/ui/input.tsx";
-import {toast} from "@/components/ui/use-toast.ts";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -143,7 +142,7 @@ const WorkOrderDataTable = () => {
       accessorKey: "found_time",
       header: "发现时间",
       cell: ({row}) => (
-        <span>{dayjs(row.original.found_time).format("YYYY-MM-DD HH:MM:ss")}</span>
+        <span>{dayjs(row.original.found_time).format("YYYY-MM-DD HH:mm:ss")}</span>
       )
     },
     {
@@ -261,7 +260,7 @@ const WorkOrderDataTable = () => {
     }
     const newParams = {
       found_time_begin: dayjs(dateRange[0]).format("YYYY-MM-DD HH:mm:ss"),
-      found_time_end: dayjs(dateRange[1]).format("YYYY-MM-DD HH:mm:ss"),
+      found_time_end: dayjs(dateRange[1]).format("YYYY-MM-DD 23:59:59"),
     };
 
     handleQueryParamsChange(newParams);

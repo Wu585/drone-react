@@ -26,14 +26,10 @@ export const useInitialConnectWebSocket = () => {
         break;
       }
       case EBizCode.DeviceOsd: {
-        // console.log('payload.data===device osd');
-        // console.log(payload.data);
         setDeviceInfo(payload.data);
         break;
       }
       case EBizCode.DockOsd: {
-        // console.log('payload.data==dock osd');
-        // console.log(payload.data);
         setDockInfo(payload.data);
         break;
       }

@@ -16,11 +16,10 @@ import windyPng from "@/assets/images/drone/cockpit/windy.png";
 import windPowerPng from "@/assets/images/drone/cockpit/wind-power.png";
 import CockpitFlyControl from "@/components/drone/public/CockpitFlyControl.tsx";
 import {Input} from "@/components/ui/input.tsx";
-import {clarityList, useDeviceVideo} from "@/hooks/drone/useDeviceVideo.ts";
+import {clarityList} from "@/hooks/drone/useDeviceVideo.ts";
 import {useEffect, useState, useCallback, useRef} from "react";
-import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 import {useSearchParams} from "react-router-dom";
-import {useCapacity, useOnlineDocks} from "@/hooks/drone";
+import {useOnlineDocks} from "@/hooks/drone";
 import {z} from "zod";
 import {
   CommanderFlightModeInCommandFlightOptions,
@@ -53,12 +52,11 @@ import {
   DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import {useDockLive} from "@/hooks/drone/useDockLive.ts";
 import {useFullscreen} from "@/hooks/useFullscreen";
-import TsaScene from "@/components/drone/public/TsaScene.tsx";
 import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
 import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
 import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
+import CockpitScene from "@/components/drone/public/CockpitScene.tsx";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -83,33 +81,14 @@ const Cockpit = () => {
     },
   });
 
-  const {
-    dockVideoSrc,
-    Video,
-    startDockVideo,
-    onRefreshDockVideo,
-    // updateVideo,
-    deviceVideoSrc,
-    DeviceVideo,
-    startDeviceVideo,
-    stopDeviceVideo,
-    onRefreshDeviceVideo,
-    devicePosition,
-    setDevicePosition,
-    setCurrentDeviceCamera,
-    stopDockVideo,
-    currentDeviceCamera,
-  } = useDeviceVideo();
-
   const {post} = useAjax();
-  const {data: capacityData} = useCapacity();
   const {onlineDocks} = useOnlineDocks();
-  useInitialConnectWebSocket();
   const [searchParams] = useSearchParams();
   const dockSn = searchParams.get("gateway_sn") || "";
   const deviceSn = searchParams.get("sn") || "";
   const instanceId = searchParams.get("instance_id") || "";
   const deviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
+
   const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -150,7 +129,12 @@ const Cockpit = () => {
   const {
     startLive: startDroneLive,
     stopLive: stopDroneLive,
-    updateClarity: updateDroneClarity
+    updateClarity: updateDroneClarity,
+    switchCameraMode: switchCloudCameraMode,
+    clarity: droneCloudClarity,
+    setClarity: setDroneCloudClarity,
+    mode: droneCloudMode,
+    setMode: setDroneCloudMode,
   } = useDeviceLive(droneCloudVideoRef.current, dockSn, deviceSn);
 
   const {
@@ -174,45 +158,6 @@ const Cockpit = () => {
 
   const deviceType = onlineDocks.find(item => item.sn === deviceSn);
 
-  const {
-    onStartLiveStream,
-    dockVideoId,
-    updateVideo,
-    dockPosition,
-    setDockPosition,
-    onStopLiveStream
-  } = useDockLive("player1", dockSn);
-  const {onStartLiveStream: startFpv, dockVideoId: fpvVideoId} = useDockLive("player3", deviceSn);
-  const {
-    onStartLiveStream: onStartDroneLive,
-    dockVideoId: droneVideoId,
-    updateVideo: updateDroneVideo,
-    dockPosition: dronePosition,
-    setDockPosition: setDronePosition,
-    switchDeviceVideoMode, currentMode, onChangeCamera
-  } = useDockLive("player2", deviceSn, "1");
-
-  const onChangeClarity = async (value: string) => {
-    await updateVideo(+value);
-    setDockPosition(value);
-  };
-
-  const onSwitchMode = async (mode: "ir" | "wide" | "zoom" | "normal") => {
-    await switchDeviceVideoMode(mode);
-  };
-
-  // useEffect(() => {
-  //   onStartLiveStream();
-  // }, [dockVideoId]);
-
-  // useEffect(() => {
-  //   onStartDroneLive();
-  // }, [droneVideoId]);
-
-  // useEffect(() => {
-  //   startFpv();
-  // }, [fpvVideoId]);
-
   // 添加 FPV 全屏控制
   const {
     isFullscreen: isFpvFullscreen,
@@ -232,8 +177,8 @@ const Cockpit = () => {
 
   // 修改为双击事件处理函数
   const handleVideoDoubleClick = async (event: React.MouseEvent<HTMLVideoElement>) => {
-    const div = event.currentTarget;
-    const rect = div.getBoundingClientRect();
+    // const div = event.currentTarget;
+    // const rect = div.getBoundingClientRect();
 
     // 获取视频元素
     const videoElement = droneCloudVideoRef.current;
@@ -277,7 +222,7 @@ const Cockpit = () => {
         cmd: PayloadCommandsEnum.CameraAim,
         data: {
           payload_index: payloadIndex,
-          camera_type: currentMode,
+          camera_type: droneCloudMode,
           locked: false,
           x: normalizedX,
           y: normalizedY,
@@ -297,28 +242,26 @@ const Cockpit = () => {
   const [zoomValue, setZoomValue] = useState(2);
 
   // 处理滚轮事件
-  const handleWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
-    event.preventDefault();
+  const handleWheel = useCallback((event: React.WheelEvent<HTMLVideoElement>) => {
+    // event.preventDefault();
 
     // 根据滚动方向决定增加或减少
     const direction = event.deltaY > 0 ? -1 : 1;
-
-    setZoomValue(prev => Math.min(currentMode === "ir" ? 20 : 200, Math.max(2, prev + direction)));
-  }, []);
+    setZoomValue(prev => Math.min(droneCloudMode === "ir" ? 20 : 200, Math.max(2, prev + direction)));
+  }, [droneCloudMode]);
 
   useEffect(() => {
     const payloadIndex = deviceInfo?.device?.cameras?.[0]?.payload_index;
-    console.log("zoom value", zoomValue);
-    if (currentMode !== "zoom" && currentMode !== "ir") return;
+    if (droneCloudMode !== "zoom" && droneCloudMode !== "ir") return;
     post(`${DRC_API_PREFIX}/devices/${dockSn}/payload/commands`, {
       cmd: PayloadCommandsEnum.CameraFocalLengthSet,
       data: {
         payload_index: payloadIndex,
-        camera_type: currentMode,
+        camera_type: droneCloudMode,
         zoom_factor: zoomValue
       }
     });
-  }, [zoomValue]);
+  }, [zoomValue, dockSn, droneCloudMode]);
 
   const {RightClickPanel, MenuItem, contextMenu} = useRightClickPanel({
     containerId: "cesiumContainer",
@@ -351,7 +294,7 @@ const Cockpit = () => {
   const [dragTimer, setDragTimer] = useState<NodeJS.Timeout | null>(null);
 
   // 处理鼠标按下事件
-  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseDown = (event: React.MouseEvent<HTMLVideoElement>) => {
     const div = event.currentTarget;
     const rect = div.getBoundingClientRect();
 
@@ -369,7 +312,7 @@ const Cockpit = () => {
   };
 
   // 处理鼠标移动事件
-  const handleMouseMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = useCallback((event: React.MouseEvent<HTMLVideoElement>) => {
     if (!isDragging) return;
 
     const div = event.currentTarget;
@@ -422,6 +365,16 @@ const Cockpit = () => {
   const [fpvOrAi, setFpvOrAi] = useState("fpv");
   const onGroupChange = (value: string) => {
     setFpvOrAi(value);
+  };
+
+  const onUpdateDroneCloudClarity = async (value?: number) => {
+    setDroneCloudClarity(value);
+    await updateDroneClarity(value!);
+  };
+
+  const onChangeDroneCloudMode = async (mode?: "ir" | "wide" | "zoom") => {
+    setDroneCloudMode(mode!);
+    await switchCloudCameraMode(mode!);
   };
 
   return (
@@ -481,7 +434,7 @@ const Cockpit = () => {
               "w-[360px] ml-[30px] rounded-lg",
               showDockLive ? "h-[244px] mt-[10px]" : "h-[430px]"
             )}>
-              <TsaScene/>
+              <CockpitScene/>
               <RightClickPanel>
                 <MenuItem onClick={onLookAt}>看向这里</MenuItem>
               </RightClickPanel>
@@ -731,16 +684,13 @@ const Cockpit = () => {
               )}
               <div className={"absolute right-40 top-16 z-50"}>
                 <PayloadControl
+                  currentMode={droneCloudMode}
+                  clarity={droneCloudClarity}
                   dockSn={dockSn}
                   onRefreshVideo={() => startDroneLive(false)}
-                  updateVideo={updateDroneVideo}
-                  devicePosition={dronePosition}
-                  setDevicePosition={setDronePosition}
+                  updateVideo={onUpdateDroneCloudClarity}
                   deviceSn={deviceSn}
-                  currentDeviceCamera={currentDeviceCamera}
-                  onChangeCamera={onChangeCamera}
-                  currentMode={currentMode}
-                  onChangeMode={onSwitchMode}
+                  onChangeMode={onChangeDroneCloudMode}
                   playerId="player2"
                 />
               </div>
@@ -914,7 +864,7 @@ const Cockpit = () => {
                     id={"player3"}></iframe>
                 : <iframe
                   id={"player3"}
-                  src={`http://218.78.133.200:9090/tm?instanceId=${instanceId || "015b9d97-f527-492e-8068-c70ec553a45c"}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
+                  src={`http://218.78.133.200:9090/tm?instanceId=${instanceId || "b211d582-1211-4f24-b196-60c731eee84c"}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
                   {isFpvFullscreen && (
                     <X
                       className="absolute top-4 right-4 cursor-pointer text-white z-10"

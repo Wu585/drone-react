@@ -17,9 +17,7 @@ import UploadButton from "@rpldy/upload-button";
 import {UploadCloud, X} from "lucide-react";
 import {cn, uuidv4} from "@/lib/utils";
 import {eventMap, WorkOrder} from "@/hooks/drone";
-import {FileLike} from "@rpldy/shared";
 import {PreviewMethods, UploadPreview} from "@rpldy/upload-preview";
-import WorkOrderUploadPreview from "@/components/drone/work-order/WorkOrderUploadPreview.tsx";
 import {getMediaType} from "@/hooks/drone/order";
 
 const createOrderSchema = z.object({

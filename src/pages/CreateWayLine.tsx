@@ -161,18 +161,6 @@ const actionList = [
     isGlobal: true,
     param: ["zoom", "wide", "ir"]
   },
-  /*{
-    name: "创建文件夹"
-  },
-  {
-    name: "开始等时间隔拍照"
-  },
-  {
-    name: "开始等距间隔拍照"
-  },
-  {
-    name: "结束间隔拍照"
-  }*/
 ];
 
 const formSchema = z.object({
@@ -240,7 +228,7 @@ const CreateWayLine = () => {
     time: 0
   });
 
-  // 使用 useMemo 计算表单的默认值
+  /*// 使用 useMemo 计算表单的默认值
   const defaultValues: z.infer<typeof formSchema> = useMemo(() => {
     if (currentWaylineData) {
       return {
@@ -286,11 +274,52 @@ const CreateWayLine = () => {
       waypoint_heading_mode: "followWayline",
       name: "新建航点航线"
     };
-  }, [currentWaylineData]);
+  }, [currentWaylineData]);*/
+
+  const defaultValues: z.infer<typeof formSchema> = {
+    device: {
+      drone_type: 67,
+      sub_drone_type: 1,
+      payload_type: 53,
+      payload_position: 0
+    },
+    take_off_ref_point: "",
+    image_format: ["zoom", "wide", "ir"] as ImageFormat[],
+    fly_to_wayline_mode: "safely",
+    global_height: 120,
+    take_off_security_height: 100,
+    auto_flight_speed: 10,
+    global_transitional_speed: 15,
+    global_waypoint_turn_mode: "toPointAndStopWithDiscontinuityCurvature",
+    gimbal_pitch_mode: "manual",
+    finish_action: "goHome",
+    waypoint_heading_mode: "followWayline",
+    name: "新建航点航线"
+  };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues // 只在初始化时设置一次默认值
+    defaultValues, // 只在初始化时设置一次默认值
+    values: currentWaylineData && {
+      device: {
+        drone_type: currentWaylineData.drone_type,
+        sub_drone_type: currentWaylineData.sub_drone_type,
+        payload_type: currentWaylineData.payload_type,
+        payload_position: currentWaylineData.payload_position,
+      },
+      take_off_ref_point: currentWaylineData.take_off_ref_point,
+      image_format: currentWaylineData.image_format?.split(",") as ImageFormat[],
+      fly_to_wayline_mode: currentWaylineData.fly_to_wayline_mode,
+      global_height: currentWaylineData.global_height,
+      take_off_security_height: currentWaylineData.take_off_security_height,
+      auto_flight_speed: currentWaylineData.auto_flight_speed,
+      global_transitional_speed: currentWaylineData.global_transitional_speed,
+      global_waypoint_turn_mode: currentWaylineData.waypoint_turn_req.waypoint_turn_mode,
+      gimbal_pitch_mode: currentWaylineData.gimbal_pitch_mode,
+      finish_action: currentWaylineData.finish_action,
+      waypoint_heading_mode: currentWaylineData.waypoint_heading_req.waypoint_heading_mode,
+      name: currentWaylineData.name,
+    }
   });
 
   const {post} = useAjax();

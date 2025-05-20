@@ -7,6 +7,8 @@ export interface AlgorithmConfig {
   contact_phone: string;
   order_type: number;
   description: string;
+  id: number;
+  warning_level: number;
 }
 
 export const ALGORITHM_CONFIG_API_PREFIX = "/algorithm-config/api/v1";
@@ -21,4 +23,10 @@ export const useAlgorithmConfigList = (params: {
     records: AlgorithmConfig[]
     total: number
   }>>(path, params)).data.data);
+};
+
+export const useAlgorithmConfigById = (id?: number) => {
+  const key = id ? [`${ALGORITHM_CONFIG_API_PREFIX}/${id}`, id] as const : null;
+  const {get} = useAjax();
+  return useSWR(key, async ([path]) => (await get<Resource<AlgorithmConfig>>(path)).data.data);
 };

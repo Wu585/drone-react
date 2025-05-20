@@ -886,7 +886,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               setDate(date);
               updateQuery({
                 begin_time: date ? dayjs(date[0]).format("YYYY-MM-DD HH:mm:ss") : "",
-                end_time: date ? dayjs(date[1]).format("YYYY-MM-DD HH:mm:ss") : ""
+                end_time: date ? dayjs(date[1]).format("YYYY-MM-DD 23:59:59") : ""
               });
             }} className={"bg-[#0A81E1] border-[#0A81E1] hover:bg-[#0A81E1] h-[36px]"}/>
           </div>

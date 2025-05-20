@@ -3,7 +3,7 @@ import {CURRENT_CONFIG} from "@/lib/config.ts";
 import JSWebrtc from "@/vendor/jswebrtc.min.js";
 import {useToast} from "@/components/ui/use-toast.ts";
 import {useCapacity} from "@/hooks/drone/index.ts";
-import {useCallback, useMemo} from "react";
+import {useCallback, useMemo, useState} from "react";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 
 // 为 JSWebrtc 添加类型声明
@@ -52,14 +52,14 @@ export const clarityList = [
 ];
 
 export enum VideoType {
-  NORMAL = "normal",
+  // NORMAL = "normal",
   WIDE = "wide",
   ZOOM = "zoom",
   IR = "ir"
 }
 
 export const videoTypeLabel = {
-  [VideoType.NORMAL]: "正常",
+  // [VideoType.NORMAL]: "正常",
   [VideoType.WIDE]: "广角",
   [VideoType.ZOOM]: "变焦",
   [VideoType.IR]: "红外",
@@ -68,6 +68,10 @@ export const videoTypeLabel = {
 export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, droneSn?: string, isFpv?: boolean) => {
   const {post} = useAjax();
   const {toast} = useToast();
+  // 清晰度
+  const [clarity, setClarity] = useState<number>();
+  // 镜头模式
+  const [mode, setMode] = useState<VideoType | undefined>();
   const {data: deviceList} = useCapacity();
 
   const dock = deviceList?.find(item => item.sn === dockSn);
@@ -176,6 +180,25 @@ export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, dr
     }
   }, [dockVideoId, droneVideoId]);
 
+  // 切换无人机广角、变焦、红外
+  const switchCameraMode = useCallback(async (mode: VideoType) => {
+    // if (mode === VideoType.NORMAL) return;
+    try {
+      await post(`${MANAGE_HTTP_PREFIX}/live/streams/switch`, {
+        video_id: droneVideoId,
+        video_type: mode
+      });
+      toast({
+        description: "切换视角成功"
+      });
+    } catch (err: any) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
+      });
+    }
+  }, [droneVideoId]);
+
   return {
     startLive,
     stopLive,
@@ -183,6 +206,11 @@ export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, dr
     dockVideoId,
     droneVideoId,
     dockWebRtcUrl,
-    droneWebRtcUrl
+    droneWebRtcUrl,
+    switchCameraMode,
+    clarity,
+    setClarity,
+    mode,
+    setMode
   };
 };

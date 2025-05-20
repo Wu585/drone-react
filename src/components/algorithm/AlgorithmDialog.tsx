@@ -8,7 +8,7 @@ import {Input} from "@/components/ui/input.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {useAjax} from "@/lib/http.ts";
-import {ALGORITHM_CONFIG_API_PREFIX} from "@/hooks/drone/algorithm";
+import {ALGORITHM_CONFIG_API_PREFIX, useAlgorithmConfigById} from "@/hooks/drone/algorithm";
 import {toast} from "@/components/ui/use-toast.ts";
 import {eventMap} from "@/hooks/drone";
 
@@ -16,6 +16,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => Promise<void>;
+  id?: number;
 }
 
 const algorithmFormSchema = z.object({
@@ -30,34 +31,54 @@ const algorithmFormSchema = z.object({
     "请选择有效的事件类型"
   ),
   description: z.string().min(1, "请输入事件描述"),
+  warning_level: z.coerce.number({
+    required_error: "请选择告警类型",
+    invalid_type_error: "告警类型必须是数字"
+  })
 });
 
 export type AlgorithmFormValues = z.infer<typeof algorithmFormSchema>;
 
-const AlgorithmDialog = ({open, onOpenChange, onSuccess}: Props) => {
-  const {post} = useAjax();
+const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
+  const {post, put} = useAjax();
+
+  const {data: currentConfig} = useAlgorithmConfigById(id);
 
   const defaultValues: AlgorithmFormValues = {
     algorithm_name: "",
     contact: "",
     contact_phone: "",
     order_type: 0,
-    description: ""
+    description: "",
+    warning_level: 1
   };
 
   const form = useForm<AlgorithmFormValues>({
     resolver: zodResolver(algorithmFormSchema),
     defaultValues,
+    values: currentConfig
   });
+
+  const _onOpenChange = (visible: boolean) => {
+    onOpenChange?.(visible);
+  };
 
   const _onSubmit = async (values: AlgorithmFormValues) => {
     console.log(values);
     try {
-      await post(`${ALGORITHM_CONFIG_API_PREFIX}`, values);
-      toast({
-        description: "算法配置创建成功"
-      });
-      await onSuccess?.();
+      if (id) {
+        await put(`${ALGORITHM_CONFIG_API_PREFIX}/${id}`, values);
+        toast({
+          description: "算法配置更新成功"
+        });
+        await onSuccess?.();
+      } else {
+        await post(`${ALGORITHM_CONFIG_API_PREFIX}`, values);
+        toast({
+          description: "算法配置创建成功"
+        });
+        await onSuccess?.();
+      }
     } catch (err: any) {
       toast({
         description: err?.data?.message,
@@ -67,7 +88,7 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess}: Props) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={_onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -76,8 +97,8 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess}: Props) => {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(_onSubmit)} className={""}>
-            <div>
-              <h1 className={"font-bold"}>算法配置</h1>
+            <div className={"mb-4"}>
+              {/*<h1 className={"font-bold"}>算法配置</h1>*/}
               <FormField
                 control={form.control}
                 name="algorithm_name"
@@ -103,7 +124,7 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess}: Props) => {
               />
             </div>
             <div>
-              <h1 className={"font-bold"}>工单配置</h1>
+              {/*<h1 className={"font-bold"}>工单配置</h1>*/}
               <div className={"space-y-4"}>
                 <FormField
                   control={form.control}
@@ -129,6 +150,32 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess}: Props) => {
                       </div>
                     </FormItem>}
                   name={"order_type"}
+                />
+                <FormField
+                  control={form.control}
+                  render={({field}) =>
+                    <FormItem>
+                      <div className="grid grid-cols-[100px_1fr] items-start">
+                        <FormLabel className="leading-[32px]">
+                          告警等级
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value?.toString()}>
+                          <FormControl>
+                            <SelectTrigger className={"border-[#43ABFF] h-8 w-32"}>
+                              <SelectValue placeholder="选择告警等级"/>
+                              <FormMessage/>
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem key={"1"} value={"1"} className={"text-blue-500"}>一般告警</SelectItem>
+                            <SelectItem key={"2"} value={"2"} className={"text-yellow-500"}>次要告警</SelectItem>
+                            <SelectItem key={"3"} value={"3"} className={"text-orange-500"}>主要告警</SelectItem>
+                            <SelectItem key={"4"} value={"4"} className={"text-red-500"}>紧急告警</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </FormItem>}
+                  name={"warning_level"}
                 />
                 <FormField
                   control={form.control}
@@ -202,12 +249,12 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess}: Props) => {
               </div>
             </div>
             <div>
-              <h1 className={"font-bold"}>实例配置</h1>
+              {/*<h1 className={"font-bold"}>实例配置</h1>
               <div>
 
-              </div>
+              </div>*/}
             </div>
-            <DialogFooter>
+            <DialogFooter className={"mt-4"}>
               <Button type={"submit"}>确认</Button>
             </DialogFooter>
           </form>

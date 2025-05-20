@@ -3,8 +3,11 @@ import {router} from "./routes/router.tsx";
 import "virtual:svgsprites";
 import {SWRConfig} from "swr";
 import {Toaster} from "@/components/ui/toaster.tsx";
+import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 
 function App() {
+  useInitialConnectWebSocket();
+
   return (
     <SWRConfig value={{
       refreshInterval: 5 * 60 * 1000

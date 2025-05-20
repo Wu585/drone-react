@@ -918,7 +918,7 @@ interface ActionTriggerReq {
 }
 
 // 查询航线参数
-export const useWaylineById = (waylineId: string) => {
+export const useWaylineById = (waylineId?: string) => {
   const {get} = useAjax();
   const key = waylineId ? [`/wayline/api/v1/common/get?waylineId=${waylineId}`] : null;
   return useSWR(key, async ([path]) => (await get<Resource<WaylineData>>(path)).data.data);

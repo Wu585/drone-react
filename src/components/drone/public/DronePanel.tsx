@@ -180,8 +180,8 @@ const DronePanel = () => {
               <span className={"col-span-1 py-[2px] text-[#40F2FF]"}>设备状态</span>
               <div
                 className={cn("col-span-3 py-[2px] bg-[#52607D] pl-4 font-bold",
-                  deviceInfo.dock.basic_osd?.mode_code === EDockModeCode.Disconnected ? "text-red-500" : "text-[#00ee8b]")}>
-                {EDockModeCode[deviceInfo.dock.basic_osd?.mode_code]}
+                  deviceInfo?.dock?.basic_osd?.mode_code === EDockModeCode.Disconnected ? "text-red-500" : "text-[#00ee8b]")}>
+                {EDockModeCode[deviceInfo?.dock?.basic_osd?.mode_code]}
               </div>
             </div>
             <div className={"grid grid-cols-4 whitespace-nowrap"}>
@@ -190,7 +190,7 @@ const DronePanel = () => {
                   <TooltipTrigger>
                     <div className={"flex items-center  grid-cols-2 gap-x-[2px]"}>
                       <span><Rocket size={10}/></span>
-                      <span>{deviceInfo.dock.basic_osd?.drone_in_dock ? "是" : "否"}</span>
+                      <span>{deviceInfo.dock?.basic_osd?.drone_in_dock ? "是" : "否"}</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -203,7 +203,7 @@ const DronePanel = () => {
                   <TooltipTrigger>
                     <div className={"flex items-center  grid-cols-2 gap-x-[2px]"}>
                       <span><ThermometerSun size={10}/></span>
-                      <span>{deviceInfo.dock.basic_osd?.environment_temperature}°C</span>
+                      <span>{deviceInfo.dock?.basic_osd?.environment_temperature}°C</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -216,7 +216,7 @@ const DronePanel = () => {
                   <TooltipTrigger>
                     <div className={"flex items-center  grid-cols-2 gap-x-[2px]"}>
                       <span><Thermometer size={10}/></span>
-                      <span>{deviceInfo.dock.basic_osd?.temperature} °C</span>
+                      <span>{deviceInfo.dock?.basic_osd?.temperature} °C</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -229,7 +229,7 @@ const DronePanel = () => {
                   <TooltipTrigger>
                     <div className={"flex items-center  grid-cols-2 gap-x-[2px]"}>
                       <span><Earth size={10}/></span>
-                      <span>{deviceInfo.dock.basic_osd?.network_state?.rate} kb/s</span>
+                      <span>{deviceInfo.dock?.basic_osd?.network_state?.rate} kb/s</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -376,7 +376,7 @@ const DronePanel = () => {
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
                   <Satellite size={14}/>
-                  <span>{deviceInfo.device ? deviceInfo.device.position_state.rtk_number : str}</span></div>
+                  <span>{deviceInfo.device ? deviceInfo.device?.position_state?.rtk_number : str}</span></div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>搜星质量</p>
@@ -388,7 +388,7 @@ const DronePanel = () => {
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
                   <Zap size={14}/>
-                  <span>{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}</span>
+                  <span>{deviceInfo.device && deviceInfo.device?.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
@@ -401,7 +401,7 @@ const DronePanel = () => {
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
                   <HardDriveUpload size={14}/>
-                  <span>{deviceInfo.dock.link_osd?.sdr?.up_quality || str}</span></div>
+                  <span>{deviceInfo.dock?.link_osd?.sdr?.up_quality || str}</span></div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>上传质量</p>
@@ -413,7 +413,7 @@ const DronePanel = () => {
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
                   <HardDriveDownload size={14}/>
-                  <span>{deviceInfo.dock.link_osd?.sdr?.down_quality || str}</span></div>
+                  <span>{deviceInfo.dock?.link_osd?.sdr?.down_quality || str}</span></div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>下载质量</p>
@@ -425,7 +425,7 @@ const DronePanel = () => {
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
                   <span className={"text-[12px]"}>GPS</span>
-                  <span>{deviceInfo.device ? deviceInfo.device.position_state.gps_number : str}</span></div>
+                  <span>{deviceInfo.device ? deviceInfo.device?.position_state.gps_number : str}</span></div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>GPS</p>
@@ -449,7 +449,7 @@ const DronePanel = () => {
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
                   <span className={"text-[12px]"}>ASL</span>
-                  <span>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height).toFixed(2) + " m"}</span>
+                  <span>{!deviceInfo.device || deviceInfo.device?.height === str ? str : parseFloat(deviceInfo.device?.height).toFixed(2) + " m"}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
@@ -462,7 +462,7 @@ const DronePanel = () => {
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
                   <span className={"text-[12px]"}>ALT</span>
-                  <span>{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " m" : str}</span>
+                  <span>{deviceInfo.device && deviceInfo.device?.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " m" : str}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
