@@ -73,7 +73,6 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
           <div className={"content-center flex flex-col space-y-2"}>
             <RedoDot className={"transform scale-x-[-1]"}/>
             <Keyboard keyboard={"Q"}/>
-
           </div>
           <div className={"content-center flex flex-col space-y-2"}>
             <ChevronUp/>
@@ -114,7 +113,7 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
           </CockpitButton>)}
         <div className={"bg-break bg-full-size w-[117px] h-[36px] content-center cursor-pointer"}
              onClick={handleEmergencyStop}>
-          急停
+          急停 Space
         </div>
       </div>
 

@@ -1,22 +1,17 @@
 import {useEffect, useMemo, useRef} from "react";
-import {findMapLayer, flyToDegree, resetView} from "@/lib/view.ts";
-import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
+import {findMapLayer, resetView} from "@/lib/view.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
-import {useSceneStore} from "@/store/useSceneStore.ts";
 import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-source.ts";
 import dockPng from "@/assets/images/drone/dock.png";
-import dronePng from "@/assets/images/drone/drone.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
 import {useConnectMqtt} from "@/hooks/drone/useConnectMqtt.ts";
 import {
-  addDroneModel,
-  addHeightPolyline,
-  dynamicAddDroneModel, dynamicAddSceneDroneModel,
-  moveDroneToTarget,
+  dynamicAddSceneDroneModel,
   removeDroneModel
 } from "@/hooks/drone/wayline";
 import {useSearchParams} from "react-router-dom";
-import takeOffPng from "@/assets/images/drone/wayline/takeoff.svg";
+import {ELocalStorageKey} from "@/types/enum.ts";
+import {useWaylinJobs} from "@/hooks/drone";
 
 const mapLayerList = [
   {
@@ -34,6 +29,8 @@ const mapLayerList = [
 ];
 
 const CockpitScene = () => {
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+
   const addMapLayer = () => {
     mapLayerList.forEach(item => {
       const layer = new Cesium.SuperMapImageryProvider(item);
@@ -147,6 +144,16 @@ const CockpitScene = () => {
     }
   }, [realTimeDeviceInfo]);
 
+  /*const {data: currentJobList} = useWaylinJobs(workspaceId, {
+    page: 1,
+    page_size: 10,
+    status: 2,
+    dock_sn: dockSn
+  });
+
+  console.log("currentJobList");
+  console.log(currentJobList);*/
+
   /*useEffect(() => {
     dynamicAddSceneDroneModel(dronePositionRef.current);
   }, []);*/
@@ -169,7 +176,6 @@ const CockpitScene = () => {
         }
       });
     }, [deviceState]);*/
-
 
   return (
     <div id="cesiumContainer" className={"h-full"}></div>

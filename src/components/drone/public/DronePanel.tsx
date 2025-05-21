@@ -23,7 +23,7 @@ import KeyboardControl from "@/components/drone/public/KeyboardControl.tsx";
 import {useNavigate} from "react-router-dom";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
-import {memo, useRef, useState} from "react";
+import {memo, useMemo, useRef, useState} from "react";
 import {useMqtt} from "@/hooks/drone/use-mqtt.ts";
 import {KeyCode, useManualControl} from "@/hooks/drone/useManualControl.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
@@ -75,13 +75,12 @@ const DronePanel = () => {
   };
 
   const {
-    handleKeyup,
-    // handleEmergencyStop,
     resetControlState,
+    handleKeyEvent
   } = useManualControl(deviceTopicInfo, isRemoteControl);
 
   const onMouseDown = (type: KeyCode) => {
-    handleKeyup(type);
+    handleKeyEvent(type, true, true);
   };
 
   const onMouseUp = () => {
@@ -164,6 +163,12 @@ const DronePanel = () => {
       description: "直播链接已复制到粘贴板！"
     });
   };
+
+  const headingDegrees = useMemo(() => {
+    if (deviceInfo.device) {
+      return deviceInfo.device.attitude_head;
+    }
+  }, [deviceInfo]);
 
   return (
     <div className={"flex relative"}>
@@ -533,7 +538,12 @@ const DronePanel = () => {
               }}/>}
           </div>
           <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center"}>
-            <img src={compassPng} alt=""/>
+            <img src={compassPng} alt=""
+                 style={{
+                   transform: `rotate(${headingDegrees || 0}deg)`,
+                   transition: "transform 0.3s ease-out"
+                 }}
+                 className={"will-change-transform"}/>
           </div>
           <div className={"flex flex-col text-[12px] text-[#D0D0D0] justify-center px-2 space-y-2"}>
             <span>指点飞行</span>

@@ -1,7 +1,7 @@
-import { DeviceTopicInfo, useMqtt } from "@/hooks/drone/use-mqtt.ts";
-import { useCallback, useEffect, useRef } from "react";
-import { DRC_METHOD, DroneControlProtocol } from "@/types/drc.ts";
-import { toast } from "@/components/ui/use-toast.ts";
+import {DeviceTopicInfo, useMqtt} from "@/hooks/drone/use-mqtt.ts";
+import {useCallback, useEffect, useRef} from "react";
+import {DRC_METHOD, DroneControlProtocol} from "@/types/drc.ts";
+import {toast} from "@/components/ui/use-toast.ts";
 
 export enum KeyCode {
   KEY_W = "KeyW",
@@ -31,14 +31,14 @@ export const useManualControl = (
 
   // 控制参数映射表（新增）
   const CONTROL_MAPPING: ControlMapping = {
-    [KeyCode.KEY_W]: { x: 5 },
-    [KeyCode.KEY_S]: { x: -5 },
-    [KeyCode.KEY_A]: { y: -5 },
-    [KeyCode.KEY_D]: { y: 5 },
-    [KeyCode.ARROW_UP]: { h: 5 },
-    [KeyCode.ARROW_DOWN]: { h: -5 },
-    [KeyCode.KEY_Q]: { w: -20 },
-    [KeyCode.KEY_E]: { w: 20 },
+    [KeyCode.KEY_W]: {x: 5},
+    [KeyCode.KEY_S]: {x: -5},
+    [KeyCode.KEY_A]: {y: -5},
+    [KeyCode.KEY_D]: {y: 5},
+    [KeyCode.ARROW_UP]: {h: 5},
+    [KeyCode.ARROW_DOWN]: {h: -5},
+    [KeyCode.KEY_Q]: {w: -20},
+    [KeyCode.KEY_E]: {w: 20},
   };
 
   // 合并多个按键的控制参数（新增）
@@ -65,15 +65,15 @@ export const useManualControl = (
 
       const body = {
         method: DRC_METHOD.DRONE_CONTROL,
-        data: { ...params, seq: seqRef.current++ },
+        data: {...params, seq: seqRef.current++},
       };
 
-      mqttHooks?.publishMqtt(deviceTopicInfo.pubTopic!, body, { qos: 0 });
+      mqttHooks?.publishMqtt(deviceTopicInfo.pubTopic!, body, {qos: 0});
     }, 50);
   };
 
   // 修改后的键盘事件处理
-  const handleKeyEvent = (e: KeyboardEvent, isKeyDown: boolean) => {
+  const handleKeyEvent = (e: KeyboardEvent | KeyCode, isKeyDown: boolean, isMouse = false) => {
     if (!deviceTopicInfo.pubTopic) {
       toast({
         description: "请确保已经建立DRC链路",
@@ -82,11 +82,12 @@ export const useManualControl = (
       return;
     }
 
-    const key = e.code as KeyCode;
+    const key = isMouse ? e as KeyCode : (e as KeyboardEvent).code as KeyCode;
 
     // 处理空格键优先
     if (key === KeyCode.SPACE && isKeyDown) {
-      e.preventDefault();
+      !isMouse && (e as KeyboardEvent).preventDefault();
+
       handleEmergencyStop();
       return;
     }
@@ -118,7 +119,7 @@ export const useManualControl = (
       data: {},
     };
     resetControlState();
-    mqttHooks?.publishMqtt(deviceTopicInfo.pubTopic!, body, { qos: 1 });
+    mqttHooks?.publishMqtt(deviceTopicInfo.pubTopic!, body, {qos: 1});
   };
 
   useEffect(() => {
@@ -141,5 +142,6 @@ export const useManualControl = (
     activeKeys: Array.from(activeKeysRef.current),
     handleEmergencyStop,
     resetControlState,
+    handleKeyEvent
   };
 };
