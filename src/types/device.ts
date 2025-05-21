@@ -298,11 +298,12 @@ export interface DeviceOsdCamera {
 }
 
 export interface DeviceOsd {
+  attitude_head: number,
   longitude: number,
   latitude: number,
   gear: number,
   mode_code: number,
-  height: string,
+  height: number | string,
   home_distance: number | string,
   horizontal_speed: string,
   vertical_speed: string,

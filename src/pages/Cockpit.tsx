@@ -926,7 +926,7 @@ const Cockpit = () => {
               </div>
             </div>
             <div>
-              <CockpitFlyControl/>
+              <CockpitFlyControl sn={dockSn}/>
             </div>
           </div>
         </form>

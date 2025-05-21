@@ -1,5 +1,5 @@
-import {useEffect} from "react";
-import {findMapLayer, resetView} from "@/lib/view.ts";
+import {useEffect, useMemo, useRef} from "react";
+import {findMapLayer, flyToDegree, resetView} from "@/lib/view.ts";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
@@ -8,8 +8,15 @@ import dockPng from "@/assets/images/drone/dock.png";
 import dronePng from "@/assets/images/drone/drone.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
 import {useConnectMqtt} from "@/hooks/drone/useConnectMqtt.ts";
-import {addDroneModel, addHeightPolyline, moveDroneToTarget, removeDroneModel} from "@/hooks/drone/wayline";
+import {
+  addDroneModel,
+  addHeightPolyline,
+  dynamicAddDroneModel, dynamicAddSceneDroneModel,
+  moveDroneToTarget,
+  removeDroneModel
+} from "@/hooks/drone/wayline";
 import {useSearchParams} from "react-router-dom";
+import takeOffPng from "@/assets/images/drone/wayline/takeoff.svg";
 
 const mapLayerList = [
   {
@@ -26,9 +33,7 @@ const mapLayerList = [
   }
 ];
 
-
 const CockpitScene = () => {
-  const deviceState = useSceneStore(state => state.deviceState);
   const addMapLayer = () => {
     mapLayerList.forEach(item => {
       const layer = new Cesium.SuperMapImageryProvider(item);
@@ -36,13 +41,26 @@ const CockpitScene = () => {
     });
   };
   // useInitialConnectWebSocket();
-  useConnectMqtt();
+  useConnectMqtt(true);
   const [searchParams] = useSearchParams();
   const dockSn = searchParams.get("gateway_sn") || "";
   const deviceSn = searchParams.get("sn") || "";
-  const realTimeDeviceInfo = useRealTimeDeviceInfo(dockSn,deviceSn);
-  console.log("realTimeDeviceInfo");
-  console.log(realTimeDeviceInfo);
+  const realTimeDeviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
+  // console.log("realTimeDeviceInfo");
+  // console.log(realTimeDeviceInfo);
+  const dronePositionRef = useRef<{
+    longitude: number,
+    latitude: number,
+    height: number,
+    heading?: number
+  }>({
+    longitude: 121.44262,
+    latitude: 30.895136,
+    height: 100,
+    heading: 0
+  });
+
+  // const dock = realTimeDeviceInfo
   useEffect(() => {
     window.viewer = new Cesium.Viewer("cesiumContainer", {
       shadows: true,
@@ -68,8 +86,42 @@ const CockpitScene = () => {
 
     const yx = findMapLayer("影像");
     yx && (yx.show = false);
-
   }, []);
+
+  // 机场坐标字符串
+  const dockPoiStr = useMemo(() => {
+    if (realTimeDeviceInfo && realTimeDeviceInfo.dock && realTimeDeviceInfo.dock.basic_osd) {
+      const {longitude, latitude, height} = realTimeDeviceInfo.dock.basic_osd;
+      return JSON.stringify({
+        longitude, latitude, height
+      });
+    }
+  }, [realTimeDeviceInfo]);
+
+  // 定位机场视角
+  useEffect(() => {
+    if (dockPoiStr) {
+      const {longitude, latitude, height} = JSON.parse(dockPoiStr);
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(longitude, latitude, 200),
+        orientation: {
+          heading: 0,
+          pitch: Cesium.Math.toRadians(-90),
+          roll: 0.0
+        }
+      });
+      if (getCustomSource("dock")?.entities.getById(`dock-${dockSn}`)) return;
+      getCustomSource("dock")?.entities.add({
+        id: `dock-${dockSn}`,
+        position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
+        billboard: {
+          image: dockPng,
+          width: EntitySize.Width,
+          height: EntitySize.Height,
+        },
+      });
+    }
+  }, [dockPoiStr, dockSn]);
 
   useEntityCustomSource("dock");
   useEntityCustomSource("drone");
@@ -77,41 +129,47 @@ const CockpitScene = () => {
   useEntityCustomSource("waylines-create");
 
   useEffect(() => {
-    if (!viewer) return;
-    Object.keys(deviceState.dockInfo).forEach(dockSn => {
-      const dockInfo = deviceState.dockInfo[dockSn];
-      if (dockInfo.basic_osd && dockInfo.basic_osd.longitude && dockInfo.basic_osd.latitude) {
-        if (getCustomSource("dock")?.entities.getById(`dock-${dockSn}`)) return;
-        getCustomSource("dock")?.entities.add({
-          id: `dock-${dockSn}`,
-          position: Cesium.Cartesian3.fromDegrees(dockInfo.basic_osd.longitude, dockInfo.basic_osd.latitude),
-          billboard: {
-            image: dockPng,
-            width: EntitySize.Width,
-            height: EntitySize.Height,
-          },
-        });
-      }
-    });
-  }, [deviceState]);
+    if (realTimeDeviceInfo && realTimeDeviceInfo.device) {
+      dronePositionRef.current.longitude = +realTimeDeviceInfo.device.longitude;
+      dronePositionRef.current.latitude = +realTimeDeviceInfo.device.latitude;
+      dronePositionRef.current.height = +realTimeDeviceInfo.device.height;
+      dronePositionRef.current.heading = +realTimeDeviceInfo.device.attitude_head;
+    }
+  }, [realTimeDeviceInfo]);
 
   useEffect(() => {
     if (realTimeDeviceInfo.device && realTimeDeviceInfo.device.longitude && realTimeDeviceInfo.device.latitude && realTimeDeviceInfo.device.height) {
-      // getCustomSource("drone")?.entities.removeAll();
-      const longitude = +realTimeDeviceInfo.device.longitude;
-      const latitude = +realTimeDeviceInfo.device.latitude;
-      const height = +realTimeDeviceInfo.device.height;
-      // addHeightPolyline(longitude, latitude, height);
-      addDroneModel(longitude, latitude, height);
-      moveDroneToTarget({
-        longitude,
-        latitude,
-        height
-      });
+      if (dronePositionRef.current) {
+        dynamicAddSceneDroneModel(dronePositionRef.current);
+      }
     } else {
       removeDroneModel();
     }
   }, [realTimeDeviceInfo]);
+
+  /*useEffect(() => {
+    dynamicAddSceneDroneModel(dronePositionRef.current);
+  }, []);*/
+
+  /*  useEffect(() => {
+      if (!viewer) return;
+      Object.keys(deviceState.dockInfo).forEach(dockSn => {
+        const dockInfo = deviceState.dockInfo[dockSn];
+        if (dockInfo.basic_osd && dockInfo.basic_osd.longitude && dockInfo.basic_osd.latitude) {
+          if (getCustomSource("dock")?.entities.getById(`dock-${dockSn}`)) return;
+          getCustomSource("dock")?.entities.add({
+            id: `dock-${dockSn}`,
+            position: Cesium.Cartesian3.fromDegrees(dockInfo.basic_osd.longitude, dockInfo.basic_osd.latitude),
+            billboard: {
+              image: dockPng,
+              width: EntitySize.Width,
+              height: EntitySize.Height,
+            },
+          });
+        }
+      });
+    }, [deviceState]);*/
+
 
   return (
     <div id="cesiumContainer" className={"h-full"}></div>

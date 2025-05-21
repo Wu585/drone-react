@@ -15,11 +15,7 @@ export const useCurrentWorkSpace = () => {
 // 获取当前组织下的部门列表
 export const useCurrentDepartList = () => {
   const currentWorkSpace = useCurrentWorkSpace();
-  console.log('currentWorkSpace');
-  console.log(currentWorkSpace);
   const {data: departList} = useDepartList();
-  console.log('departList');
-  console.log(departList);
   return useMemo(() => {
     return departList?.filter(item => item.workspace === currentWorkSpace?.id) || [];
   }, [departList, currentWorkSpace]);

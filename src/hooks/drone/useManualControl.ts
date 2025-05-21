@@ -1,7 +1,7 @@
-import {DeviceTopicInfo, useMqtt} from "@/hooks/drone/use-mqtt.ts";
-import {useCallback, useEffect, useRef} from "react";
-import {DRC_METHOD, DroneControlProtocol} from "@/types/drc.ts";
-import {toast} from "@/components/ui/use-toast.ts";
+import { DeviceTopicInfo, useMqtt } from "@/hooks/drone/use-mqtt.ts";
+import { useCallback, useEffect, useRef } from "react";
+import { DRC_METHOD, DroneControlProtocol } from "@/types/drc.ts";
+import { toast } from "@/components/ui/use-toast.ts";
 
 export enum KeyCode {
   KEY_W = "KeyW",
@@ -12,137 +12,134 @@ export enum KeyCode {
   KEY_E = "KeyE",
   ARROW_UP = "ArrowUp",
   ARROW_DOWN = "ArrowDown",
+  SPACE = "Space", // 添加空格键枚举
 }
 
-export const useManualControl = (deviceTopicInfo: DeviceTopicInfo, isCurrentFlightController: boolean) => {
-  const activeCodeKeyRef = useRef<KeyCode | null>(null);
+// 新增类型：按键与控制参数的映射
+type ControlMapping = {
+  [key in KeyCode]?: Partial<DroneControlProtocol>;
+};
+
+export const useManualControl = (
+  deviceTopicInfo: DeviceTopicInfo,
+  isCurrentFlightController: boolean
+) => {
+  const activeKeysRef = useRef<Set<KeyCode>>(new Set()); // 改用 Set 跟踪多个按键
   const mqttHooks = useMqtt(deviceTopicInfo);
   const seqRef = useRef(0);
   const intervalRef = useRef<NodeJS.Timeout | undefined>();
-  const isKeyDownRef = useRef(false);
+
+  // 控制参数映射表（新增）
+  const CONTROL_MAPPING: ControlMapping = {
+    [KeyCode.KEY_W]: { x: 5 },
+    [KeyCode.KEY_S]: { x: -5 },
+    [KeyCode.KEY_A]: { y: -5 },
+    [KeyCode.KEY_D]: { y: 5 },
+    [KeyCode.ARROW_UP]: { h: 5 },
+    [KeyCode.ARROW_DOWN]: { h: -5 },
+    [KeyCode.KEY_Q]: { w: -20 },
+    [KeyCode.KEY_E]: { w: 20 },
+  };
+
+  // 合并多个按键的控制参数（新增）
+  const getCombinedParams = (): DroneControlProtocol => {
+    const params: DroneControlProtocol = {};
+    activeKeysRef.current.forEach((key) => {
+      Object.assign(params, CONTROL_MAPPING[key]);
+    });
+    return params;
+  };
 
   const handleClearInterval = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = undefined;
-    }
+    intervalRef.current && clearInterval(intervalRef.current);
+    intervalRef.current = undefined;
   }, []);
 
-  const handlePublish = (params: DroneControlProtocol) => {
-    const body = {
-      method: DRC_METHOD.DRONE_CONTROL,
-      data: params,
-    };
-    
+  // 重构后的发送逻辑
+  const startSendingCommands = () => {
     if (intervalRef.current) return;
-    
+
     intervalRef.current = setInterval(() => {
-      body.data.seq = seqRef.current++;
-      seqRef.current++;
-      window.console.log('keyCode>>>>', activeCodeKeyRef.current, body);
-      mqttHooks?.publishMqtt(deviceTopicInfo.pubTopic, body, {qos: 0});
+      const params = getCombinedParams();
+      if (Object.keys(params).length === 0) return;
+
+      const body = {
+        method: DRC_METHOD.DRONE_CONTROL,
+        data: { ...params, seq: seqRef.current++ },
+      };
+
+      mqttHooks?.publishMqtt(deviceTopicInfo.pubTopic!, body, { qos: 0 });
     }, 50);
   };
 
-  const handleKeyup = (keyCode: KeyCode) => {
+  // 修改后的键盘事件处理
+  const handleKeyEvent = (e: KeyboardEvent, isKeyDown: boolean) => {
     if (!deviceTopicInfo.pubTopic) {
-      return toast({
+      toast({
         description: "请确保已经建立DRC链路",
-        variant: "destructive"
+        variant: "destructive",
       });
+      return;
     }
 
-    if (!isKeyDownRef.current) return;
+    const key = e.code as KeyCode;
 
-    const SPEED = 5;
-    const HEIGHT = 5;
-    const W_SPEED = 20;
+    // 处理空格键优先
+    if (key === KeyCode.SPACE && isKeyDown) {
+      e.preventDefault();
+      handleEmergencyStop();
+      return;
+    }
 
-    switch (keyCode) {
-      case KeyCode.KEY_A:
-        handlePublish({y: -SPEED});
-        activeCodeKeyRef.current = keyCode;
-        break;
-      case KeyCode.KEY_W:
-        handlePublish({x: SPEED});
-        activeCodeKeyRef.current = keyCode;
-        break;
-      case KeyCode.KEY_S:
-        handlePublish({x: -SPEED});
-        activeCodeKeyRef.current = keyCode;
-        break;
-      case KeyCode.KEY_D:
-        handlePublish({y: SPEED});
-        activeCodeKeyRef.current = keyCode;
-        break;
-      case "ArrowUp":
-        handlePublish({h: HEIGHT});
-        activeCodeKeyRef.current = keyCode;
-        break;
-      case "ArrowDown":
-        handlePublish({h: -HEIGHT});
-        activeCodeKeyRef.current = keyCode;
-        break;
-      case KeyCode.KEY_Q:
-        handlePublish({w: -W_SPEED});
-        activeCodeKeyRef.current = keyCode;
-        break;
-      case KeyCode.KEY_E:
-        handlePublish({w: W_SPEED});
-        activeCodeKeyRef.current = keyCode;
-        break;
-      default:
-        break;
+    // 更新按键状态
+    if (isKeyDown) {
+      activeKeysRef.current.add(key);
+    } else {
+      activeKeysRef.current.delete(key);
+    }
+
+    // 控制指令发送启停
+    if (activeKeysRef.current.size > 0) {
+      startSendingCommands();
+    } else {
+      handleClearInterval();
     }
   };
 
   const resetControlState = useCallback(() => {
-    activeCodeKeyRef.current = null;
+    activeKeysRef.current.clear();
     seqRef.current = 0;
-    isKeyDownRef.current = false;
     handleClearInterval();
-  }, []);
+  }, [handleClearInterval]);
+
+  const handleEmergencyStop = () => {
+    const body = {
+      method: DRC_METHOD.DRONE_EMERGENCY_STOP,
+      data: {},
+    };
+    resetControlState();
+    mqttHooks?.publishMqtt(deviceTopicInfo.pubTopic!, body, { qos: 1 });
+  };
 
   useEffect(() => {
-    if (isCurrentFlightController && deviceTopicInfo.pubTopic) {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        isKeyDownRef.current = true;
-        handleKeyup(e.code as KeyCode);
-      };
+    if (!isCurrentFlightController) return;
 
-      const handleKeyUp = () => {
-        isKeyDownRef.current = false;
-        resetControlState();
-      };
+    const onKeyDown = (e: KeyboardEvent) => handleKeyEvent(e, true);
+    const onKeyUp = (e: KeyboardEvent) => handleKeyEvent(e, false);
 
-      window.addEventListener("keydown", handleKeyDown);
-      window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
 
-      return () => {
-        window.removeEventListener("keydown", handleKeyDown);
-        window.removeEventListener("keyup", handleKeyUp);
-        resetControlState();
-      };
-    }
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      resetControlState();
+    };
   }, [isCurrentFlightController, deviceTopicInfo.pubTopic, resetControlState]);
 
   return {
-    activeCodeKey: activeCodeKeyRef.current,
-    handleKeyup,
-    handleEmergencyStop: () => {
-      if (!deviceTopicInfo.pubTopic) {
-        return toast({
-          description: "请确保已经建立DRC链路",
-          variant: "destructive"
-        });
-      }
-      const body = {
-        method: DRC_METHOD.DRONE_EMERGENCY_STOP,
-        data: {}
-      };
-      resetControlState();
-      mqttHooks?.publishMqtt(deviceTopicInfo.pubTopic, body, {qos: 1});
-    },
+    activeKeys: Array.from(activeKeysRef.current),
+    handleEmergencyStop,
     resetControlState,
   };
 };

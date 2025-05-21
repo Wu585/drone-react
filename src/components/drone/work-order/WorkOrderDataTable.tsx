@@ -5,7 +5,7 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {useState} from "react";
+import {useMemo, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {
   useCurrentUser, usePermission,
@@ -115,77 +115,78 @@ const WorkOrderDataTable = () => {
   const urlFix = isGly ? "page" : "pageByOperator";
   const [currentOrder, setCurrentOrder] = useState<WorkOrder | null>(null);
 
-  const columns: ColumnDef<WorkOrder>[] = [
-    {
-      header: "序号",
-      cell: ({row}) => (
-        <span>
+  const columns: ColumnDef<WorkOrder>[] = useMemo(() => {
+    return [
+      {
+        header: "序号",
+        cell: ({row}) => (
+          <span>
           {row.index + 1}
         </span>
-      )
-    },
-    {
-      accessorKey: "name",
-      header: "事件名称",
-      cell: ({row}) => (
-        <div className={"w-[150px] whitespace-nowrap overflow-hidden text-ellipsis"}>{row.original.name}</div>
-      )
-    },
-    {
-      accessorKey: "warning_level",
-      header: "告警等级",
-      cell: ({row}) => (
-        <span>{warnLevelMap[row.original.warning_level as WarnLevel]}</span>
-      )
-    },
-    {
-      accessorKey: "found_time",
-      header: "发现时间",
-      cell: ({row}) => (
-        <span>{dayjs(row.original.found_time).format("YYYY-MM-DD HH:mm:ss")}</span>
-      )
-    },
-    {
-      accessorKey: "address",
-      header: "发生地址",
-    },
-    {
-      accessorKey: "contact",
-      header: "联系人",
-    },
-    {
-      accessorKey: "contact_phone",
-      header: "联系方式",
-    },
-    {
-      accessorKey: "order_type",
-      header: "事件类型",
-      cell: ({row}) => <span>{eventMap[row.original.order_type as keyof typeof eventMap]}</span>
-    },
-    {
-      accessorKey: "status",
-      header: "状态",
-      cell: ({row}) => (
-        <span className={cn(
-          "px-2 py-1 rounded text-sm",
-          {
-            "bg-yellow-500/20 text-yellow-500": row.original.status === 0,
-            "bg-blue-500/20 text-blue-500": row.original.status === 1,
-            "bg-orange-500/20 text-orange-500": row.original.status === 2,
-            "bg-green-500/20 text-green-500": row.original.status === 3,
-            "bg-red-500/20 text-red-500": row.original.status === 4,
-          }
-        )}>
+        )
+      },
+      {
+        accessorKey: "name",
+        header: "事件名称",
+        cell: ({row}) => (
+          <div className={"w-[150px] whitespace-nowrap overflow-hidden text-ellipsis"}>{row.original.name}</div>
+        )
+      },
+      {
+        accessorKey: "warning_level",
+        header: "告警等级",
+        cell: ({row}) => (
+          <span>{warnLevelMap[row.original.warning_level as WarnLevel]}</span>
+        )
+      },
+      {
+        accessorKey: "found_time",
+        header: "发现时间",
+        cell: ({row}) => (
+          <span>{dayjs(row.original.found_time).format("YYYY-MM-DD HH:mm:ss")}</span>
+        )
+      },
+      {
+        accessorKey: "address",
+        header: "发生地址",
+      },
+      {
+        accessorKey: "contact",
+        header: "联系人",
+      },
+      {
+        accessorKey: "contact_phone",
+        header: "联系方式",
+      },
+      {
+        accessorKey: "order_type",
+        header: "事件类型",
+        cell: ({row}) => <span>{eventMap[row.original.order_type as keyof typeof eventMap]}</span>
+      },
+      {
+        accessorKey: "status",
+        header: "状态",
+        cell: ({row}) => (
+          <span className={cn(
+            "px-2 py-1 rounded text-sm",
+            {
+              "bg-yellow-500/20 text-yellow-500": row.original.status === 0,
+              "bg-blue-500/20 text-blue-500": row.original.status === 1,
+              "bg-orange-500/20 text-orange-500": row.original.status === 2,
+              "bg-green-500/20 text-green-500": row.original.status === 3,
+              "bg-red-500/20 text-red-500": row.original.status === 4,
+            }
+          )}>
           {OrderStatusMap[row.original.status as OrderStatus]}
         </span>
-      )
-    },
-    {
-      header: "操作",
-      // 管理员 && 待分配 才可编辑
-      cell: ({row}) => {
-        return (
-          <span className={`flex items-center space-x-2`}>
+        )
+      },
+      {
+        header: "操作",
+        // 管理员 && 待分配 才可编辑
+        cell: ({row}) => {
+          return (
+            <span className={`flex items-center space-x-2`}>
             {isGly && row.original.status === 0 && <PermissionButton
               permissionKey={"Collection_TicketCreateEdit"}
               className={"h-4 bg-transparent px-0"}
@@ -199,21 +200,22 @@ const WorkOrderDataTable = () => {
             >
               <Edit className={"w-4"}/>
             </PermissionButton>}
-            {(isGly && row.original.status === 0) &&
-              <DistributeDialog onConfirm={mutate} currentWorkOrderId={row.original.id}/>}
-            <Eye className={"w-4"} onClick={() => {
-              isGly ? setOrderHandleType("preview") : setOrderHandleType("handle");
-              setOrderType("preview");
-              setCurrentOrder(row.original);
-              stepper.goTo(getStepByStatus(row.original.status));
-              setOpen(true);
-            }}/>
-            {/*<Trash className={"w-4"}/>*/}
+              {(isGly && row.original.status === 0) &&
+                <DistributeDialog onConfirm={mutate} currentWorkOrderId={row.original.id}/>}
+              <Eye className={"w-4"} onClick={() => {
+                isGly ? setOrderHandleType("preview") : setOrderHandleType("handle");
+                setOrderType("preview");
+                setCurrentOrder(row.original);
+                stepper.goTo(getStepByStatus(row.original.status));
+                setOpen(true);
+              }}/>
+              {/*<Trash className={"w-4"}/>*/}
           </span>
-        );
+          );
+        }
       }
-    }
-  ];
+    ];
+  }, [isGly]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     []
   );

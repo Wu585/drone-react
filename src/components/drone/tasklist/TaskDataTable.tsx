@@ -9,7 +9,7 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {useState} from "react";
+import {useMemo, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {HTTP_PREFIX_Wayline, Task, useBindingDevice, useWaylinJobs} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
@@ -42,139 +42,141 @@ import dayjs from "dayjs";
 const TaskDataTable = () => {
   const {delete: deleteClient, put, post} = useAjax();
 
-  const columns: ColumnDef<Task>[] = [
-    {
-      header: "计划时间 | 实际时间",
-      cell: ({row}) => {
-        // 格式化时间函数
-        const formatTime = (timeStr: string) => {
-          if (!timeStr) return "";
-          const time = timeStr.split(" ")[1];  // 取空格后的时间部分
-          return time ? time.substring(0, 8) : ""; // 只保留时分秒 (HH:mm:ss)
-        };
+  const columns: ColumnDef<Task>[] = useMemo(() => {
+    return [
+      {
+        header: "计划时间 | 实际时间",
+        cell: ({row}) => {
+          // 格式化时间函数
+          const formatTime = (timeStr: string) => {
+            if (!timeStr) return "";
+            const time = timeStr.split(" ")[1];  // 取空格后的时间部分
+            return time ? time.substring(0, 8) : ""; // 只保留时分秒 (HH:mm:ss)
+          };
 
-        return (
-          <div className="flex gap-0.5 space-x-2">
-            <div className="text-gray-400 text-[13px]">
-              [{formatTime(row.original.begin_time)}-{formatTime(row.original.end_time)}]
+          return (
+            <div className="flex gap-0.5 space-x-2">
+              <div className="text-gray-400 text-[13px]">
+                [{formatTime(row.original.begin_time)}-{formatTime(row.original.end_time)}]
+              </div>
+              <div className="text-[#43ABFF] text-[13px]">
+                {formatTime(row.original.execute_time) ?
+                  `[${formatTime(row.original.execute_time)}-${formatTime(row.original.completed_time)}]` : "已取消"
+                }
+              </div>
             </div>
-            <div className="text-[#43ABFF] text-[13px]">
-              {formatTime(row.original.execute_time) ?
-                `[${formatTime(row.original.execute_time)}-${formatTime(row.original.completed_time)}]` : "已取消"
-              }
-            </div>
+          );
+        }
+      },
+      {
+        header: "执行状态",
+        cell: ({row}) =>
+          <span style={{
+            color: formatTaskStatus(row.original).color
+          }} className={""}>{formatTaskStatus(row.original).text}</span>
+      },
+      {
+        accessorKey: "job_name",
+        header: "计划名称",
+      },
+      {
+        accessorKey: "task_type",
+        header: "类型",
+        cell: ({row}) => <span>{TaskTypeMap[row.original.task_type]}</span>
+      },
+      {
+        accessorKey: "file_name",
+        header: "航线名称",
+      },
+      {
+        accessorKey: "dock_name",
+        header: "机场",
+      },
+      {
+        accessorKey: "username",
+        header: "创建人",
+      },
+      {
+        header: "媒体上传",
+        cell: ({row}) => {
+          return <div className={"flex items-center whitespace-nowrap"}>
+            <Circle fill={formatMediaTaskStatus(row.original).color} size={16}/>
+            <span>{formatMediaTaskStatus(row.original).text}
+              {formatMediaTaskStatus(row.original).number && `${formatMediaTaskStatus(row.original).number}`}</span>
+          </div>;
+        }
+      },
+      {
+        header: "操作",
+        cell: ({row}) =>
+          <div className={"flex whitespace-nowrap space-x-2"}>
+            {row.original.status === TaskStatus.Wait && <AlertDialog>
+              <AlertDialogTrigger className={""} asChild>
+                <PermissionButton
+                  permissionKey={"Collection_PlanDelete"}
+                  className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
+                  删除
+                </PermissionButton>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>删除任务</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    确认删除任务吗？
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDeleteTask(row.original.job_id)}>确认</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>}
+            {row.original.status === TaskStatus.Carrying && <AlertDialog>
+              <AlertDialogTrigger className={""} asChild>
+                <Button
+                  type={"submit"}
+                  className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
+                  中止
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>中止任务</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    确认中止任务吗？
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onSuspandTask(row.original.job_id)}>确认</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>}
+            {row.original.status === TaskStatus.Paused && <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type={"submit"}
+                  className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
+                  恢复
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>恢复任务</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    确认恢复任务吗？
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onResumeTask(row.original.job_id)}>确认</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>}
           </div>
-        );
       }
-    },
-    {
-      header: "执行状态",
-      cell: ({row}) =>
-        <span style={{
-          color: formatTaskStatus(row.original).color
-        }} className={""}>{formatTaskStatus(row.original).text}</span>
-    },
-    {
-      accessorKey: "job_name",
-      header: "计划名称",
-    },
-    {
-      accessorKey: "task_type",
-      header: "类型",
-      cell: ({row}) => <span>{TaskTypeMap[row.original.task_type]}</span>
-    },
-    {
-      accessorKey: "file_name",
-      header: "航线名称",
-    },
-    {
-      accessorKey: "dock_name",
-      header: "机场",
-    },
-    {
-      accessorKey: "username",
-      header: "创建人",
-    },
-    {
-      header: "媒体上传",
-      cell: ({row}) => {
-        return <div className={"flex items-center whitespace-nowrap"}>
-          <Circle fill={formatMediaTaskStatus(row.original).color} size={16}/>
-          <span>{formatMediaTaskStatus(row.original).text}
-            {formatMediaTaskStatus(row.original).number && `${formatMediaTaskStatus(row.original).number}`}</span>
-        </div>;
-      }
-    },
-    {
-      header: "操作",
-      cell: ({row}) =>
-        <div className={"flex whitespace-nowrap space-x-2"}>
-          {row.original.status === TaskStatus.Wait && <AlertDialog>
-            <AlertDialogTrigger className={""} asChild>
-              <PermissionButton
-                permissionKey={"Collection_PlanDelete"}
-                className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
-                删除
-              </PermissionButton>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>删除任务</AlertDialogTitle>
-                <AlertDialogDescription>
-                  确认删除任务吗？
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction onClick={() => onDeleteTask(row.original.job_id)}>确认</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>}
-          {row.original.status === TaskStatus.Carrying && <AlertDialog>
-            <AlertDialogTrigger className={""} asChild>
-              <Button
-                type={"submit"}
-                className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
-                中止
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>中止任务</AlertDialogTitle>
-                <AlertDialogDescription>
-                  确认中止任务吗？
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction onClick={() => onSuspandTask(row.original.job_id)}>确认</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>}
-          {row.original.status === TaskStatus.Paused && <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                type={"submit"}
-                className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
-                恢复
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>恢复任务</AlertDialogTitle>
-                <AlertDialogDescription>
-                  确认恢复任务吗？
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction onClick={() => onResumeTask(row.original.job_id)}>确认</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>}
-        </div>
-    }
-  ];
+    ];
+  }, []);
 
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const HTTP_PREFIX = "/wayline/api/v1";

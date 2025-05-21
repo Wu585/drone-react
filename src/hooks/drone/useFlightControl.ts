@@ -11,7 +11,7 @@ const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) |
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
 
-export const useFlightControl = () => {
+export const useFlightControl = (sn?: string) => {
   const {visible: isRemoteControl, show: enterRemoteControl, hide: outRemoteControl} = useVisible();
   const osdVisible = useSceneStore(state => state.osdVisible);
   const clientId = useSceneStore(state => state.clientId);
@@ -19,7 +19,7 @@ export const useFlightControl = () => {
   // ws 消息通知
   const {droneControlSource} = useDroneControlWsEvent(osdVisible.gateway_sn || "");
   const [deviceTopicInfo, setDeviceTopicInfo] = useState({
-    sn: osdVisible.gateway_sn || "",
+    sn: osdVisible.gateway_sn || sn || "",
     pubTopic: "",
     subTopic: ""
   });
@@ -29,7 +29,7 @@ export const useFlightControl = () => {
     try {
       const res = await post<Resource<any>>(`${DRC_API_PREFIX}/workspaces/${workspaceId}/drc/enter`, {
         client_id: clientId,
-        dock_sn: osdVisible.gateway_sn || ""
+        dock_sn: osdVisible.gateway_sn || sn || ""
       });
 
       if (res.data.code === 0) {
@@ -66,7 +66,7 @@ export const useFlightControl = () => {
     try {
       const res = await post<Resource<any>>(`${DRC_API_PREFIX}/workspaces/${workspaceId}/drc/exit`, {
         client_id: clientId,
-        dock_sn: osdVisible.gateway_sn || ""
+        dock_sn: osdVisible.gateway_sn || sn || ""
       });
       if (res.data.code === 0) {
         outRemoteControl();

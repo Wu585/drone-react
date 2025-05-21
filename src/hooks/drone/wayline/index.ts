@@ -71,6 +71,44 @@ export const dynamicAddDroneModel = (dronePosition: {
   getCustomSource(sourceName)?.entities.add({
     id: "takeoff-drone",
     position: new Cesium.CallbackProperty(() => {
+      console.log('dronePosition==callback');
+      console.log(dronePosition);
+      const {longitude, latitude, height} = dronePosition;
+      return Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
+    }, false),
+    orientation: new Cesium.CallbackProperty(() => {
+      // 根据航向角计算四元数
+      const heading = Cesium.Math.toRadians(dronePosition.heading || 0);
+      return Cesium.Transforms.headingPitchRollQuaternion(
+        Cesium.Cartesian3.fromDegrees(dronePosition.longitude, dronePosition.latitude, dronePosition.height),
+        new Cesium.HeadingPitchRoll(heading, 0, 0)
+      );
+    }, false),
+    model: {
+      uri: "/models/untitled2.glb",
+      scale: 0.1,
+      minimumPixelSize: 64,
+      maximumScale: 64,
+      runAnimations: true,
+    }
+  });
+};
+
+export const dynamicAddSceneDroneModel = (dronePosition?: {
+  longitude: number,
+  latitude: number,
+  height: number,
+  heading?: number // 添加航向角属性
+}, sourceName = "waylines-create") => {
+  const takeoffDroneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
+
+  if (takeoffDroneEntity || !dronePosition) {
+    return;
+  }
+
+  getCustomSource(sourceName)?.entities.add({
+    id: "takeoff-drone",
+    position: new Cesium.CallbackProperty(() => {
       const {longitude, latitude, height} = dronePosition;
       return Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
     }, false),

@@ -8,7 +8,7 @@ const DRC_API_PREFIX = "/control/api/v1";
 
 const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
 
-export const useConnectMqtt = () => {
+export const useConnectMqtt = (connect: boolean = true) => {
   const {osdVisible, setMqttState, setClientId} = useSceneStore();
   const {post} = useAjax();
   const mqttStateRef = useRef<UranusMqtt | null>(null);
@@ -16,7 +16,7 @@ export const useConnectMqtt = () => {
   const dockOsdVisible = useMemo(() => osdVisible && osdVisible.visible && osdVisible.is_dock, [osdVisible]);
 
   useEffect(() => {
-    if (dockOsdVisible) {
+    if (dockOsdVisible || connect) {
       if (mqttStateRef.current) return;
 
       post(`${DRC_API_PREFIX}/workspaces/${workspaceId}/drc/connect`, {}).then((result: any) => {
@@ -40,7 +40,7 @@ export const useConnectMqtt = () => {
       setMqttState(null);
       setClientId("");
     }
-  }, [dockOsdVisible]);
+  }, [dockOsdVisible, connect]);
 
   return () => {
     mqttStateRef.current?.destroyed();

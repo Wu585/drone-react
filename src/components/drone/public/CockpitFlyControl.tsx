@@ -12,22 +12,20 @@ import {useDockControl} from "@/hooks/drone/useDockControl.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 
-const CockpitFlyControl = () => {
+const CockpitFlyControl = ({sn}: { sn?: string }) => {
   const {
     isRemoteControl,
     exitFlightControl,
     enterFlightControl,
     deviceTopicInfo,
     outRemoteControl
-  } = useFlightControl();
+  } = useFlightControl(sn);
   const {sendDockControlCmd} = useDockControl();
   const osdVisible = useSceneStore(state => state.osdVisible);
   useMqtt(deviceTopicInfo);
 
   const {
-    handleKeyup,
     handleEmergencyStop,
-    resetControlState,
   } = useManualControl(deviceTopicInfo, isRemoteControl);
 
   const onClickFightControl = async () => {
@@ -41,7 +39,7 @@ const CockpitFlyControl = () => {
   const sendControlCmd = async (cmdItem: DeviceCmdItem) => {
     try {
       await sendDockControlCmd({
-        sn: osdVisible.gateway_sn || "",
+        sn: osdVisible.gateway_sn || sn || "",
         cmd: cmdItem.cmdKey,
         action: cmdItem.action
       }, false);
@@ -114,7 +112,8 @@ const CockpitFlyControl = () => {
           <CockpitButton type={"button"} onClick={() => sendControlCmd(cmdItem)} key={cmdItem.cmdKey}>
             {cmdItem.operateText}
           </CockpitButton>)}
-        <div className={"bg-break bg-full-size w-[117px] h-[36px] content-center cursor-pointer"} onClick={handleEmergencyStop}>
+        <div className={"bg-break bg-full-size w-[117px] h-[36px] content-center cursor-pointer"}
+             onClick={handleEmergencyStop}>
           急停
         </div>
       </div>

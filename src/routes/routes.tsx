@@ -22,6 +22,7 @@ import TaskCreateApply from "@/pages/TaskCreateApply.tsx";
 import VideoShareRtc from "@/pages/VideoShareRtc.tsx";
 import AlgorithmConfig from "@/pages/AlgorithmConfig.tsx";
 import CreateWayLine0517 from "@/pages/CreateWayLine0517.tsx";
+import VideoShareRtc2 from "@/pages/VideoShareRtc2.tsx";
 
 const Login = lazy(() => import("@/pages/hgyq/Login.tsx"));
 
@@ -29,6 +30,10 @@ export const routes: RouteObject[] = [
   {
     path: "/video-share",
     element: <VideoShareRtc/>
+  },
+  {
+    path: "/video-share2",
+    element: <VideoShareRtc2/>
   },
   {
     path: "/login",

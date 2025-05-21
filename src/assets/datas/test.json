@@ -1,13 +1,13 @@
 {
-  "event_id": "eventId",
+  "event_id": "eventId3",
   "event_state": 0,
   "device_name": "BM1684-180",
   "device_id": "2f1e469a-c0a0-4883-e11e-d60e5a16faa9",
   "task_name": "测试",
   "task_id": "3a5aaacf-56b3-4307-8d39-337bf476bc86",
-  "app_name": "火焰烟雾A",
+  "app_name": "高速抛洒物识别",
   "app_id": "100001",
-  "src_name": "摄像头01",
+  "src_name": "1581F8HGD25110010022",
   "src_id": "camera01",
   "created": 1649317910,
   "details": [

@@ -67,9 +67,10 @@ export const useRealTimeDeviceInfo = (dockSn?: string, droneSn?: string) => {
     } as GatewayOsd,
     dock: {} as DockOsd,
     device: {
+      attitude_head: 0,
       gear: -1,
       mode_code: EModeCode.Disconnected,
-      height: str,
+      height: 0,
       home_distance: str,
       horizontal_speed: str,
       vertical_speed: str,
