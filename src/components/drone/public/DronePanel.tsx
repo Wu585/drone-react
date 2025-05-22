@@ -18,6 +18,7 @@ import TakeOffFormPanel from "@/components/drone/public/TakeOffFormPanel.tsx";
 import {useVisible} from "@/hooks/public/utils.ts";
 import remoteControlPng from "@/assets/images/drone/remote-control.png";
 import compassPng from "@/assets/images/drone/compass.png";
+import pointerPng from "@/assets/images/drone/pointer.png";
 import {cn} from "@/lib/utils.ts";
 import KeyboardControl from "@/components/drone/public/KeyboardControl.tsx";
 import {useNavigate} from "react-router-dom";
@@ -537,13 +538,14 @@ const DronePanel = () => {
                 hideDebugPanel();
               }}/>}
           </div>
-          <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center"}>
+          <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center relative"}>
             <img src={compassPng} alt=""
                  style={{
-                   transform: `rotate(${headingDegrees || 0}deg)`,
+                   transform: `rotate(${-(headingDegrees || 0)}deg)`,
                    transition: "transform 0.3s ease-out"
                  }}
                  className={"will-change-transform"}/>
+            <img src={pointerPng} alt="" className={"absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"}/>
           </div>
           <div className={"flex flex-col text-[12px] text-[#D0D0D0] justify-center px-2 space-y-2"}>
             <span>指点飞行</span>

@@ -46,7 +46,8 @@ interface Pagination {
 
 export const useMapPhoto = () => {
   const {get} = useAjax();
-  const url = `${MEDIA_API}/files/${workspaceId}/files?page=1&page_size=1000`;
+  const _workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const url = `${MEDIA_API}/files/${_workspaceId}/files?page=1&page_size=1000`;
   return useSWR(url, async (path) => (await get<Resource<Data>>(path)).data.data);
 };
 

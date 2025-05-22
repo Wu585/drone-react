@@ -12,6 +12,7 @@ import {
 import {useSearchParams} from "react-router-dom";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {useWaylinJobs} from "@/hooks/drone";
+import {useAddWaylineEntityById} from "@/hooks/drone/useAddWaylineEntityById.ts";
 
 const mapLayerList = [
   {
@@ -124,6 +125,7 @@ const CockpitScene = () => {
   useEntityCustomSource("drone");
   useEntityCustomSource("drone-wayline");
   useEntityCustomSource("waylines-create");
+  useEntityCustomSource("waylines-preview");
 
   useEffect(() => {
     if (realTimeDeviceInfo && realTimeDeviceInfo.device) {
@@ -141,10 +143,11 @@ const CockpitScene = () => {
       }
     } else {
       removeDroneModel();
+      getCustomSource("waylines-preview")?.entities.removeAll();
     }
   }, [realTimeDeviceInfo]);
 
-  /*const {data: currentJobList} = useWaylinJobs(workspaceId, {
+  const {data: currentJobList} = useWaylinJobs(workspaceId, {
     page: 1,
     page_size: 10,
     status: 2,
@@ -152,7 +155,10 @@ const CockpitScene = () => {
   });
 
   console.log("currentJobList");
-  console.log(currentJobList);*/
+  console.log(currentJobList);
+
+  useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id);
+
 
   /*useEffect(() => {
     dynamicAddSceneDroneModel(dronePositionRef.current);

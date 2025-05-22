@@ -3,8 +3,10 @@ import {useEffect} from "react";
 import {getWebsocketUrl} from "@/lib/websocket/config.ts";
 
 export const useConnectWebSocket = (messageHandler: MessageHandler) => {
+  const url = getWebsocketUrl();
+
   useEffect(() => {
-    const webSocket = new ConnectWebSocket(getWebsocketUrl());
+    const webSocket = new ConnectWebSocket(url);
 
     webSocket?.registerMessageHandler(messageHandler);
     webSocket?.initSocket();
@@ -12,5 +14,5 @@ export const useConnectWebSocket = (messageHandler: MessageHandler) => {
     return () => {
       webSocket?.close();
     };
-  }, []);
+  }, [url]);
 };

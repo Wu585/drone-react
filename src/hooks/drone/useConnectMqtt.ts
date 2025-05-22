@@ -6,9 +6,8 @@ import {ELocalStorageKey} from "@/types/enum.ts";
 
 const DRC_API_PREFIX = "/control/api/v1";
 
-const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
-
 export const useConnectMqtt = (connect: boolean = true) => {
+  const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
   const {osdVisible, setMqttState, setClientId} = useSceneStore();
   const {post} = useAjax();
   const mqttStateRef = useRef<UranusMqtt | null>(null);

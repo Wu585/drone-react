@@ -9,6 +9,7 @@ import dronePng from "@/assets/images/drone/drone.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
 import {useConnectMqtt} from "@/hooks/drone/useConnectMqtt.ts";
 import {addDroneModel, addHeightPolyline, moveDroneToTarget, removeDroneModel} from "@/hooks/drone/wayline";
+import SearchPositionInput from "@/components/drone/SearchPositionInput.tsx";
 
 const mapLayerList = [
   {
@@ -111,7 +112,11 @@ const TsaScene = () => {
   }, [realTimeDeviceInfo]);
 
   return (
-    <div id="cesiumContainer" className={"h-full"}></div>
+    <div id="cesiumContainer" className={"h-full relative"}>
+      <div className={"absolute right-0 top-0 w-32 border-2 z-50"}>
+        <SearchPositionInput/>
+      </div>
+    </div>
   );
 };
 

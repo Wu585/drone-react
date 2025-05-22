@@ -44,6 +44,7 @@ export interface Layer {
 }
 
 export const useElementsGroup = () => {
+  const workspace_id = localStorage.getItem(ELocalStorageKey.WorkspaceId);
   const {get} = useAjax();
   const url = `${PREFIX}/workspaces/` + workspace_id + "/element-groups";
   return useSWR(url, async (path) => (await get<Resource<Layer[]>>(path)).data.data);
@@ -51,6 +52,7 @@ export const useElementsGroup = () => {
 
 export const useElementsGroupActions = () => {
   const {post, delete: deleteClient} = useAjax();
+  const workspace_id = localStorage.getItem(ELocalStorageKey.WorkspaceId);
   const addGroup = (body: { name: string, parent_id: string }) =>
     post(`${PREFIX}/workspaces/${workspace_id}/element-groups/add`, body);
 
@@ -97,6 +99,7 @@ export interface ElementParam {
 
 export const useElementActions = () => {
   const {post, put, delete: deleteClient} = useAjax();
+  const workspace_id = localStorage.getItem(ELocalStorageKey.WorkspaceId);
 
   const addElement = (groupId: string, geometry: ElementParam) =>
     post(`${PREFIX}/workspaces/${workspace_id}/element-groups/${groupId}/elements`, geometry as any);

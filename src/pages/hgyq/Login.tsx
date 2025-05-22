@@ -9,7 +9,8 @@ import {useAjax} from "@/lib/http.ts";
 import {HTTP_PREFIX} from "@/api/manage.ts";
 import {ELocalStorageKey, EUserType} from "@/types/enum.ts";
 import {useNavigate} from "react-router-dom";
-import companyTitle from "@/assets/images/drone/company-title.png"
+import companyTitle from "@/assets/images/drone/company-title.png";
+import {toast} from "@/components/ui/use-toast.ts";
 
 const formSchema = z.object({
   username: z.string().min(3, {
@@ -22,35 +23,41 @@ const formSchema = z.object({
 
 const Login = () => {
   const {post} = useAjax();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "xiaogang",
-      password: "111111"
+      username: "test999",
+      password: "123456"
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const url = `${HTTP_PREFIX}/login`;
-    const result = await post<Resource<{
-      access_token: string
-      workspace_id: string
-      username: string
-      user_id: string
-    }>>(url, {
-      ...values,
-      flag: EUserType.Web,
-    });
-    if (result.data.code === 0) {
+    try {
+      const url = `${HTTP_PREFIX}/login`;
+      const result = await post<Resource<{
+        access_token: string
+        workspace_id: string
+        username: string
+        user_id: string
+      }>>(url, {
+        ...values,
+        flag: EUserType.Web,
+      });
       localStorage.setItem(ELocalStorageKey.Token, result.data.data.access_token);
       localStorage.setItem(ELocalStorageKey.WorkspaceId, result.data.data.workspace_id);
       localStorage.setItem(ELocalStorageKey.Username, result.data.data.username);
       localStorage.setItem(ELocalStorageKey.UserId, result.data.data.user_id);
       localStorage.setItem(ELocalStorageKey.Flag, EUserType.Web.toString());
-      navigate("/depart")
+      navigate("/depart");
+    } catch (err: any) {
+      toast({
+        description: "用户名或密码错误，登录失败！",
+        variant: "destructive"
+      });
     }
+
   };
 
   return (
