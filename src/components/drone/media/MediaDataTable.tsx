@@ -310,6 +310,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     begin_time: "",
     end_time: "",
     search: "",
+    wayline_name: "",
     parent: 0,
     page: pagination.pageIndex + 1,
     page_size: pagination.pageSize
@@ -510,12 +511,12 @@ const MediaDataTable = ({onChangeDir}: Props) => {
           <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onClickFolder(current)}>
             {isDir && <FolderClosed className={"w-4 h-4"} fill={"orange"}/>}
 
-            {isVideo && current.preview_url && (
+            {isVideo && current.thumbnail_url && (
               <HoverCard>
                 <HoverCardTrigger>
                   <div className="relative w-4 h-4">
-                    <video
-                      src={current.preview_url}
+                    <img
+                      src={current.thumbnail_url}
                       className="w-full h-full object-cover rounded"
                       muted
                       loop
@@ -525,8 +526,8 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                   </div>
                 </HoverCardTrigger>
                 <HoverCardContent side={"right"} className="w-80 p-0">
-                  <video
-                    src={current.preview_url}
+                  <img
+                    src={current.thumbnail_url}
                     className="w-full rounded"
                     controls
                     autoPlay
@@ -537,18 +538,18 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               </HoverCard>
             )}
 
-            {isPhoto && current.preview_url && (
+            {isPhoto && current.thumbnail_url && (
               <HoverCard>
                 <HoverCardTrigger>
                   <img
-                    src={current.preview_url}
+                    src={current.thumbnail_url}
                     alt={current.file_name}
                     className="w-4 h-4 object-cover rounded border-2"
                   />
                 </HoverCardTrigger>
                 <HoverCardContent side={"right"} className="w-80 p-0">
                   <img
-                    src={current.preview_url}
+                    src={current.thumbnail_url}
                     alt={current.file_name}
                     className="w-full rounded"
                   />
@@ -560,6 +561,13 @@ const MediaDataTable = ({onChangeDir}: Props) => {
           </div>
         );
       }
+    },
+    {
+      accessorKey: "wayline_name",
+      header: "航线名称",
+      cell: ({row}) => <div>
+        {row.original.wayline_name || "--"}
+      </div>
     },
     {
       accessorKey: "drone",
@@ -889,6 +897,17 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                 end_time: date ? dayjs(date[1]).format("YYYY-MM-DD 23:59:59") : ""
               });
             }} className={"bg-[#0A81E1] border-[#0A81E1] hover:bg-[#0A81E1] h-[36px]"}/>
+          </div>
+          <div className={"flex items-center space-x-2 whitespace-nowrap"}>
+            <span>航线名称</span>
+            <Input
+              className={"bg-transparent w-36 border-[#43ABFF] border-[1px]"}
+              value={queryParams.wayline_name}
+              onChange={e => updateQuery({
+                wayline_name: e.target.value
+              })}
+              placeholder={"请输入航线名称"}
+            />
           </div>
           <div className={"flex items-center space-x-2"}>
             <span>文件类型</span>

@@ -17,7 +17,7 @@ import windPowerPng from "@/assets/images/drone/cockpit/wind-power.png";
 import CockpitFlyControl from "@/components/drone/public/CockpitFlyControl.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {clarityList} from "@/hooks/drone/useDeviceVideo.ts";
-import {useEffect, useState, useCallback, useRef} from "react";
+import {useEffect, useState, useCallback, useRef, useMemo} from "react";
 import {useSearchParams} from "react-router-dom";
 import {useOnlineDocks} from "@/hooks/drone";
 import {z} from "zod";
@@ -45,6 +45,7 @@ import {cn} from "@/lib/utils.ts";
 import PayloadControl from "@/components/drone/PayloadControl.tsx";
 import compassWrapperPng from "@/assets/images/drone/cockpit/compass-wrapper.png";
 import compassPng from "@/assets/images/drone/cockpit/compass.png";
+import pointerPng from "@/assets/images/drone/cockpit/pointer.png";
 import {RefreshCcw, Settings, Maximize2, X} from "lucide-react";
 import {
   DropdownMenu,
@@ -377,6 +378,12 @@ const Cockpit = () => {
     await switchCloudCameraMode(mode!);
   };
 
+  const headingDegrees = useMemo(() => {
+    if (deviceInfo.device) {
+      return deviceInfo.device.attitude_head;
+    }
+  }, [deviceInfo]);
+
   return (
     <FitScreen width={1920} height={1080} mode="full">
       <Form {...form}>
@@ -426,7 +433,7 @@ const Cockpit = () => {
                   ref={dockVideoRef}
                   controls
                   autoPlay
-                  className={"h-[180px] w-full"}
+                  className={"h-[180px] w-full object-fill rounded-lg"}
                 />
               </div>
             )}
@@ -661,7 +668,7 @@ const Cockpit = () => {
                 <video
                   ref={droneCloudVideoRef}
                   autoPlay
-                  className={"w-[830px] rounded-[40px] overflow-hidden cursor-crosshair aspect-video"}
+                  className={"w-[830px] rounded-[40px] overflow-hidden cursor-crosshair aspect-video object-fill"}
                   id={"player2"}
                   onDoubleClick={handleVideoDoubleClick}
                   onWheel={handleWheel}
@@ -773,7 +780,15 @@ const Cockpit = () => {
               </div>
               <div className={"col-span-1h-full relative content-center"}>
                 <img src={compassWrapperPng} className={"absolute right-14 scale-150 bottom-28"} alt=""/>
-                <img src={compassPng} className={"absolute left-18 top-[70px]"} alt=""/>
+                <img src={compassPng}
+                     style={{
+                       transform: `rotate(${-(headingDegrees || 0)}deg)`,
+                       transition: "transform 0.3s ease-out"
+                     }}
+                     className={"absolute left-18 top-[70px]"} alt=""
+                />
+                <img src={pointerPng} alt=""
+                     className={"absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[50px]"}/>
                 <Button type={"submit"} className={"bg-transparent absolute bottom-0"}>
                   <img src={yjqfPng} alt=""/>
                 </Button>
@@ -855,14 +870,16 @@ const Cockpit = () => {
                     autoPlay
                     className={cn(
                       "h-[200px] mr-[60px] z-50 my-2 relative",
-                      isFpvFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black"
+                      isFpvFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black object-fill aspect-video"
                     )}
                   >
                   </video>
                   : <iframe
+                    className={""}
                     src={`http://218.78.133.200:9090/tm?instanceId=${instanceId || "ce2bd19b-d039-4c5c-b49d-abc8a87696d5"}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}
                     id={"player3"}></iframe>
                 : <iframe
+                  className={"w-80 h-60 rounded-[16px]"}
                   id={"player3"}
                   src={`http://218.78.133.200:9090/tm?instanceId=${instanceId || "b211d582-1211-4f24-b196-60c731eee84c"}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
                   {isFpvFullscreen && (
@@ -878,13 +895,15 @@ const Cockpit = () => {
                 当前设备已关机，无法进行直播
               </div>
             )}
-            <CockpitTitle title={"实时气象"}/>
+            <div className={"py-4"}>
+              <CockpitTitle title={"实时气象"}/>
+            </div>
             <div className={"flex"}>
-              <div className={"flex flex-col content-center"}>
+              {/*<div className={"flex flex-col content-center"}>
                 <img className={"translate-y-12"} src={cloudyPng} alt=""/>
                 <img src={weatherBasePng} alt=""/>
-              </div>
-              <div className={"pl-[32px] space-y-2 flex flex-col justify-center"}>
+              </div>*/}
+              <div className={"pl-[32px] flex justify-center items-center space-x-2"}>
                 <span>温度：</span>
                 <div className={"text-[34px]"}>
                   {deviceInfo.dock?.basic_osd?.environment_temperature}°C

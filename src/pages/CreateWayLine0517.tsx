@@ -52,12 +52,14 @@ import MapChange from "@/components/drone/public/MapChange.tsx";
 import Compass from "@/components/drone/public/Compass.tsx";
 import {ImageFormat} from "@/hooks/drone";
 import SceneMini from "@/components/drone/public/SceneMini.tsx";
+import * as egm96 from "egm96-universal";
 
 interface WayPoint {
   id: string;
   longitude: number;
   latitude: number;
   height?: number;
+  ellipsoid_height?: number;
   entity?: any;
   speed?: number;
   copyToAll?: boolean;
@@ -937,6 +939,7 @@ const CreateWayLine0517 = () => {
         longitude: waypoint.longitude,
         latitude: waypoint.latitude,
         height: !waypoint.useGlobalHeight && waypoint.height,
+        ellipsoid_height: !waypoint.useGlobalHeight && egm96.egm96ToEllipsoid(waypoint.latitude, waypoint.longitude, waypoint.height!),
         speed: !waypoint.useGlobalSpeed && waypoint.speed,
         action_trigger_req: {
           action_trigger_type: "reach_point",
@@ -1014,6 +1017,9 @@ const CreateWayLine0517 = () => {
         }
         if (!point.height) {
           delete point.height;
+        }
+        if (!point.ellipsoid_height) {
+          delete point.ellipsoid_height;
         }
         return {
           ...point

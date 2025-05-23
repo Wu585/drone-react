@@ -26,6 +26,7 @@ import takeOffPng from "@/assets/images/drone/wayline/takeoff.svg";
 import {calculateHaversineDistance} from "@/lib/utils.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
+import {useAddWaylineEntityById} from "@/hooks/drone/useAddWaylineEntityById.ts";
 
 const HTTP_PREFIX_Wayline = "wayline/api/v1";
 
@@ -60,6 +61,8 @@ const WayLine = () => {
 
   const [currentWayline, setCurrentWayline] = useState("");
   const {data: currentWaylineData} = useWaylineById(currentWayline);
+  useAddWaylineEntityById(currentWayline)
+
 
   // 计算航线长度
   useEffect(() => {
@@ -83,97 +86,6 @@ const WayLine = () => {
     }
     console.log("length==");
     console.log(length);
-  }, [currentWaylineData]);
-
-  // 撒点撒线
-  useEffect(() => {
-    console.log("currentWaylineData");
-    console.log(currentWaylineData);
-    if (!currentWaylineData) return;
-    const takeoffPoint = currentWaylineData.take_off_ref_point?.split(",");
-    console.log("takeoffPoint");
-    console.log(takeoffPoint);
-
-    if (currentWaylineData.route_point_list && currentWaylineData.route_point_list.length > 0) {
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(currentWaylineData.route_point_list[0].longitude, currentWaylineData.route_point_list[0].latitude, 500),
-        duration: 1
-      });
-    }
-
-    if (currentWaylineData && currentWaylineData.route_point_list && currentWaylineData.route_point_list.length > 0) {
-      getCustomSource("waylines-preview")?.entities.removeAll();
-      const takeoffPoint = currentWaylineData.take_off_ref_point?.split(",");
-      if (takeoffPoint && takeoffPoint.length > 1) {
-        const [takeoffLat, takeoffLon, takeoffHei] = takeoffPoint;
-        getCustomSource("waylines-preview")?.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(+takeoffLon, +takeoffLat, +takeoffHei),
-          billboard: {
-            image: takeOffPng,
-            width: 48,
-            height: 48,
-            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY
-          },
-          polyline: {
-            positions: [
-              Cesium.Cartesian3.fromDegrees(+takeoffLon, +takeoffLat, +takeoffHei),
-              Cesium.Cartesian3.fromDegrees(+takeoffLon, +takeoffLat, currentWaylineData.take_off_security_height)
-            ],
-            width: 2,
-            material: new Cesium.PolylineDashMaterialProperty({
-              color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-              dashLength: 8.0
-            })
-          }
-        });
-        if (currentWaylineData.route_point_list.length > 0) {
-          getCustomSource("waylines-preview")?.entities.add({
-            polyline: {
-              positions: [
-                Cesium.Cartesian3.fromDegrees(+takeoffLon, +takeoffLat, currentWaylineData.take_off_security_height),
-                Cesium.Cartesian3.fromDegrees(currentWaylineData.route_point_list[0].longitude, currentWaylineData.route_point_list[0].latitude, currentWaylineData.route_point_list[0].height || currentWaylineData.global_height)
-              ],
-              width: 2,
-              material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8)
-            }
-          });
-        }
-      }
-      currentWaylineData.route_point_list.forEach((point, index) => {
-        getCustomSource("waylines-preview")?.entities.add(waylinePointConfig({
-          longitude: point.longitude,
-          latitude: point.latitude,
-          height: point.height || currentWaylineData.global_height,
-          text: (index + 1).toString()
-        }));
-        getCustomSource("waylines-preview")?.entities.add({
-          polyline: currentWaylineData.route_point_list[index + 1] ? {
-            positions: [
-              Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, point.height || currentWaylineData.global_height),
-              Cesium.Cartesian3.fromDegrees(currentWaylineData.route_point_list[index + 1].longitude,
-                currentWaylineData.route_point_list[index + 1].latitude,
-                currentWaylineData.route_point_list[index + 1].height || currentWaylineData.global_height)
-            ],
-            width: 2,
-            material: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8)
-          } : {}
-        });
-        getCustomSource("waylines-preview")?.entities.add({
-          polyline: {
-            positions: [
-              Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, 0),
-              Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, point.height || currentWaylineData.global_height)
-            ],
-            width: 2,
-            material: new Cesium.PolylineDashMaterialProperty({
-              color: Cesium.Color.fromCssColorString("#4CAF50").withAlpha(0.8),
-              dashLength: 8.0
-            })
-          }
-        });
-      });
-    }
   }, [currentWaylineData]);
 
   /*viewer.camera.flyTo({

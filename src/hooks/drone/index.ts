@@ -411,6 +411,7 @@ export interface FileItem {
   preview_url: string;
   longitude: string;
   latitude: string;
+  thumbnail_url?: string;
 }
 
 interface FileData {
@@ -905,6 +906,7 @@ interface RoutePoint {
   waypoint_turn_req: object; // Assuming this can be an empty object
   actions: Action[];
   action_trigger_req: ActionTriggerReq;
+  ellipsoid_height?: number;
 }
 
 interface Action {

@@ -171,24 +171,29 @@ const TaskDataTable = () => {
       variant: "destructive"
     });
     try {
-      const res: any = await post(`${HTTP_PREFIX}/wayline-job-audit/approve`, {
+      await post(`${HTTP_PREFIX}/wayline-job-audit/approve`, {
         id,
         status: taskStatus
       });
-      if (res.data.code === 0) {
+      if (taskStatus === ApplyTaskStatus.APPROVED) {
         await post(`${HTTP_PREFIX}/workspaces/${workspaceId}/flight-tasks`, selectedTask as any);
         toast({
           description: "审核成功，任务创建成功！"
         });
-        await mutate();
-        setCurrentId(undefined);
-        setTaskStatus(undefined);
+      } else if (taskStatus === ApplyTaskStatus.REJECTED) {
+        toast({
+          description: "审核不通过，任务未创建！"
+        });
       }
     } catch (err) {
       toast({
         description: "审核失败，任务未创建！",
         variant: "destructive"
       });
+    } finally {
+      await mutate();
+      setCurrentId(undefined);
+      setTaskStatus(undefined);
     }
   };
 

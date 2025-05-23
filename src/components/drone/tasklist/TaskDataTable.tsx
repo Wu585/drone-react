@@ -61,7 +61,7 @@ const TaskDataTable = () => {
               </div>
               <div className="text-[#43ABFF] text-[13px]">
                 {formatTime(row.original.execute_time) ?
-                  `[${formatTime(row.original.execute_time)}-${formatTime(row.original.completed_time)}]` : "已取消"
+                  `[${formatTime(row.original.execute_time)}-${formatTime(row.original.completed_time)}]` : "--"
                 }
               </div>
             </div>
@@ -115,14 +115,14 @@ const TaskDataTable = () => {
                 <PermissionButton
                   permissionKey={"Collection_PlanDelete"}
                   className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
-                  删除
+                  取消
                 </PermissionButton>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>删除任务</AlertDialogTitle>
+                  <AlertDialogTitle>取消任务</AlertDialogTitle>
                   <AlertDialogDescription>
-                    确认删除任务吗？
+                    确认取消任务吗？
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -136,14 +136,14 @@ const TaskDataTable = () => {
                 <Button
                   type={"submit"}
                   className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
-                  中止
+                  挂起
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>中止任务</AlertDialogTitle>
+                  <AlertDialogTitle>挂起任务</AlertDialogTitle>
                   <AlertDialogDescription>
-                    确认中止任务吗？
+                    确认挂起任务吗？
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -190,6 +190,7 @@ const TaskDataTable = () => {
       toast({
         description: "任务取消成功！"
       });
+      await mutateWaylineJobs();
     } catch (err: any) {
       toast({
         description: err.data.message,
@@ -207,6 +208,7 @@ const TaskDataTable = () => {
       toast({
         description: "任务中止成功！"
       });
+      await mutateWaylineJobs();
     } catch (err: any) {
       toast({
         description: err.data.message,
@@ -224,6 +226,7 @@ const TaskDataTable = () => {
       toast({
         description: "任务恢复成功！"
       });
+      await mutateWaylineJobs();
     } catch (err: any) {
       toast({
         description: err.data.message,
@@ -274,7 +277,7 @@ const TaskDataTable = () => {
     status: undefined as TaskStatus | undefined
   });
 
-  const {data} = useWaylinJobs(workspaceId, queryParams);
+  const {data, mutate: mutateWaylineJobs} = useWaylinJobs(workspaceId, queryParams);
 
   const onChangeDateRange = (dateRange?: Date[]) => {
     if (dateRange?.length !== 2) {

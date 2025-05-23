@@ -62,9 +62,9 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
         <CockpitTitle title={"飞行控制"}/>
         <span
           onClick={onClickFightControl}
-          className={cn("w-[22px] h-[22px] content-center border-[1px] border-[#43ABFF] cursor-pointer",
+          className={cn("w-[32px] h-[32px] content-center border-[1px] border-[#43ABFF] cursor-pointer",
             isRemoteControl ? "bg-[#43ABFF]" : "")}>
-                        <img src={remoteControlPng} alt=""/>
+                        <img src={remoteControlPng} className={"w-[24px]"} alt=""/>
         </span>
       </div>
 

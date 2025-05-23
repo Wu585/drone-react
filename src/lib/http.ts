@@ -13,7 +13,7 @@ export class Http {
   }
 
   // get
-  get<R = unknown>(url: string, query?: Record<string, string | number>, config?: Omit<AxiosRequestConfig, "params" | "url" | "method">) {
+  get<R = unknown>(url: string, query?: Record<string, string | number | boolean>, config?: Omit<AxiosRequestConfig, "params" | "url" | "method">) {
     return this.instance.request<R>({...config, url: url, params: query, method: "get"});
   }
 
@@ -84,7 +84,7 @@ export const useAjax = () => {
   };
 
   return {
-    get: <T>(url: string, query?: Record<string, string | number>, config?: Omit<AxiosRequestConfig, "params" | "url" | "method">) => {
+    get: <T>(url: string, query?: Record<string, string | number | boolean>, config?: Omit<AxiosRequestConfig, "params" | "url" | "method">) => {
       return client.get<T>(url, query, config).catch(onError);
     },
     post: <T>(url: string, data?: Record<string, JSONValue> | string[] | undefined, config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
