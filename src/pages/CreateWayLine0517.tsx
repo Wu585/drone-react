@@ -1320,10 +1320,7 @@ const CreateWayLine0517 = () => {
                     </FormItem>
                   )}
                 />
-                <div className={"rounded-md flex justify-between bg-[#3c3c3c] px-2 py-2"}>
-                  <span>参考起飞点</span>
-                  <span className={"cursor-pointer"} onClick={onSetTakeoffPoint}>设置起飞点</span>
-                </div>
+
                 <FormField
                   control={form.control}
                   name="device"
@@ -1421,6 +1418,10 @@ const CreateWayLine0517 = () => {
                     </FormItem>
                   )}
                 />
+                <div className={"rounded-md flex justify-between bg-[#3c3c3c] px-2 py-2"}>
+                  <span>参考起飞点</span>
+                  <span className={"cursor-pointer"} onClick={onSetTakeoffPoint}>设置起飞点</span>
+                </div>
                 <FormField
                   control={form.control}
                   name="global_height"
@@ -2529,7 +2530,7 @@ const CreateWayLine0517 = () => {
         </header>
         <div className={"flex-1 relative overflow-hidden"}>
           <Scene/>
-          <div className={"absolute bottom-0 right-[80px] w-[360px] h-[280px]"}>
+          <div className={"absolute bottom-0 right-[180px] w-[360px] h-[280px]"}>
             {miniSceneCameraPosition && <SceneMini onCameraChange={onCameraChange}
                                                    hp={miniSceneCameraHp}
                                                    onChangeHp={setMiniSceneCameraHp}

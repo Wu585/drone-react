@@ -71,8 +71,6 @@ export const dynamicAddDroneModel = (dronePosition: {
   getCustomSource(sourceName)?.entities.add({
     id: "takeoff-drone",
     position: new Cesium.CallbackProperty(() => {
-      console.log('dronePosition==callback');
-      console.log(dronePosition);
       const {longitude, latitude, height} = dronePosition;
       return Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
     }, false),

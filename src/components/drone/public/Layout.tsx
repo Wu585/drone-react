@@ -92,8 +92,8 @@ const Layout = () => {
       </header>
       <div className="flex-1 p-[22px] flex overflow-hidden">
         {!pathname.includes("organ") && !pathname.includes("depart") && !pathname.includes("create-wayline") &&
-          <aside className="w-[50px] border-[1px] border-[#43ABFF] rounded-l-lg border-r-0">
-            <div className="w-[50px] bg-[#0059BF]/[.5] h-full">
+          <aside className="w-[50px] border-[1px] border-[#43ABFF] border-r-0 rounded-l-lg">
+            <div className="w-[50px] bg-[#375f9f]/[.68] h-full rounded-l-lg">
               {menuList.map((item, index) =>
                 <PermissionButton key={item.name} permissionKey={item.permission} variant={"link"}
                                   className={cn("content-center py-[32px] cursor-pointer text-white w-[50px] rounded-none",
@@ -106,7 +106,7 @@ const Layout = () => {
               )}
             </div>
           </aside>}
-        <div className="flex-1">
+        <div className="flex-1 bg-gradient-to-r from-[#074578]/[.4] to-[#0B142E]/[.7]">
           <Outlet/>
         </div>
       </div>

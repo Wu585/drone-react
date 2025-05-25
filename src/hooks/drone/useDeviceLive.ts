@@ -2,9 +2,10 @@ import {useAjax} from "@/lib/http.ts";
 import {CURRENT_CONFIG} from "@/lib/config.ts";
 import JSWebrtc from "@/vendor/jswebrtc.min.js";
 import {useToast} from "@/components/ui/use-toast.ts";
-import {useCapacity} from "@/hooks/drone/index.ts";
+import {useCapacity, useDeviceTopo} from "@/hooks/drone/index.ts";
 import {useCallback, useMemo, useState} from "react";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
+import {DEVICE_SUB_TYPE, DOMAIN, DRONE_TYPE, PAYLOAD_TYPE} from "@/types/device.ts";
 
 // 为 JSWebrtc 添加类型声明
 interface Player {
@@ -65,6 +66,10 @@ export const videoTypeLabel = {
   [VideoType.IR]: "红外",
 };
 
+export const devicePayloadType: Record<string, string> = {
+  [`${DOMAIN.DRONE}-${DRONE_TYPE.M4TD}-${DEVICE_SUB_TYPE.ONE}`]: `${PAYLOAD_TYPE.M4TD}-${DEVICE_SUB_TYPE.ZERO}-0`
+};
+
 export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, droneSn?: string, isFpv?: boolean) => {
   const {post} = useAjax();
   const {toast} = useToast();
@@ -73,7 +78,7 @@ export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, dr
   // 镜头模式
   const [mode, setMode] = useState<VideoType | undefined>();
   const {data: deviceList} = useCapacity();
-
+  const {data: allDeviceList} = useDeviceTopo();
   const dock = deviceList?.find(item => item.sn === dockSn);
   const realtime = useRealTimeDeviceInfo(dockSn);
 
@@ -95,10 +100,16 @@ export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, dr
       return droneSn + "/" + fpvCamera.index + "/" + fpvCamera.videos_list[0].index;
     } else {
       const cameras = realtime.device?.cameras;
-      if (!cameras || cameras.length <= 0) return;
-      return droneSn + "/" + cameras[0].payload_index + "/" + "normal-0";
+      if (!cameras || cameras.length <= 0) {
+        const device = allDeviceList?.find(item => item.device_sn === dockSn);
+        if (!device || !device.children) return;
+        const key = `${device.children.domain}-${device.children.type}-${device.children.sub_type}`;
+        return droneSn + "/" + devicePayloadType[key] + "/" + "normal-0";
+      } else {
+        return droneSn + "/" + cameras[0].payload_index + "/" + "normal-0";
+      }
     }
-  }, [deviceList, droneSn, isFpv, realtime]);
+  }, [deviceList, droneSn, isFpv, realtime, allDeviceList, dockSn]);
 
   const dockWebRtcUrl = useMemo(() => {
     if (!dockVideoId) return;

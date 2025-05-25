@@ -36,7 +36,7 @@ const Scene = () => {
     window.viewer = new Cesium.Viewer("cesiumContainer", {
       shadows: false,
       infoBox: false,
-      navigation: true, //指南针
+      navigation: false, //指南针
       selectionIndicator: false, //绿色选择框
     });
 

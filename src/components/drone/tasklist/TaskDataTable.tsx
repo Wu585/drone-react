@@ -532,18 +532,16 @@ const TaskDataTable = () => {
         </Label>
         <div className="space-x-2">
           <Button
-            variant="outline"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
+            className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
           >
             上一页
           </Button>
           <Button
-            variant="outline"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
+            className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
           >
             下一页
           </Button>

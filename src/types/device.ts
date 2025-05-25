@@ -377,7 +377,7 @@ export interface DockBasicOsd {
     longitude: number,
     height: number,
     safe_land_height: number,
-    is_configured: number
+    is_configured: boolean
   }
   first_power_on: number,
   positionState?: {
@@ -496,6 +496,24 @@ export enum EModeCode {
   Disconnected,
 }
 
+export const EModeCodeMap = {
+  [EModeCode.Standby]: "待机模式",
+  [EModeCode.Preparing]: "准备中",
+  [EModeCode.Ready]: "就绪",
+  [EModeCode.Manual]: "手动模式",
+  [EModeCode.Automatic]: "自动模式",
+  [EModeCode.Waypoint]: "航点模式",
+  [EModeCode.Panoramic]: "全景模式",
+  [EModeCode.Active_Track]: "智能跟随",
+  [EModeCode.ADS_B]: "ADS-B（广播式自动相关监视）",
+  [EModeCode.Return_To_Home]: "返航中",
+  [EModeCode.Landing]: "降落",
+  [EModeCode.Forced_Landing]: "强制降落",
+  [EModeCode.Three_Blades_Landing]: "三桨叶降落",
+  [EModeCode.Upgrading]: "升级中",
+  [EModeCode.Disconnected]: "离线",
+};
+
 export enum EGear {
   A,
   P,
@@ -517,6 +535,15 @@ export enum EDockModeCode {
   Upgrading,
   Working,
 }
+
+export const EDockModeCodeMap = {
+  [EDockModeCode.Disconnected]: "设备已离线",
+  [EDockModeCode.Idle]: "空闲",
+  [EDockModeCode.Debugging]: "本地调试中",
+  [EDockModeCode.Remote_Debugging]: "远程调试中",
+  [EDockModeCode.Upgrading]: "固件升级中",
+  [EDockModeCode.Working]: "工作中",
+};
 
 export interface DeviceHms {
   hms_id: string,

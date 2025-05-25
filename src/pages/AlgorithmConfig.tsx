@@ -1,5 +1,6 @@
 import titleArrowPng from "@/assets/images/drone/title-arrow.png";
 import AlgorithmDataTable from "@/components/algorithm/AlgorithmDataTable.tsx";
+import AlgorithmGrid from "@/components/algorithm/AlgorithmGrid.tsx";
 
 const AlgorithmConfig = () => {
 
@@ -15,7 +16,8 @@ const AlgorithmConfig = () => {
           </div>
         </h1>
         <div className={"flex-1 p-4"}>
-          <AlgorithmDataTable/>
+          {/*<AlgorithmDataTable/>*/}
+          <AlgorithmGrid/>
         </div>
       </div>
     </div>

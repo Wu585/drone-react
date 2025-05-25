@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sheet.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {useState} from "react";
-import WaylineActionList, {Action} from "@/components/drone/wayline/WaylineActionList.tsx";
+import WaylineActionList from "@/components/drone/wayline/WaylineActionList.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import {ELocalStorageKey} from "@/types/enum.ts";
 
@@ -80,9 +80,9 @@ interface Props {
 
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
-const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
-
 const Audit = ({currentOrder, onSuccess}: Props) => {
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+
   const {post} = useAjax();
   const {data: operationList} = useOperationList(currentOrder?.id);
   const [sheetVisible, setSheetVisible] = useState(false);

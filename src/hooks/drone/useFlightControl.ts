@@ -49,13 +49,13 @@ export const useFlightControl = (sn?: string) => {
         }
 
         toast({
-          description: "Get flight control successfully"
+          description: "获取飞行控制权成功！"
         });
       }
     } catch (error: any) {
       console.log(error);
       toast({
-        description: error.data.message,
+        description: "获取飞行控制权失败！",
         variant: "destructive"
       });
     }
@@ -76,11 +76,15 @@ export const useFlightControl = (sn?: string) => {
           pubTopic: ""
         });
         toast({
-          description: "Exit flight control",
+          description: "退出飞行控制！",
         });
       }
     } catch (error) {
       console.log(error);
+      toast({
+        description: "退出飞行控制失败！",
+        variant: "destructive"
+      });
     }
   };
 

@@ -24,11 +24,11 @@ import KeyboardControl from "@/components/drone/public/KeyboardControl.tsx";
 import {useNavigate} from "react-router-dom";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
-import {memo, useMemo, useRef, useState} from "react";
+import {memo, useEffect, useMemo, useRef, useState} from "react";
 import {useMqtt} from "@/hooks/drone/use-mqtt.ts";
 import {KeyCode, useManualControl} from "@/hooks/drone/useManualControl.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
-import {EDockModeCode, EGear, EModeCode} from "@/types/device.ts";
+import {EDockModeCode, EDockModeCodeMap, EModeCode, EModeCodeMap} from "@/types/device.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {useDockControl} from "@/hooks/drone/useDockControl.ts";
 import {DeviceCmdItem, noDebugCmdList} from "@/types/device-cmd.ts";
@@ -37,6 +37,8 @@ import DebugPanel from "@/components/drone/public/DebugPanel.tsx";
 import {copyToClipboard} from "@/hooks/drone/media";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
+import dockDemoPng from "@/assets/images/drone/dock-demo.png";
+import droneDemoPng from "@/assets/images/drone/drone-demo.png";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -52,6 +54,11 @@ const DronePanel = () => {
   const {sendDockControlCmd} = useDockControl();
   const {visible: dockVideoVisible, show: showDockVideo, hide: hideDockVideo} = useVisible();
   const {visible: droneVideoVisible, show: showDroneVideo, hide: hideDroneVideo} = useVisible();
+
+  useEffect(() => {
+    hideDockVideo();
+    hideDroneVideo();
+  }, [osdVisible]);
 
   const str = "--";
 
@@ -130,7 +137,7 @@ const DronePanel = () => {
     stopLive: stopDroneLive
   } = useDeviceLive(droneVideoRef.current, osdVisible.gateway_sn, osdVisible.sn);
 
-  const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
+  const deviceStatus = !deviceInfo.device ? EModeCodeMap[EModeCode.Disconnected] : EModeCodeMap[deviceInfo.device?.mode_code];
 
   const onPintoDock = () => {
     viewer.camera.flyTo({
@@ -177,17 +184,19 @@ const DronePanel = () => {
         <X onClick={() => setOsdVisible({...osdVisible, visible: !osdVisible.visible})}
            className={"absolute right-2 top-2 cursor-pointer"}/>
         <div className={"h-[46px] flex items-center pl-6"}>
-          DJI Dock
+          {osdVisible.gateway_callsign} - {osdVisible.callsign ?? "暂无机器"}
         </div>
         <div className={"flex text-[12px] border-b-[1px] border-[#104992]/[.85] mr-[4px]"}>
-          <div className={"w-[65px] bg-[#2A8DFE]/[.5] content-center"} onClick={onPintoDock}>Dock</div>
+          <div className={"w-[65px] bg-[#2A8DFE]/[.5] content-center cursor-pointer"} onClick={onPintoDock}>
+            <img src={dockDemoPng} alt=""/>
+          </div>
           <div className={"flex-1 p-[12px] space-y-2 bg-[#001E37]/[.9]"}>
             <div className={"grid grid-cols-4"}>
               <span className={"col-span-1 py-[2px] text-[#40F2FF]"}>设备状态</span>
               <div
                 className={cn("col-span-3 py-[2px] bg-[#52607D] pl-4 font-bold",
                   deviceInfo?.dock?.basic_osd?.mode_code === EDockModeCode.Disconnected ? "text-red-500" : "text-[#00ee8b]")}>
-                {EDockModeCode[deviceInfo?.dock?.basic_osd?.mode_code]}
+                {EDockModeCodeMap[deviceInfo?.dock?.basic_osd?.mode_code]}
               </div>
             </div>
             <div className={"grid grid-cols-4 whitespace-nowrap"}>
@@ -298,9 +307,10 @@ const DronePanel = () => {
           </div>
         </div>
         <div className={"flex text-[12px] border-b-[1px] border-[#104992]/[.85] mr-[4px]"}>
-          <div className={"w-[65px] bg-[#2A8DFE]/[.5] content-center text-center cursor-pointer"}
+          <div className={"flex flex-col w-[65px] bg-[#2A8DFE]/[.5] content-center text-center cursor-pointer"}
                onClick={onPointDrone}>
-            {osdVisible.model}
+            <img src={droneDemoPng} alt=""/>
+            {/*{osdVisible.model}*/}
           </div>
           <div className={"flex-1 p-[12px] space-y-2 bg-[#001E37]/[.9]"}>
             <div className={"grid grid-cols-4"}>
@@ -312,7 +322,7 @@ const DronePanel = () => {
               </div>
             </div>
             <div className={"grid grid-cols-12"}>
-              {deviceStatus === EModeCode[EModeCode.Disconnected] ? (
+              {deviceStatus === EModeCodeMap[EModeCode.Disconnected] ? (
                 <span className={"col-span-12 text-[#9F9F9F] cursor-pointer content-center py-[2px]"}>
                   当前设备已关机，无法进行直播
                 </span>
@@ -376,7 +386,7 @@ const DronePanel = () => {
           </div>
         </div>
         <div
-          className={"h-[90px] mr-[4px] grid grid-cols-4 bg-[#001E37]/[.9] border-b-[1px] border-[#104992]/[.85] text-[12px] pl-4"}>
+          className={"mr-[4px] grid grid-cols-4 bg-[#001E37]/[.9] border-b-[1px] border-[#104992]/[.85] text-[12px] pl-4 py-2 gap-y-2"}>
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger>
@@ -402,7 +412,7 @@ const DronePanel = () => {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <TooltipProvider delayDuration={300}>
+          {/*<TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
@@ -413,8 +423,8 @@ const DronePanel = () => {
                 <p>上传质量</p>
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider delayDuration={300}>
+          </TooltipProvider>*/}
+          {/*<TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
@@ -425,8 +435,8 @@ const DronePanel = () => {
                 <p>下载质量</p>
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider delayDuration={300}>
+          </TooltipProvider>*/}
+          {/*<TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
@@ -437,8 +447,8 @@ const DronePanel = () => {
                 <p>GPS</p>
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider delayDuration={300}>
+          </TooltipProvider>*/}
+          {/*<TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
@@ -449,7 +459,7 @@ const DronePanel = () => {
                 <p>飞行模式</p>
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
+          </TooltipProvider>*/}
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger>
@@ -481,7 +491,7 @@ const DronePanel = () => {
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
                   <LandPlot size={14}/>
-                  <span>{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}</span>
+                  <span>{deviceInfo.device && deviceInfo.device.home_distance !== str ? parseFloat(deviceInfo.device?.home_distance?.toString())?.toFixed(2) + " m" : str}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
@@ -507,7 +517,7 @@ const DronePanel = () => {
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
                   <span className={"text-[12px]"}>V.S</span>
-                  <span>{!deviceInfo.device || deviceInfo.device.vertical_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
+                  <span>{!deviceInfo.device || deviceInfo.device.vertical_speed === str ? str : parseFloat(deviceInfo.device?.vertical_speed).toFixed(2) + " m/s"}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>

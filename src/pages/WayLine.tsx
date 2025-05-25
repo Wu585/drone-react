@@ -20,9 +20,6 @@ import {
 } from "@/components/ui/alert-dialog.tsx";
 import {useNavigate} from "react-router-dom";
 import Scene from "@/components/drone/public/Scene.tsx";
-import {getCustomSource} from "@/hooks/public/custom-source.ts";
-import {waylinePointConfig} from "@/lib/wayline.ts";
-import takeOffPng from "@/assets/images/drone/wayline/takeoff.svg";
 import {calculateHaversineDistance} from "@/lib/utils.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
@@ -61,8 +58,7 @@ const WayLine = () => {
 
   const [currentWayline, setCurrentWayline] = useState("");
   const {data: currentWaylineData} = useWaylineById(currentWayline);
-  useAddWaylineEntityById(currentWayline)
-
+  useAddWaylineEntityById(currentWayline);
 
   // 计算航线长度
   useEffect(() => {
@@ -79,8 +75,6 @@ const WayLine = () => {
     if (posArr.length < 2) return;
     let length = 0;
     for (let i = 0; i < posArr.length - 1; i++) {
-      console.log(calculateHaversineDistance([posArr[i].longitude, posArr[i].latitude],
-        [posArr[i + 1].longitude, posArr[i + 1].latitude]));
       length += calculateHaversineDistance([posArr[i].longitude, posArr[i].latitude],
         [posArr[i + 1].longitude, posArr[i + 1].latitude]);
     }
@@ -92,6 +86,31 @@ const WayLine = () => {
     destination: Cesium.Cartesian3.fromDegrees(deviceInfo.dock.basic_osd.longitude, deviceInfo.dock.basic_osd.latitude, 100),
     duration: 1
   });*/
+
+  useEffect(() => {
+    if (!currentWaylineData) return;
+    const takeoffPoint = currentWaylineData.take_off_ref_point?.split(",");
+    if (takeoffPoint && takeoffPoint.length >= 2) {
+      return viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(+takeoffPoint[1], +takeoffPoint[0], 500),
+        orientation: {
+          heading: 0,
+          pitch: Cesium.Math.toRadians(-90),
+          roll: 0.0
+        }
+      });
+    } else if (currentWaylineData.route_point_list && currentWaylineData.route_point_list.length > 0) {
+      const firstIndex = currentWaylineData.route_point_list[0];
+      return viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(firstIndex.longitude, firstIndex.latitude, 500),
+        orientation: {
+          heading: 0,
+          pitch: Cesium.Math.toRadians(-90),
+          roll: 0.0
+        }
+      });
+    }
+  }, [currentWaylineData]);
 
   const onClickWayline = (wayline: WaylineItem) => {
     setCurrentWayline(wayline.id);

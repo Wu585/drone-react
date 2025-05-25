@@ -15,7 +15,7 @@ import {downloadFile, FileItem, MEDIA_HTTP_PREFIX, useMediaList, WorkOrder} from
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
-import {Download, Edit, FolderClosed, Grid3X3, Loader, Play, SquareMenu, Trash} from "lucide-react";
+import {Download, Edit, Eye, FolderClosed, Grid3X3, Loader, Play, SquareMenu, Trash} from "lucide-react";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {
@@ -50,6 +50,7 @@ import {getMediaType} from "@/hooks/drone/order";
 import {useNavigate} from "react-router-dom";
 import {useMapLoadMedia} from "@/hooks/drone/map-photo";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
+import {MediaPreview} from "@/components/drone/MediaPreview.tsx";
 
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
@@ -502,21 +503,21 @@ const MediaDataTable = ({onChangeDir}: Props) => {
         const current = row.original;
         const fileType = current.type;
         const isDir = fileType === MediaFileType.DIR;
-        const isVideo = fileType === MediaFileType.VIDEO ||
-          (fileType === MediaFileType.MANUAL && getMediaType(current.preview_url) === "video");
-        const isPhoto = fileType !== MediaFileType.ZIP && fileType !== MediaFileType.VIDEO
-          && fileType !== MediaFileType.DIR && getMediaType(current.preview_url) === "image";
+        /* const isVideo = fileType === MediaFileType.VIDEO ||
+           (fileType === MediaFileType.MANUAL && getMediaType(current.preview_url) === "video");
+         const isPhoto = fileType !== MediaFileType.ZIP && fileType !== MediaFileType.VIDEO
+           && fileType !== MediaFileType.DIR && getMediaType(current.preview_url) === "image";*/
 
         return (
           <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onClickFolder(current)}>
             {isDir && <FolderClosed className={"w-4 h-4"} fill={"orange"}/>}
 
-            {isVideo && current.thumbnail_url && (
+            {/*{isVideo && current.thumbnail_url && (
               <HoverCard>
                 <HoverCardTrigger>
                   <div className="relative w-4 h-4">
-                    <img
-                      src={current.thumbnail_url}
+                    <video
+                      src={current.preview_url}
                       className="w-full h-full object-cover rounded"
                       muted
                       loop
@@ -526,8 +527,8 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                   </div>
                 </HoverCardTrigger>
                 <HoverCardContent side={"right"} className="w-80 p-0">
-                  <img
-                    src={current.thumbnail_url}
+                  <video
+                    src={current.preview_url}
                     className="w-full rounded"
                     controls
                     autoPlay
@@ -536,26 +537,26 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                   />
                 </HoverCardContent>
               </HoverCard>
-            )}
+            )}*/}
 
-            {isPhoto && current.thumbnail_url && (
+            {/*{isPhoto && current.preview_url && (
               <HoverCard>
                 <HoverCardTrigger>
                   <img
-                    src={current.thumbnail_url}
+                    src={current.preview_url}
                     alt={current.file_name}
                     className="w-4 h-4 object-cover rounded border-2"
                   />
                 </HoverCardTrigger>
                 <HoverCardContent side={"right"} className="w-80 p-0">
                   <img
-                    src={current.thumbnail_url}
+                    src={current.preview_url}
                     alt={current.file_name}
                     className="w-full rounded"
                   />
                 </HoverCardContent>
               </HoverCard>
-            )}
+            )}*/}
 
             <span>{current.file_name}</span>
           </div>
@@ -597,23 +598,33 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     {
       header: "操作",
       cell: ({row}) => {
+        const isDir = row.original.type === MediaFileType.DIR;
         const isDownloading = downloadingIds.has(row.original.file_id);
         return (
           <div className={"flex items-center space-x-2"}>
+            {!isDir && getMediaType(row.original.preview_url) === "image" &&
+              <MediaPreview src={row.original.preview_url}
+                            type="image"
+                            alt="Example Image"
+                            modalWidth="60vw"
+                            modalHeight="60vh"
+                            triggerElement={<Eye size={18}/>}
+              />}
+            {!isDir && getMediaType(row.original.preview_url) === "video" &&
+              <MediaPreview src={row.original.preview_url}
+                            type="video"
+                            alt="Example Video"
+                            modalWidth="70vw"
+                            modalHeight="70vh"
+                            triggerElement={<Eye size={18}/>}
+              />}
             {row.original.type !== MediaFileType.DIR && <PermissionButton
               permissionKey={"Collection_MediaDownload"}
               className={`flex items-center px-0 bg-transparent h-4 ${isDownloading ? "opacity-50" : "cursor-pointer hover:opacity-80"}`}
-              onClick={() => {
-                if (!isDownloading) {
-                  downloadMediaFile(workspaceId, row.original.file_id, row.original.file_name);
-                }
-              }}
             >
-              {isDownloading ? (
-                <Loader className="h-4 w-4 animate-spin"/>
-              ) : (
+              <a href={row.original.preview_url} download>
                 <Download size={18}/>
-              )}
+              </a>
             </PermissionButton>}
             <PermissionButton
               permissionKey={"Collection_MediaOperation"}
@@ -1148,18 +1159,16 @@ const MediaDataTable = ({onChangeDir}: Props) => {
           </Label>
           <div className="space-x-2">
             <Button
-              variant="outline"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
+              className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
             >
               上一页
             </Button>
             <Button
-              variant="outline"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
+              className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
             >
               下一页
             </Button>

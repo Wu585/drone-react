@@ -141,6 +141,9 @@ module.exports = {
         'screen-task-detail': "url('@/assets/images/drone/screen/task-detail-bg.png')",
         'screen-media-content': "url('@/assets/images/drone/screen/media-content-bg.png')",
         'screen-work-order': "url('@/assets/images/drone/screen/work-order-bg.png')",
+        'compass-drone': "url('@/assets/images/drone/drone.png')",
+        'algorithm-panel': "url('@/assets/images/drone/algorithm/panel-bg.png')",
+        'algorithm-jjgj': "url('@/assets/images/drone/algorithm/jjgj.png')",
       }
     },
   },

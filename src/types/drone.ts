@@ -16,8 +16,8 @@ export enum WaylineLostControlActionInCommandFlight {
 }
 
 export const WaylineLostControlActionInCommandFlightOptions = [
-  {label: "Continue", value: WaylineLostControlActionInCommandFlight.CONTINUE},
-  {label: "Execute Lost Action", value: WaylineLostControlActionInCommandFlight.EXEC_LOST_ACTION}
+  {label: "继续", value: WaylineLostControlActionInCommandFlight.CONTINUE},
+  {label: "执行失控动作", value: WaylineLostControlActionInCommandFlight.EXEC_LOST_ACTION}
 ];
 
 export enum ERthMode {
@@ -26,8 +26,8 @@ export enum ERthMode {
 }
 
 export const RthModeInCommandFlightOptions = [
-  {label: "Smart Height", value: ERthMode.SMART},
-  {label: "Setting Height", value: ERthMode.SETTING}
+  {label: "自动高度", value: ERthMode.SMART},
+  {label: "指定高度", value: ERthMode.SETTING}
 ];
 
 export enum ECommanderModeLostAction {
@@ -36,8 +36,8 @@ export enum ECommanderModeLostAction {
 }
 
 export const CommanderModeLostActionInCommandFlightOptions = [
-  {label: "Continue", value: ECommanderModeLostAction.CONTINUE},
-  {label: "Execute Lost Action", value: ECommanderModeLostAction.EXEC_LOST_ACTION}
+  {label: "继续", value: ECommanderModeLostAction.CONTINUE},
+  {label: "执行失控动作", value: ECommanderModeLostAction.EXEC_LOST_ACTION}
 ];
 
 export enum ECommanderFlightMode {
@@ -46,6 +46,6 @@ export enum ECommanderFlightMode {
 }
 
 export const CommanderFlightModeInCommandFlightOptions = [
-  {label: "Smart Height", value: ERthMode.SMART},
-  {label: "Setting Height", value: ERthMode.SETTING}
+  {label: "自动高度", value: ERthMode.SMART},
+  {label: "指定高度", value: ERthMode.SETTING}
 ];

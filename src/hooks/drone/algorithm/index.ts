@@ -1,6 +1,11 @@
 import {useAjax} from "@/lib/http.ts";
 import useSWR from "swr";
 
+export enum AlgorithmPlatform {
+  CloudPlatForm,
+  Other
+}
+
 export interface AlgorithmConfig {
   algorithm_name: string;
   contact: string;
@@ -9,6 +14,11 @@ export interface AlgorithmConfig {
   description: string;
   id: number;
   warning_level: number;
+  device_list: {
+    device_sn: string;
+    instance_id: string;
+  }[];
+  algorithm_platform: AlgorithmPlatform;
 }
 
 export const ALGORITHM_CONFIG_API_PREFIX = "/algorithm-config/api/v1";

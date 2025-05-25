@@ -55,7 +55,6 @@ export const TaskStatusMap = {
   [TaskStatus.CanCel]: "取消",
   [TaskStatus.Fail]: "失败",
   [TaskStatus.Paused]: "中止",
-
 };
 
 export const TaskStatusColor = {

@@ -233,7 +233,7 @@ const SceneMini = ({initialPosition, onCameraChange, hp, onChangeHp, onZoomChang
         }}
       />
 
-      <ToggleGroup className={"absolute left-1/2 -translate-x-1/2 top-2 bg-gray-500"}
+      {/*<ToggleGroup className={"absolute left-1/2 -translate-x-1/2 top-2 bg-gray-500"}
                    type="single"
                    onValueChange={_onChangeMode}
                    defaultValue={"wide"}
@@ -244,16 +244,16 @@ const SceneMini = ({initialPosition, onCameraChange, hp, onChangeHp, onZoomChang
         <ToggleGroupItem value="zoom" aria-label="Toggle italic">
           变焦
         </ToggleGroupItem>
-      </ToggleGroup>
+      </ToggleGroup>*/}
 
-      <Slider
+      {/*<Slider
         onValueChange={_onZoomChange}
         min={5}
         max={20}
         defaultValue={[5]}
         orientation={"vertical"}
         className={"absolute right-4 top-12 border-2 h-[200px] w-[12px] bg-gray-500 border-none rounded-lg"}
-      />
+      />*/}
     </div>
   );
 };

@@ -4,7 +4,7 @@ import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/co
 import {useOnlineDocks} from "@/hooks/drone";
 import DronePanel from "@/components/drone/public/DronePanel.tsx";
 import {useSceneStore} from "@/store/useSceneStore.ts";
-import {EDockModeCode, EModeCode} from "@/types/device.ts";
+import {EDockModeCode, EDockModeCodeMap, EModeCode, EModeCodeMap} from "@/types/device.ts";
 import {OnlineDevice, useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import TsaScene from "@/components/drone/public/TsaScene.tsx";
 import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
@@ -12,6 +12,7 @@ import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
+import {Button} from "@/components/ui/button.tsx";
 
 const DRC_API_PREFIX = "/control/api/v1";
 
@@ -22,11 +23,9 @@ const Tsa = () => {
     hmsInfo,
     setOsdVisible
   } = useSceneStore();
-
   const {post} = useAjax();
   const {onlineDocks} = useOnlineDocks();
   const realTime = useRealTimeDeviceInfo(osdVisible.gateway_sn, osdVisible.sn);
-
   const switchVisible = (dock: OnlineDevice) => {
     if (dock.sn === osdVisible.sn) {
       setOsdVisible({
@@ -123,7 +122,7 @@ const Tsa = () => {
                           <div
                             className={cn("pl-4 w-2/3 bg-[#2E3751]/[.88] text-[#40F2FF]",
                               deviceState.dockInfo[dock.gateway.sn] && deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code !== EDockModeCode.Disconnected ? "text-[#00ee8b]" : "text-red-500")}>
-                            {deviceState.dockInfo[dock.gateway.sn] ? EDockModeCode[deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code] : EModeCode[EModeCode.Disconnected]}
+                            {deviceState.dockInfo[dock.gateway.sn] ? EDockModeCodeMap[deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code] : "设备已离线"}
                           </div>
                           <div className={"w-1/3 bg-[#52607D] pl-4"}>
                             <span>{hmsInfo[dock.gateway.sn]?.length}</span>
@@ -131,19 +130,20 @@ const Tsa = () => {
                         </div>
                         <div className={"flex"}>
                           <div className={cn("pl-4 w-2/3 bg-[#2E3751]/[.88] text-[#40F2FF]",
-                            deviceState.deviceInfo[dock.sn] && deviceState.deviceInfo[dock.sn].mode_code !== EDockModeCode.Disconnected ? "text-[#00ee8b]" : "text-red-500")}>
-                            {deviceState.deviceInfo[dock.sn] ? EModeCode[deviceState.deviceInfo[dock.sn].mode_code] : EModeCode[EModeCode.Disconnected]}
+                            deviceState.deviceInfo[dock.sn] && deviceState.deviceInfo[dock.sn].mode_code !== EModeCode.Disconnected ? "text-[#00ee8b]" : "text-red-500")}>
+                            {deviceState.deviceInfo[dock.sn] ? EModeCodeMap[deviceState.deviceInfo[dock.sn].mode_code] : "飞行器未连接"}
                           </div>
                           <div className={"w-1/3 bg-[#52607D] pl-4"}></div>
                         </div>
                       </div>
                     </div>
                     <div className={"px-[20px] content-center"}>
-                      <div
+                      <Button
+                        disabled={deviceState.dockInfo[dock.gateway.sn]?.basic_osd?.mode_code === EModeCode.Disconnected}
                         onClick={() => switchVisible(dock)}
-                        className={cn("cursor-pointer", deviceState.dockInfo[dock.gateway.sn] && deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code !== EModeCode.Disconnected ? "" : "cursor-not-allowed")}>
+                        className={cn("cursor-pointer p-0 bg-transparent", deviceState.dockInfo[dock.gateway.sn] && deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code !== EModeCode.Disconnected ? "" : "cursor-not-allowed")}>
                         {osdVisible.gateway_sn === dock.gateway.sn && osdVisible.visible ? <Eye/> : <EyeOff/>}
-                      </div>
+                      </Button>
                     </div>
                   </div>
                   {/*<div className={"h-[38px] mb-[18px] ml-[12px] flex items-center font-medium"}>
@@ -158,7 +158,7 @@ const Tsa = () => {
       </div>
       <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative"}>
         {/*<GMap/>*/}
-        <TsaScene/>
+        <TsaScene dockSn={osdVisible.gateway_sn} deviceSn={osdVisible.sn}/>
         <div className={"absolute right-0 bottom-0 z-100"}>
           <MapChange/>
         </div>

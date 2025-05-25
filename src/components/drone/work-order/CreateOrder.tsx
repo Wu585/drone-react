@@ -19,6 +19,8 @@ import {cn, uuidv4} from "@/lib/utils";
 import {eventMap, WorkOrder} from "@/hooks/drone";
 import {PreviewMethods, UploadPreview} from "@rpldy/upload-preview";
 import {getMediaType} from "@/hooks/drone/order";
+import {Button} from "@/components/ui/button.tsx";
+import ReviewSheet from "@/components/drone/work-order/ReviewSheet.tsx";
 
 const createOrderSchema = z.object({
   name: z.string().min(1, "请输入事件名称"),
@@ -62,6 +64,7 @@ interface Props {
 }
 
 const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
+  const [open, setOpen] = useState(false);
   const {post} = useAjax();
   const [mediaUrlList, setMediaUrlList] = useState<string[]>([]);
   const [fileList, setFileList] = useState<{ id: string, fileKey: string }[]>([]);
@@ -201,6 +204,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
 
   return (
     <Form {...form}>
+      <ReviewSheet open={open} setOpen={setOpen} currentOrder={currentOrder}/>
       <form id="createOrderForm" onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2">
         <FormField
           control={form.control}
@@ -386,12 +390,14 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
             <FormItem className="grid grid-cols-4 gap-2">
               <FormLabel className="text-right mt-4">发生地址</FormLabel>
               <FormControl>
-                <div className={"col-span-3 space-y-4"}>
+                <div className={"col-span-3 space-y-4 whitespace-nowrap"}>
                   <Input disabled={isPreview} {...field} className="rounded-none bg-[#072E62]/[.7] border-[#43ABFF]"/>
                   <div>
                     <Scene/>
                   </div>
                   <span>经纬度：{formattedLongitude}, {formattedLatitude}</span>
+                  {isPreview && <Button className={"h-8 ml-2 bg-[#43ABFF]"} type={"button"}
+                                        onClick={() => setOpen(true)}>无人机核查</Button>}
                 </div>
               </FormControl>
               <FormMessage className="col-span-3 col-start-2"/>

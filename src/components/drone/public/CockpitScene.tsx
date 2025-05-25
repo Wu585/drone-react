@@ -44,17 +44,16 @@ const CockpitScene = () => {
   const dockSn = searchParams.get("gateway_sn") || "";
   const deviceSn = searchParams.get("sn") || "";
   const realTimeDeviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
-  // console.log("realTimeDeviceInfo");
-  // console.log(realTimeDeviceInfo);
+
   const dronePositionRef = useRef<{
     longitude: number,
     latitude: number,
     height: number,
     heading?: number
   }>({
-    longitude: 121.44262,
-    latitude: 30.895136,
-    height: 100,
+    longitude: 0,
+    latitude: 0,
+    height: 0,
     heading: 0
   });
 
@@ -80,7 +79,7 @@ const CockpitScene = () => {
     scene.sun.show = true;
 
     addMapLayer();
-    resetView();
+    // resetView();
 
     const yx = findMapLayer("影像");
     yx && (yx.show = false);
@@ -154,11 +153,7 @@ const CockpitScene = () => {
     dock_sn: dockSn
   });
 
-  console.log("currentJobList");
-  console.log(currentJobList);
-
   useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id);
-
 
   /*useEffect(() => {
     dynamicAddSceneDroneModel(dronePositionRef.current);

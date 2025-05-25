@@ -14,15 +14,17 @@ interface Props {
 
 const CockpitTitle = ({title, groupList, onGroupChange, groupValue}: Props) => {
   return (
-    <div className={"flex space-x-[16px] items-center"}>
+    <div className={"flex space-x-[16px] items-center whitespace-nowrap"}>
       <img src={titleIcon} alt=""/>
-      {groupList ? <ToggleGroup value={groupValue} onValueChange={onGroupChange} type="single">
-        {groupList.map(item =>
-          <ToggleGroupItem
-            className={"whitespace-nowrap hover:bg-transparent data-[state=on]:bg-transparent data-[state=on]:text-[#32A3FF]"}
-            key={item.value}
-            value={item.value}>{item.name}</ToggleGroupItem>)}
-      </ToggleGroup> : <span className={"text-[18px]"}>{title}</span>}
+      <div>
+        {groupList ? <ToggleGroup value={groupValue} onValueChange={onGroupChange} type="single">
+          {groupList.map(item =>
+            <ToggleGroupItem
+              className={"whitespace-nowrap hover:bg-transparent data-[state=on]:bg-transparent data-[state=on]:text-[#32A3FF]"}
+              key={item.value}
+              value={item.value}>{item.name}</ToggleGroupItem>)}
+        </ToggleGroup> : <span className={"text-[18px]"}>{title}</span>}
+      </div>
       <img className={"h-[8px]"} src={titleBar} alt=""/>
     </div>
   );

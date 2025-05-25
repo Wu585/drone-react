@@ -1,4 +1,5 @@
 import {useMemo} from "react";
+import dronePng from "@/assets/images/drone/drone.png";
 
 const tickNumbers = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
 
@@ -74,8 +75,10 @@ const Compass = ({heading}: Props) => {
 
         {/* 内环 */}
         <div
-          className="absolute w-[80px] aspect-square bg-neutral-200 bg-no-repeat bg-center bg-[length:80%] rounded-full"
-        />
+          className="absolute w-[80px] aspect-square bg-neutral-200 bg-no-repeat bg-[length:80%] rounded-full flex items-center justify-center"
+        >
+          <img src={dronePng} className={"w-16 -translate-y-2"} alt=""/>
+        </div>
 
         {/* 刻度面板 */}
         <div

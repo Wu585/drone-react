@@ -16,7 +16,7 @@ import {
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
-import {Edit, Eye} from "lucide-react";
+import {Edit, Eye, Loader2} from "lucide-react";
 import {getAuthToken, useAjax} from "@/lib/http.ts";
 import {
   Dialog,
@@ -41,6 +41,7 @@ import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePicker.tsx";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {Input} from "@/components/ui/input.tsx";
+import {toast} from "@/components/ui/use-toast.ts";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -312,35 +313,46 @@ const WorkOrderDataTable = () => {
   const [orderType, setOrderType] = useState<"create" | "edit" | "preview">("create");
   const [orderHandleType, setOrderHandleType] = useState<"handle" | "preview">("handle");
 
+  const [loading, setLoading] = useState(false);
+
   const onExportOrder = async () => {
     console.log("currentUser");
     console.log(currentUser);
-    const res: any = await post(
-      `${OPERATION_HTTP_PREFIX}/order/${13}/exportReport`,
-      queryParams,
-      // 设置响应类型为 blob
-      {responseType: "blob"}
-    );
+    try {
+      setLoading(true);
+      const res: any = await post(
+        `${OPERATION_HTTP_PREFIX}/order/${13}/exportReport`,
+        queryParams,
+        // 设置响应类型为 blob
+        {responseType: "blob"}
+      );
 
-    // 创建 Blob 对象
-    const blob = new Blob([res.data], {
-      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    });
+      // 创建 Blob 对象
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      });
 
-    // 创建下载链接
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `工单报告_${dayjs().format("YYYY-MM-DD_HH-mm-ss")}.docx`; // 设置文件名
+      // 创建下载链接
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `工单报告_${dayjs().format("YYYY-MM-DD_HH-mm-ss")}.docx`; // 设置文件名
 
-    // 触发下载
-    document.body.appendChild(link);
-    link.click();
+      // 触发下载
+      document.body.appendChild(link);
+      link.click();
 
-    // 清理
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
+      // 清理
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast({
+        description: "导出工单失败！",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -447,11 +459,11 @@ const WorkOrderDataTable = () => {
                 创建
               </PermissionButton>
             </DialogTrigger>
-            <DialogContent className="max-w-screen-lg bg-[#0A4088]/[.7] text-white border-none">
+            <DialogContent className="max-w-screen-lg bg-[#20355f]/[.8] text-white border-none">
               <DialogHeader className={""}>
                 <DialogTitle>工单管理</DialogTitle>
               </DialogHeader>
-              <div className={"border-[2px] border-[#43ABFF] flex p-8"}>
+              <div className={" border-[#43ABFF] flex p-8 rounded-md bg-[#1b233c] opacity-80"}>
                 <ol className="flex flex-col gap-2" aria-orientation="vertical">
                   {stepper.all.map((step, index, array) => (
                     <div key={step.id} className={""}>
@@ -564,8 +576,12 @@ const WorkOrderDataTable = () => {
           </Dialog>
           <PermissionButton
             permissionKey={"Collection_TicketExport"}
-            className={"bg-[#43ABFF] w-24"}
-            onClick={onExportOrder}>导出工单报告</PermissionButton>
+            className={"bg-[#43ABFF] w-32"}
+            disabled={loading}
+            onClick={onExportOrder}>
+            {loading && <Loader2 className="h-4 w-4 animate-spin" size={16}/>}
+            导出工单报告
+          </PermissionButton>
         </div>
 
         <div className="rounded-md border border-[#0A81E1] overflow-hidden">

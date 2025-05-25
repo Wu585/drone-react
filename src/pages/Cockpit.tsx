@@ -8,8 +8,6 @@ import alt from "@/assets/images/drone/cockpit/alt.png";
 import windSpeed from "@/assets/images/drone/cockpit/wind-speed.png";
 import qsdjl from "@/assets/images/drone/cockpit/qsdjl.png";
 import CockpitTitle from "@/components/drone/public/CockpitTitle.tsx";
-import weatherBasePng from "@/assets/images/drone/cockpit/weather-base.png";
-import cloudyPng from "@/assets/images/drone/cockpit/cloudy.png";
 import humidityPng from "@/assets/images/drone/cockpit/humidity.png";
 import rainyPng from "@/assets/images/drone/cockpit/rainy.png";
 import windyPng from "@/assets/images/drone/cockpit/windy.png";
@@ -18,7 +16,7 @@ import CockpitFlyControl from "@/components/drone/public/CockpitFlyControl.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {clarityList} from "@/hooks/drone/useDeviceVideo.ts";
 import {useEffect, useState, useCallback, useRef, useMemo} from "react";
-import {useSearchParams} from "react-router-dom";
+import {useNavigate, useSearchParams} from "react-router-dom";
 import {useOnlineDocks} from "@/hooks/drone";
 import {z} from "zod";
 import {
@@ -40,13 +38,13 @@ import yjqfPng from "@/assets/images/drone/cockpit/yjqf.png";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
-import {EModeCode, RainfallEnum} from "@/types/device.ts";
+import {EModeCode, EModeCodeMap, RainfallEnum} from "@/types/device.ts";
 import {cn} from "@/lib/utils.ts";
 import PayloadControl from "@/components/drone/PayloadControl.tsx";
 import compassWrapperPng from "@/assets/images/drone/cockpit/compass-wrapper.png";
 import compassPng from "@/assets/images/drone/cockpit/compass.png";
 import pointerPng from "@/assets/images/drone/cockpit/pointer.png";
-import {RefreshCcw, Settings, Maximize2, X} from "lucide-react";
+import {RefreshCcw, Settings, Maximize2, X, ArrowRightLeft, ArrowBigLeft, Undo2} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,6 +56,7 @@ import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
 import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
 import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
 import CockpitScene from "@/components/drone/public/CockpitScene.tsx";
+import {AlgorithmConfig, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -89,8 +88,7 @@ const Cockpit = () => {
   const deviceSn = searchParams.get("sn") || "";
   const instanceId = searchParams.get("instance_id") || "";
   const deviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
-
-  const deviceStatus = !deviceInfo.device ? EModeCode[EModeCode.Disconnected] : EModeCode[deviceInfo.device?.mode_code];
+  const deviceStatus = !deviceInfo.device ? EModeCodeMap[EModeCode.Disconnected] : EModeCodeMap[deviceInfo.device?.mode_code];
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!dockSn) return;
@@ -384,27 +382,85 @@ const Cockpit = () => {
     }
   }, [deviceInfo]);
 
+  // 算法选择
+  const {data: algorithmConfigList} = useAlgorithmConfigList({
+    page: 1,
+    size: 1000,
+  });
+
+  console.log("algorithmConfigList");
+  console.log(algorithmConfigList);
+
+  function groupByDeviceAndPlatform(algorithms: AlgorithmConfig[]): Record<string, Record<number, string[]>> {
+    const result: Record<string, Record<number, string[]>> = {};
+
+    algorithms.forEach(algorithm => {
+      const platform = algorithm.algorithm_platform;
+
+      if (algorithm.device_list && algorithm.device_list.length > 0) {
+        algorithm.device_list.forEach(device => {
+          const sn = device.device_sn;
+
+          // Initialize device_sn entry if not exists
+          if (!result[sn]) {
+            result[sn] = {};
+          }
+
+          // Initialize platform entry if not exists
+          if (!result[sn][platform]) {
+            result[sn][platform] = [];
+          }
+
+          // Add instance_id
+          result[sn][platform].push(device.instance_id);
+        });
+      }
+    });
+
+    return result;
+  }
+
+  const result = groupByDeviceAndPlatform(algorithmConfigList?.records || []);
+  console.log("result");
+  console.log(result);
+
+  const navigate = useNavigate();
+
+  // 切换中屏显示
+  const [videoLayout, setVideoLayout] = useState<"default" | "switched">("default");
+
+  const switchVideos = () => {
+    setVideoLayout(prev => prev === "default" ? "switched" : "default");
+  };
+
   return (
     <FitScreen width={1920} height={1080} mode="full">
       <Form {...form}>
         <form className={"h-full bg-cockpit bg-full-size relative grid grid-cols-5"}
               onSubmit={form.handleSubmit(onSubmit)}>
           <header
-            className={"bg-cockpit-header h-[164px] bg-full-size absolute top-0 w-full left-0 flex justify-center py-4 z-10"}>
+            className={"bg-cockpit-header h-[164px] bg-full-size absolute top-0 w-full left-0 flex justify-center py-4 z-[5]"}>
             远程控制 - <span
             className={!deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected ? "text-red-500 px-2 font-bold" : "text-[#00ee8b] px-2 font-bold"}>{deviceStatus}</span>
           </header>
           <div className={"col-span-1 z-50"}>
+            <div
+              className={"absolute top-4 left-6 flex items-center justify-center space-x-2 z-[20] cursor-pointer bg-[#072E62]/[.7] px-2 py-1 rounded"}>
+              <Undo2 className="cursor-pointer text-white" size={24} onClick={() => {
+                navigate("/tsa");
+              }}/>
+              {/*<span>返回</span>*/}
+            </div>
             <div className={"mt-[123px] ml-[53px] mb-[12px] flex items-center justify-between pr-4 z-50"}>
               <div
                 className="flex items-center space-x-2 cursor-pointer"
                 onClick={handleDockLiveToggle}
               >
                 <CockpitTitle title={"机场直播"}/>
-                <X size={16} className={cn("transition-transform", !showDockLive && "rotate-45")}/>
+                <X size={18} className={cn("transition-transform", !showDockLive && "rotate-45")}/>
               </div>
               {showDockLive && (
-                <div className={"flex space-x-2"}>
+                <div className={"ml-2 flex space-x-2"}>
                   <DropdownMenu>
                     <DropdownMenuTrigger>
                       <Settings size={16}/>
@@ -424,17 +480,41 @@ const Cockpit = () => {
                     onClick={() => startDockLive()}
                     size={16}
                   />
+                  {/*<ArrowRightLeft
+                    className={"cursor-pointer"}
+                    // onClick={() => startDockLive()}
+                    onClick={switchVideos}
+                    size={16}
+                  />*/}
                 </div>
               )}
             </div>
             {showDockLive && (
               <div className={"w-[360px] h-[186px] ml-[30px]"}>
-                <video
-                  ref={dockVideoRef}
-                  controls
-                  autoPlay
-                  className={"h-[180px] w-full object-fill rounded-lg"}
-                />
+                {videoLayout === "default" ? (
+                  <video
+                    ref={dockVideoRef}
+                    controls
+                    autoPlay
+                    className={"h-[180px] w-full object-fill rounded-lg"}
+                  />
+                ) : (
+                  <video
+                    ref={droneCloudVideoRef}
+                    autoPlay
+                    className={"h-[180px] w-full object-fill rounded-lg"}
+                    onDoubleClick={handleVideoDoubleClick}
+                    onWheel={handleWheel}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    style={{
+                      background: "#000",
+                      userSelect: "none"
+                    }}
+                  />
+                )}
               </div>
             )}
             <div className={cn(
@@ -447,7 +527,7 @@ const Cockpit = () => {
               </RightClickPanel>
             </div>
             <div className={"ml-[53px] py-[30px]"}>
-              <CockpitTitle title={"飞行器基本参数"}/>
+              <CockpitTitle title={"一键起飞基本参数"}/>
             </div>
             <div className={"ml-[53px] mr-[32px] space-y-2 h-[360px] overflow-auto"}>
               <FormField
@@ -664,27 +744,43 @@ const Cockpit = () => {
           </div>
           <div className={"col-span-3 z-50"}>
             <div className={"h-[596px] bg-center-video mt-[52px] bg-full-size content-center relative"}>
-              {deviceStatus !== EModeCode[EModeCode.Disconnected] ? (
-                <video
-                  ref={droneCloudVideoRef}
-                  autoPlay
-                  className={"w-[830px] rounded-[40px] overflow-hidden cursor-crosshair aspect-video object-fill"}
-                  id={"player2"}
-                  onDoubleClick={handleVideoDoubleClick}
-                  onWheel={handleWheel}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}  // 鼠标离开也要停止拖动
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "#000",
-                    position: "relative",
-                    userSelect: "none"  // 防止拖动时选中文本
-                  }}
-                />) : (
+              {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
+                videoLayout === "default" ? (
+                  <video
+                    ref={droneCloudVideoRef}
+                    autoPlay
+                    className={"w-[830px] rounded-[40px] overflow-hidden cursor-crosshair aspect-video object-fill"}
+                    id={"player2"}
+                    onDoubleClick={handleVideoDoubleClick}
+                    onWheel={handleWheel}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "#000",
+                      position: "relative",
+                      userSelect: "none"
+                    }}
+                  />
+                ) : (
+                  <video
+                    ref={dockVideoRef}
+                    controls
+                    autoPlay
+                    className={"w-[830px] rounded-[40px] overflow-hidden aspect-video object-fill"}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "#000",
+                      position: "relative"
+                    }}
+                  />
+                )) : (
                 <div className={"text-[#d0d0d0]"}>
                   当前设备已关机，无法进行直播
                 </div>
@@ -728,7 +824,7 @@ const Cockpit = () => {
                     <div className={"flex flex-col justify-center space-y-2"}>
                       <span className={"text-[12px] text-[#D0D0D0]"}>垂直速度</span>
                       <span
-                        className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.vertical_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
+                        className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.vertical_speed === str ? str : parseFloat(deviceInfo.device?.vertical_speed).toFixed(2) + " m/s"}</span>
                     </div>
                   </div>
                   <div className={"flex space-x-4"}>
@@ -779,7 +875,7 @@ const Cockpit = () => {
                 </div>
               </div>
               <div className={"col-span-1h-full relative content-center"}>
-                <img src={compassWrapperPng} className={"absolute right-14 scale-150 bottom-28"} alt=""/>
+                <img src={compassWrapperPng} className={"absolute right-14 scale-150 bottom-28 border-2"} alt=""/>
                 <img src={compassPng}
                      style={{
                        transform: `rotate(${-(headingDegrees || 0)}deg)`,
@@ -846,7 +942,7 @@ const Cockpit = () => {
                 ] : undefined}
                 onGroupChange={onGroupChange}
               />
-              {deviceStatus !== EModeCode[EModeCode.Disconnected] && (
+              {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] && (
                 <div className="flex items-center space-x-2">
                   {fpvDroneVideoId && fpvOrAi === "fpv" && <RefreshCcw
                     size={17}
@@ -861,7 +957,7 @@ const Cockpit = () => {
                 </div>
               )}
             </div>
-            {deviceStatus !== EModeCode[EModeCode.Disconnected] ? (
+            {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
               fpvDroneVideoId ?
                 fpvOrAi === "fpv" ?
                   <video
