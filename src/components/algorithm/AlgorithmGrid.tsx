@@ -85,7 +85,12 @@ const AlgorithmGrid = () => {
   };
 
   return (
-    <div className={"h-full grid grid-cols-6 gap-4"}>
+    <div className={"h-full grid grid-cols-6 gap-4 relative"}>
+      <Button className={"absolute right-0 -top-12 w-20 bg-[#43ABFF]"}
+              onClick={() => {
+                setOpen(true);
+                setConfigId(undefined);
+              }}>添加</Button>
       <AlgorithmDialog key={configId} open={open} onOpenChange={setOpen} onSuccess={onSuccess} id={configId}/>
       {algorithmConfigList?.records.map((record) => (
         <div className={"bg-algorithm-panel bg-full-size flex flex-col justify-between items-center py-4 relative"}
