@@ -1,11 +1,14 @@
 import {useWaylineById} from "@/hooks/drone";
 import {useEffect} from "react";
+import {resetView} from "@/lib/view.ts";
 
 export const useSetViewByWaylineData = (id?: string) => {
   const {data: currentWaylineData} = useWaylineById(id || "");
 
   useEffect(() => {
-    if (!currentWaylineData) return;
+    if (!currentWaylineData) {
+      return resetView();
+    }
     const takeoffPoint = currentWaylineData.take_off_ref_point?.split(",");
     if (takeoffPoint && takeoffPoint.length >= 2) {
       return viewer.camera.setView({

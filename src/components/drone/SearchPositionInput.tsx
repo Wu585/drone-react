@@ -24,10 +24,11 @@ const SearchPositionInput = () => {
   const {get} = useAjax();
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [open, setOpen] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!debouncedValue) {
+    if (isComposing || !debouncedValue) {
       setSearchResults([]);
       setOpen(false);
       return;
@@ -41,18 +42,16 @@ const SearchPositionInput = () => {
       const results = res.data.data || [];
       setSearchResults(results);
       setOpen(results.length > 0);
-      // 当Popover打开后，重新聚焦到输入框
       if (results.length > 0 && inputRef.current) {
         setTimeout(() => inputRef.current?.focus(), 0);
       }
     });
-  }, [debouncedValue]);
+  }, [debouncedValue, isComposing]);
 
   const handleClear = () => {
     setValue("");
     setSearchResults([]);
     setOpen(false);
-    // 清除后重新聚焦
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
@@ -67,7 +66,6 @@ const SearchPositionInput = () => {
     });
     setValue(result.name);
     setOpen(false);
-    // 选择结果后重新聚焦
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
@@ -81,6 +79,8 @@ const SearchPositionInput = () => {
             autoFocus
             value={value}
             onChange={e => setValue(e.target.value)}
+            onCompositionStart={() => setIsComposing(true)}
+            onCompositionEnd={() => setIsComposing(false)}
             className="pl-8 pr-8 text-black"
             placeholder="搜索位置..."
           />

@@ -1,5 +1,5 @@
 import {useEffect} from "react";
-import {findMapLayer} from "@/lib/view.ts";
+import {findMapLayer, resetView} from "@/lib/view.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-source.ts";
 import dockPng from "@/assets/images/drone/dock.png";
@@ -51,7 +51,7 @@ const Scene = () => {
     scene.sun.show = true;
 
     addMapLayer();
-    // resetView();
+    resetView();
 
     const yx = findMapLayer("影像");
     yx && (yx.show = false);

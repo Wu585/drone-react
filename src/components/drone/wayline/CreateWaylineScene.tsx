@@ -4,6 +4,7 @@ import {useSceneStore} from "@/store/useSceneStore.ts";
 import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-source.ts";
 import dockPng from "@/assets/images/drone/dock.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
+import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 
 const mapLayerList = [
   {
@@ -22,6 +23,7 @@ const mapLayerList = [
 
 const CreateWaylineScene = () => {
   const deviceState = useSceneStore(state => state.deviceState);
+  useInitialConnectWebSocket();
   const addMapLayer = () => {
     mapLayerList.forEach(item => {
       const layer = new Cesium.SuperMapImageryProvider(item);
@@ -34,7 +36,7 @@ const CreateWaylineScene = () => {
     window.viewer = new Cesium.Viewer("cesiumContainer", {
       shadows: false,
       infoBox: false,
-      navigation: false, //指南针
+      navigation: true, //指南针
       selectionIndicator: false, //绿色选择框
     });
 

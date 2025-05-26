@@ -35,16 +35,14 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog.tsx";
-import {useWaylineById, WaylineData} from "@/hooks/drone";
+import {useWaylineById} from "@/hooks/drone";
 import {
   addConnectLines,
-  addDroneModel,
   dynamicAddDroneModel,
   addLabelWithin, addPyramid, addTakeOffPoint,
   addWayPointWithIndex,
-  moveDroneToTarget,
   removeDroneModel, removePyramid,
-  removeTakeoffPoint, CreateFrustum
+  removeTakeoffPoint
 } from "@/hooks/drone/wayline";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
@@ -54,6 +52,7 @@ import SceneMini from "@/components/drone/public/SceneMini.tsx";
 import * as egm96 from "egm96-universal";
 import {useSetViewByWaylineData} from "@/hooks/drone/wayline/useSetViewByWaylineData.ts";
 import CreateWaylineScene from "@/components/drone/wayline/CreateWaylineScene.tsx";
+import SearchPositionInput from "@/components/drone/SearchPositionInput.tsx";
 
 interface WayPoint {
   id: string;
@@ -120,7 +119,7 @@ const actionList = [
     name: "开始录像",
     func: "startRecord",
     isGlobal: true,
-    param: ["zoom", "wide", "ir"]
+    param: ["zoom", "wide", "ir", "visable"]
   },
   {
     name: "停止录像",
@@ -152,7 +151,7 @@ const actionList = [
     name: "拍照",
     func: "takePhoto",
     isGlobal: true,
-    param: ["zoom", "wide", "ir"]
+    param: ["zoom", "wide", "ir", "visable"]
   },
   {
     name: "变焦",
@@ -163,20 +162,8 @@ const actionList = [
     name: "全景拍照",
     func: "panoShot",
     isGlobal: true,
-    param: ["zoom", "wide", "ir"]
+    param: ["zoom", "wide", "ir", "visable"]
   },
-  /*{
-    name: "创建文件夹"
-  },
-  {
-    name: "开始等时间隔拍照"
-  },
-  {
-    name: "开始等距间隔拍照"
-  },
-  {
-    name: "结束间隔拍照"
-  }*/
 ];
 
 const formSchema = z.object({
@@ -1162,21 +1149,6 @@ const CreateWayLine0517 = () => {
     });
 
     setWaypoints(initialWaypoints);
-
-    // 初始化表单数据
-    form.reset({
-      ...currentWaylineData,
-      device: {
-        drone_type: currentWaylineData.drone_type,
-        sub_drone_type: currentWaylineData.sub_drone_type,
-        payload_type: currentWaylineData.payload_type,
-        payload_position: currentWaylineData.payload_position,
-      },
-      image_format: currentWaylineData.image_format.split(","),
-      take_off_ref_point: currentWaylineData.take_off_ref_point || "",
-      waypoint_heading_mode: currentWaylineData.waypoint_heading_req.waypoint_heading_mode,
-      global_waypoint_turn_mode: currentWaylineData.waypoint_turn_req.waypoint_turn_mode,
-    });
   }, [currentWaylineData, form, globalHeight]);
 
   // 添加对 auto_flight_speed 的监听
@@ -1192,30 +1164,6 @@ const CreateWayLine0517 = () => {
       }));
     }
   }, [form.watch("auto_flight_speed"), waylineInfo.distance]);
-
-  /*useEffect(() => {
-    let origin = Cesium.Cartesian3.fromDegrees(120, 30,120);
-    let heading = 0;
-    let pitch = 0;
-    let roll = 0;
-    let hpr = new Cesium.HeadingPitchRoll(heading,pitch,roll)
-    let orientation = Cesium.Quaternion.fromHeadingPitchRoll(hpr);
-
-    // 创建视锥体
-    let createFrustum = new CreateFrustum({
-      position: origin,
-      orientation: orientation,
-      fov: 30,
-      near: 0.01,
-      far: 200,
-      aspectRatio: 1.7,
-    });
-    // 视角定位
-    viewer.camera.flyTo({
-      destination: origin,
-    });
-
-  }, []);*/
 
   return (
     <Form {...form}>
@@ -1425,6 +1373,7 @@ const CreateWayLine0517 = () => {
                       <FormControl>
                         <div className={"flex space-x-2 items-center"}>
                           <Input className={"bg-transparent"} {...field} onChange={(e) => {
+                            console.log(111);
                             field.onChange(e);
                             setWaypoints(waypoints.map(point => point.useGlobalHeight ? ({
                               ...point,
@@ -2524,6 +2473,9 @@ const CreateWayLine0517 = () => {
         </header>
         <div className={"flex-1 relative overflow-hidden"}>
           <CreateWaylineScene/>
+          <div className={"absolute right-36 top-12"}>
+            <SearchPositionInput/>
+          </div>
           <div className={"absolute bottom-0 right-[180px] w-[360px] h-[280px]"}>
             {miniSceneCameraPosition && <SceneMini onCameraChange={onCameraChange}
                                                    hp={miniSceneCameraHp}
