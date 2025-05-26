@@ -15,7 +15,7 @@ import windPowerPng from "@/assets/images/drone/cockpit/wind-power.png";
 import CockpitFlyControl from "@/components/drone/public/CockpitFlyControl.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {clarityList} from "@/hooks/drone/useDeviceVideo.ts";
-import {useEffect, useState, useCallback, useRef, useMemo} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {useOnlineDocks} from "@/hooks/drone";
 import {z} from "zod";
@@ -25,8 +25,11 @@ import {
   ECommanderFlightMode,
   ECommanderModeLostAction,
   ERthMode,
-  LostControlActionInCommandFLight, LostControlActionInCommandFLightOptions, RthModeInCommandFlightOptions,
-  WaylineLostControlActionInCommandFlight, WaylineLostControlActionInCommandFlightOptions
+  LostControlActionInCommandFLight,
+  LostControlActionInCommandFLightOptions,
+  RthModeInCommandFlightOptions,
+  WaylineLostControlActionInCommandFlight,
+  WaylineLostControlActionInCommandFlightOptions
 } from "@/types/drone.ts";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
@@ -44,11 +47,13 @@ import PayloadControl from "@/components/drone/PayloadControl.tsx";
 import compassWrapperPng from "@/assets/images/drone/cockpit/compass-wrapper.png";
 import compassPng from "@/assets/images/drone/cockpit/compass.png";
 import pointerPng from "@/assets/images/drone/cockpit/pointer.png";
-import {RefreshCcw, Settings, Maximize2, X, ArrowRightLeft, ArrowBigLeft, Undo2} from "lucide-react";
+import {Maximize2, RefreshCcw, Settings, Undo2, X} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {useFullscreen} from "@/hooks/useFullscreen";
@@ -56,7 +61,8 @@ import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
 import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
 import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
 import CockpitScene from "@/components/drone/public/CockpitScene.tsx";
-import {AlgorithmConfig, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
+import {AlgorithmConfig, AlgorithmPlatform, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
+import JSWebrtc from "@/vendor/jswebrtc.min.js";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -86,7 +92,8 @@ const Cockpit = () => {
   const [searchParams] = useSearchParams();
   const dockSn = searchParams.get("gateway_sn") || "";
   const deviceSn = searchParams.get("sn") || "";
-  const instanceId = searchParams.get("instance_id") || "";
+  // const instanceId = searchParams.get("instance_id") || "";
+  const [instanceId, setInstanceId] = useState("");
   const deviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
   const deviceStatus = !deviceInfo.device ? EModeCodeMap[EModeCode.Disconnected] : EModeCodeMap[deviceInfo.device?.mode_code];
 
@@ -388,11 +395,8 @@ const Cockpit = () => {
     size: 1000,
   });
 
-  console.log("algorithmConfigList");
-  console.log(algorithmConfigList);
-
-  function groupByDevicePlatformAndName(algorithms: AlgorithmConfig[]): Record<string, Record<number, InstanceDetail[]>> {
-    const result: Record<string, Record<number, InstanceDetail[]>> = {};
+  function groupByDevicePlatformAndName(algorithms: AlgorithmConfig[]): Record<string, Record<number, any[]>> {
+    const result: Record<string, Record<number, any[]>> = {};
 
     algorithms.forEach(algorithm => {
       const platform = algorithm.algorithm_platform;
@@ -424,9 +428,33 @@ const Cockpit = () => {
     return result;
   }
 
+  const [currentPlatform, setCurrentPlatform] = useState(AlgorithmPlatform.CloudPlatForm);
+  const otherPlatFormAiRef = useRef<HTMLVideoElement>(null);
+
+  const onChangeAiVideo = (platform: AlgorithmPlatform, video_id: string) => {
+    console.log("instanceId");
+    console.log(instanceId);
+    setInstanceId(video_id);
+    setCurrentPlatform(platform);
+  };
+
+  useEffect(() => {
+    if (currentPlatform === AlgorithmPlatform.Other && instanceId) {
+      const webrtcUrl = instanceId.replace("rtmp", "webrtc");
+      console.log("webrtcUrl");
+      console.log(webrtcUrl);
+      new JSWebrtc.Player(webrtcUrl, {
+        video: otherPlatFormAiRef.current,
+        autoplay: true,
+        onPlay: () => {
+          console.log("start play livestream");
+        }
+      });
+    }
+  }, [currentPlatform, instanceId]);
+
+
   const result = groupByDevicePlatformAndName(algorithmConfigList?.records || []);
-  console.log("result");
-  console.log(result);
 
   const navigate = useNavigate();
 
@@ -932,6 +960,7 @@ const Cockpit = () => {
           <div className={"col-span-1 pt-[100px]"}>
             <div className="flex items-center  mr-[60px] z-50 relative">
               <CockpitTitle
+                sn={deviceSn}
                 title={!fpvDroneVideoId ? "AI识别" : undefined}
                 groupValue={fpvOrAi}
                 groupList={fpvDroneVideoId ? [
@@ -945,6 +974,7 @@ const Cockpit = () => {
                   }
                 ] : undefined}
                 onGroupChange={onGroupChange}
+                onClickPopoverItem={onChangeAiVideo}
               />
               {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] && (
                 <div className="flex items-center space-x-2">
@@ -953,11 +983,12 @@ const Cockpit = () => {
                     className="cursor-pointer"
                     onClick={() => startFpvLive(false)}
                   />}
-                  {(fpvOrAi !== "fpv" || !fpvDroneVideoId) && <Maximize2
-                    size={17}
-                    className="cursor-pointer"
-                    onClick={toggleFpvFullscreen}
-                  />}
+                  {(fpvOrAi !== "fpv" || !fpvDroneVideoId) && currentPlatform === AlgorithmPlatform.CloudPlatForm &&
+                    <Maximize2
+                      size={17}
+                      className="cursor-pointer"
+                      onClick={toggleFpvFullscreen}
+                    />}
                 </div>
               )}
             </div>
@@ -978,18 +1009,23 @@ const Cockpit = () => {
                     className={""}
                     src={`http://218.78.133.200:9090/tm?instanceId=${instanceId || "ce2bd19b-d039-4c5c-b49d-abc8a87696d5"}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}
                     id={"player3"}></iframe>
-                : <iframe
-                  className={"w-80 h-60 rounded-[16px]"}
-                  id={"player3"}
-                  src={`http://218.78.133.200:9090/tm?instanceId=${instanceId || "b211d582-1211-4f24-b196-60c731eee84c"}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
-                  {isFpvFullscreen && (
-                    <X
-                      className="absolute top-4 right-4 cursor-pointer text-white z-10"
-                      size={24}
-                      onClick={exitFpvFullscreen}
-                    />
-                  )}
-                </iframe>
+                : currentPlatform === AlgorithmPlatform.CloudPlatForm ? <iframe
+                    className={"w-80 h-60 rounded-[16px]"}
+                    id={"player3"}
+                    src={`http://218.78.133.200:9090/tm?instanceId=${instanceId || "b211d582-1211-4f24-b196-60c731eee84c"}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
+                    {isFpvFullscreen && (
+                      <X
+                        className="absolute top-4 right-4 cursor-pointer text-white z-10"
+                        size={24}
+                        onClick={exitFpvFullscreen}
+                      />
+                    )}
+                  </iframe> :
+                  <video ref={otherPlatFormAiRef}
+                         controls
+                         autoPlay>
+
+                  </video>
             ) : (
               <div className={"text-[#d0d0d0] h-[200px] flex items-center pl-6"}>
                 当前设备已关机，无法进行直播

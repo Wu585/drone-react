@@ -178,6 +178,12 @@ const DronePanel = () => {
     }
   }, [deviceInfo]);
 
+  useEffect(() => {
+    return () => {
+      setOsdVisible({...osdVisible, visible: false});
+    };
+  }, []);
+
   return (
     <div className={"flex relative"}>
       <div className={"w-[422px] bg-control-panel bg-full-size relative"}>
