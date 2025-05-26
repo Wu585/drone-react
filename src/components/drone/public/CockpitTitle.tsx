@@ -76,9 +76,10 @@ const CockpitTitle = ({title, groupList, onGroupChange, groupValue, sn, onClickP
               <PopoverContent>
                 <ToggleGroup type="single" className={"flex flex-col"}>
                   {sn && result[sn]?.["0"]?.map(item =>
-                    <ToggleGroupItem onClick={() => onClickPopoverItem?.(AlgorithmPlatform.CloudPlatForm, item.instance_id)}
-                                     value={item.instance_id}
-                                     key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
+                    <ToggleGroupItem
+                      onClick={() => onClickPopoverItem?.(AlgorithmPlatform.CloudPlatForm, item.instance_id)}
+                      value={item.instance_id}
+                      key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
                   {sn && result[sn]?.["1"]?.map(item =>
                     <ToggleGroupItem value={item.instance_id} key={item.instance_id}
                                      onClick={() => onClickPopoverItem?.(AlgorithmPlatform.Other, item.instance_id)}>{item.algorithm_name}</ToggleGroupItem>)}
