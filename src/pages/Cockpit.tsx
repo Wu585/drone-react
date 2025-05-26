@@ -391,11 +391,12 @@ const Cockpit = () => {
   console.log("algorithmConfigList");
   console.log(algorithmConfigList);
 
-  function groupByDeviceAndPlatform(algorithms: AlgorithmConfig[]): Record<string, Record<number, string[]>> {
-    const result: Record<string, Record<number, string[]>> = {};
+  function groupByDevicePlatformAndName(algorithms: AlgorithmConfig[]): Record<string, Record<number, InstanceDetail[]>> {
+    const result: Record<string, Record<number, InstanceDetail[]>> = {};
 
     algorithms.forEach(algorithm => {
       const platform = algorithm.algorithm_platform;
+      const algorithmName = algorithm.algorithm_name;
 
       if (algorithm.device_list && algorithm.device_list.length > 0) {
         algorithm.device_list.forEach(device => {
@@ -411,8 +412,11 @@ const Cockpit = () => {
             result[sn][platform] = [];
           }
 
-          // Add instance_id
-          result[sn][platform].push(device.instance_id);
+          // Add instance detail with algorithm name
+          result[sn][platform].push({
+            algorithm_name: algorithmName,
+            instance_id: device.instance_id
+          });
         });
       }
     });
@@ -420,7 +424,7 @@ const Cockpit = () => {
     return result;
   }
 
-  const result = groupByDeviceAndPlatform(algorithmConfigList?.records || []);
+  const result = groupByDevicePlatformAndName(algorithmConfigList?.records || []);
   console.log("result");
   console.log(result);
 

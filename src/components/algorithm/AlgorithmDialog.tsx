@@ -150,7 +150,7 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
                       <FormLabel className="text-sm font-medium text-gray-700">
                         算法平台
                       </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value.toString()}>
+                      <Select onValueChange={(value) => field.onChange(+value)} value={field.value.toString()}>
                         <FormControl>
                           <SelectTrigger className="h-9 w-full min-w-[180px]">
                             <SelectValue placeholder="选择算法平台"/>
