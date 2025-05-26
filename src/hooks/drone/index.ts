@@ -861,7 +861,7 @@ export const useOperationList = (orderId?: number) => {
 };
 
 // 添加 ImageFormat 类型定义
-export type ImageFormat = "wide" | "zoom" | "ir";
+export type ImageFormat = "wide" | "zoom" | "ir" | "visable";
 
 // 修改 WaylineData 接口，添加 image_format 字段类型
 export interface WaylineData {

@@ -3,8 +3,11 @@ import {useState} from "react";
 import titleArrowPng from "@/assets/images/drone/title-arrow.png";
 import DroneDataTable from "@/components/drone/device-manage/DroneDataTable.tsx";
 import DockDataTable from "@/components/drone/device-manage/DockDataTable.tsx";
+import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 
 const DeviceManage = () => {
+  useInitialConnectWebSocket();
+
   const deviceList = [
     {
       name: "飞行器信息"

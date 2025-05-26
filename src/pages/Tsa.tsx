@@ -13,10 +13,13 @@ import {useAjax} from "@/lib/http.ts";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
 import {Button} from "@/components/ui/button.tsx";
+import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 
 const DRC_API_PREFIX = "/control/api/v1";
 
 const Tsa = () => {
+  useInitialConnectWebSocket();
+
   const {
     deviceState,
     osdVisible,

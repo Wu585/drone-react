@@ -63,6 +63,7 @@ import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
 import CockpitScene from "@/components/drone/public/CockpitScene.tsx";
 import {AlgorithmConfig, AlgorithmPlatform, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
 import JSWebrtc from "@/vendor/jswebrtc.min.js";
+import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -70,6 +71,8 @@ const DRC_API_PREFIX = "/control/api/v1";
 const str = "--";
 
 const Cockpit = () => {
+  useInitialConnectWebSocket();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {

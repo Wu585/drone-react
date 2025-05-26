@@ -7,12 +7,10 @@ import * as egm96 from "egm96-universal";
 
 export const useAddWaylineEntityById = (waylineId?: string) => {
   const {data: currentWaylineData} = useWaylineById(waylineId);
-  // 是否添加过航线entity
 
   // 撒点撒线
   useEffect(() => {
     if (!currentWaylineData) return;
-
     if (currentWaylineData && currentWaylineData.route_point_list && currentWaylineData.route_point_list.length > 0) {
       getCustomSource("waylines-preview")?.entities.removeAll();
       const takeoffPoint = currentWaylineData.take_off_ref_point?.split(",");
