@@ -39,7 +39,7 @@ export const useConnectMqtt = (connect: boolean = true) => {
       setMqttState(null);
       setClientId("");
     }
-  }, [dockOsdVisible, connect]);
+  }, [dockOsdVisible, connect, workspaceId]);
 
   return () => {
     mqttStateRef.current?.destroyed();

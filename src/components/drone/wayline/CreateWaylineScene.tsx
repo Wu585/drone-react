@@ -20,7 +20,7 @@ const mapLayerList = [
   },
 ];
 
-const Scene = () => {
+const CreateWaylineScene = () => {
   const deviceState = useSceneStore(state => state.deviceState);
   const addMapLayer = () => {
     mapLayerList.forEach(item => {
@@ -98,5 +98,5 @@ const Scene = () => {
   );
 };
 
-export default Scene;
+export default CreateWaylineScene;
 

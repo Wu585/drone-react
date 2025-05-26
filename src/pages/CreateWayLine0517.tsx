@@ -1,7 +1,6 @@
 import {AlignJustify, ChevronLeft, Copy, Save, Trash2, XIcon} from "lucide-react";
 import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import Scene from "@/components/drone/public/Scene.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
 import {useState, useEffect, useMemo, useRef, useCallback} from "react";
 import {pickPosition} from "@/components/toolbar/tools";
@@ -54,6 +53,7 @@ import {ImageFormat} from "@/hooks/drone";
 import SceneMini from "@/components/drone/public/SceneMini.tsx";
 import * as egm96 from "egm96-universal";
 import {useSetViewByWaylineData} from "@/hooks/drone/wayline/useSetViewByWaylineData.ts";
+import CreateWaylineScene from "@/components/drone/wayline/CreateWaylineScene.tsx";
 
 interface WayPoint {
   id: string;
@@ -2523,7 +2523,7 @@ const CreateWayLine0517 = () => {
           </div>
         </header>
         <div className={"flex-1 relative overflow-hidden"}>
-          <Scene/>
+          <CreateWaylineScene/>
           <div className={"absolute bottom-0 right-[180px] w-[360px] h-[280px]"}>
             {miniSceneCameraPosition && <SceneMini onCameraChange={onCameraChange}
                                                    hp={miniSceneCameraHp}
