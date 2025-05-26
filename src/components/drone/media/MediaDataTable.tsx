@@ -155,7 +155,6 @@ const InfiniteGridView = ({
                             hasMore,
                             onLoadMore,
                             onClickFolder,
-                            onDownload,
                             onUpdateFileName,
                             onDeleteFile
                           }: {
@@ -163,7 +162,6 @@ const InfiniteGridView = ({
   hasMore: boolean;
   onLoadMore: () => void;
   onClickFolder: (file: Partial<FileItem>) => void;
-  onDownload: (file: FileItem) => void;
   onUpdateFileName: (file: FileItem) => void;
   onDeleteFile: (file: FileItem) => void;
 }) => {
@@ -209,22 +207,37 @@ const InfiniteGridView = ({
             <div className="w-full aspect-square flex items-center justify-center mb-1">
               {file.type === MediaFileType.DIR ? (
                 <FolderClosed className="w-12 h-12 text-orange-400"/>
-              ) : file.type === MediaFileType.VIDEO || getMediaType(file.preview_url) ? (
-                <div
-                  className="relative w-full aspect-square flex items-center justify-center bg-black/20 rounded-lg overflow-hidden">
-                  <video
-                    loop
-                    autoPlay
-                    muted
-                    src={file.preview_url}
-                    className="max-h-full max-w-full object-contain"
-                  />
-                </div>
+              ) : getMediaType(file.preview_url) === "video" ? (
+                <MediaPreview src={file.preview_url}
+                              type="video"
+                              alt="Example Video"
+                              modalWidth="70vw"
+                              modalHeight="70vh"
+                              triggerElement={<div
+                                className="relative w-full aspect-square flex items-center justify-center bg-black/20 rounded-lg overflow-hidden">
+                                <video
+                                  muted
+                                  src={file.preview_url}
+                                  className="max-h-full max-w-full object-fill"
+                                />
+                              </div>}
+                />
               ) : (
-                <img
-                  src={file.preview_url}
-                  className="w-full h-full object-cover rounded-lg"
-                  alt={file.file_name}
+                <MediaPreview src={file.preview_url}
+                              type="image"
+                              alt="Example Image"
+                              modalWidth="900px"
+                              modalHeight="600px"
+                              triggerElement={
+                                <div
+                                  className="relative w-full aspect-square flex items-center justify-center bg-black/20 rounded-lg overflow-hidden">
+                                  <img
+                                    src={file.preview_url}
+                                    className="object-contain rounded-lg border-2 p-4"
+                                    alt={file.file_name}
+                                  />
+                                </div>
+                              }
                 />
               )}
             </div>
@@ -237,16 +250,12 @@ const InfiniteGridView = ({
             {/* 悬浮操作按钮 */}
             <div className="absolute top-1 right-1 hidden group-hover:flex items-center space-x-0.5">
               {file.type !== MediaFileType.DIR && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDownload(file);
-                  }}
-                >
-                  <Download className="h-3 w-3"/>
+                <Button size="icon"
+                        variant="ghost"
+                        className="h-6 w-6">
+                  <a href={file.preview_url} download>
+                    <Download className="h-3 w-3"/>
+                  </a>
                 </Button>
               )}
               <Button
@@ -261,8 +270,8 @@ const InfiniteGridView = ({
                 <Edit className="h-3 w-3"/>
               </Button>
               <Button
-                variant="ghost"
                 size="icon"
+                variant="ghost"
                 className="h-6 w-6"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -558,7 +567,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               </HoverCard>
             )}*/}
 
-            <span>{current.file_name}</span>
+            <span>{row.original.file_name}</span>
           </div>
         );
       }
@@ -606,8 +615,8 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               <MediaPreview src={row.original.preview_url}
                             type="image"
                             alt="Example Image"
-                            modalWidth="60vw"
-                            modalHeight="60vh"
+                            modalWidth="900px"
+                            modalHeight="600px"
                             triggerElement={<Eye size={18}/>}
               />}
             {!isDir && getMediaType(row.original.preview_url) === "video" &&
@@ -689,33 +698,6 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     manualPagination: true,
   });
 
-  const downloadMediaFile = async (workspaceId: string, fileId: string, fileName: string) => {
-    try {
-      addDownloadingId(fileId);
-      const url = `${MEDIA_HTTP_PREFIX}/files/${workspaceId}/file/${fileId}/url`;
-      const result: any = await get(url, {}, {responseType: "blob"});
-      if (!result.data) return;
-
-      if (result.data.type === "application/json") {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const text = reader.result as string;
-          const result = JSON.parse(text);
-          toast({
-            description: result.data.message,
-            variant: "destructive"
-          });
-        };
-        reader.readAsText(result.data, "utf-8");
-      } else {
-        const data = new Blob([result.data]);
-        downloadFile(data, fileName);
-      }
-    } finally {
-      removeDownloadingId(fileId);
-    }
-  };
-
   const getSelectedFileIds = (): number[] => {
     return table.getSelectedRowModel().rows.map(row => row.original.id);
   };
@@ -796,6 +778,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
       page: 1,
       page_size: displayType === 0 ? 10 : 30
     }));
+    mutate();
   }, [displayType]);
 
   useEffect(() => {
@@ -808,7 +791,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
         setAllItems(prev => [...prev, ...data.list]);
       }
     }
-  }, [data?.list, displayType]);
+  }, [data, displayType, pagination]);
 
   const loadMore = useCallback(() => {
     if (displayType === 1 && !isLoading && data?.pagination.total > allItems.length) {
@@ -1138,15 +1121,11 @@ const MediaDataTable = ({onChangeDir}: Props) => {
             hasMore={(data?.pagination.total || 0) > allItems.length}
             onLoadMore={loadMore}
             onClickFolder={onClickFolder}
-            onDownload={async (file) => {
-              addDownloadingId(file.id.toString());
-              try {
-                await downloadMediaFile(workspaceId, file.file_id, file.file_name);
-              } finally {
-                removeDownloadingId(file.id.toString());
-              }
+            onUpdateFileName={(file) => {
+              setEditingFile(file);
+              setInputName(file.file_name);
+              setIsEditDialogOpen(true);
             }}
-            onUpdateFileName={onUpdateFileName}
             onDeleteFile={onDeleteFile}
           />
         )}
