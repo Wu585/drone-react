@@ -11,13 +11,13 @@ export const mapLayerList = [
     name: "矢量图"
   },
   {
+    url: "http://36.139.117.52:8090/iserver/services/map-tianditu/rest/maps/Image%20Base%20Map%20_%20Longitude%20and%20Latitude",
+    name: "影像"
+  },
+  {
     url: "http://36.139.117.52:8090/iserver/services/map-tianditu/rest/maps/Vector%20Chinese%20Notes%20_%20Longitude%20and%20Latitude",
     name: "中文注记"
   },
-  {
-    url: "http://36.139.117.52:8090/iserver/services/map-tianditu/rest/maps/Image%20Base%20Map%20_%20Longitude%20and%20Latitude",
-    name: "影像"
-  }
 ];
 
 const Scene = () => {
