@@ -73,7 +73,7 @@ const CockpitTitle = ({title, groupList, onGroupChange, groupValue, sn, onClickP
               <PopoverTrigger>
                 <span className={"text-[18px]"}>{title}</span>
               </PopoverTrigger>
-              <PopoverContent>
+              <PopoverContent className={"w-48"}>
                 <ToggleGroup type="single" className={"flex flex-col"}>
                   {sn && result[sn]?.["0"]?.map(item =>
                     <ToggleGroupItem
