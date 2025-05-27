@@ -474,7 +474,7 @@ const Cockpit = () => {
         <form className={"h-full bg-cockpit bg-full-size relative grid grid-cols-5"}
               onSubmit={form.handleSubmit(onSubmit)}>
           <header
-            className={"bg-cockpit-header h-[164px] bg-full-size absolute top-0 w-full left-0 flex justify-center py-4 z-[5]"}>
+            className={"bg-cockpit-header h-[164px] bg-full-size absolute top-0 w-full left-0 flex justify-center py-4 z-[5] text-lg"}>
             远程控制 - <span
             className={!deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected ? "text-red-500 px-2 font-bold" : "text-[#00ee8b] px-2 font-bold"}>{deviceStatus}</span>
           </header>

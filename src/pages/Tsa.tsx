@@ -108,7 +108,7 @@ const Tsa = () => {
         <Accordion type="single" defaultValue="item-1" collapsible>
           <AccordionItem value="item-1" className={"border-b-[1px] border-b-[#265C9A]"}>
             <AccordionTrigger className={"px-[12px]"}>
-              <div className={"flex content-center space-x-4"}>
+              <div className={"flex content-center space-x-4 text-lg"}>
                 <span>机场</span>
               </div>
             </AccordionTrigger>
@@ -117,13 +117,13 @@ const Tsa = () => {
                 <div className={"h-[172px] bg-dock-panel bg-full-size flex flex-col"} key={dock.gateway.sn}>
                   <div className={"flex h-full"}>
                     <div className={"flex-1"}>
-                      <div className={"pl-[24px] pt-[16px]"}>
+                      <div className={"pl-[24px] pt-[16px] text-[18px]"}>
                         {dock.gateway.callsign} - {dock.callsign ?? "暂无机器"}
                       </div>
-                      <div className={"pl-[24px] pt-[16px] space-y-4"}>
-                        <div className={"flex"}>
+                      <div className={"pl-[24px] space-y-4 mt-2"}>
+                        <div className={"flex "}>
                           <div
-                            className={cn("pl-4 w-2/3 bg-[#2E3751]/[.88] text-[#40F2FF]",
+                            className={cn("pl-4 w-2/3 bg-[#2E3751]/[.88] text-[#40F2FF] text-base",
                               deviceState.dockInfo[dock.gateway.sn] && deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code !== EDockModeCode.Disconnected ? "text-[#00ee8b]" : "text-red-500")}>
                             {deviceState.dockInfo[dock.gateway.sn] ? EDockModeCodeMap[deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code] : "设备已离线"}
                           </div>
@@ -132,7 +132,7 @@ const Tsa = () => {
                           </div>
                         </div>
                         <div className={"flex"}>
-                          <div className={cn("pl-4 w-2/3 bg-[#2E3751]/[.88] text-[#40F2FF]",
+                          <div className={cn("pl-4 w-2/3 bg-[#2E3751]/[.88] text-[#40F2FF] text-base",
                             deviceState.deviceInfo[dock.sn] && deviceState.deviceInfo[dock.sn].mode_code !== EModeCode.Disconnected ? "text-[#00ee8b]" : "text-red-500")}>
                             {deviceState.deviceInfo[dock.sn] ? EModeCodeMap[deviceState.deviceInfo[dock.sn].mode_code] : "飞行器未连接"}
                           </div>

@@ -209,7 +209,8 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
     status: 2,
     dock_sn: dockSn
   });
-
+  console.log('currentJobList');
+  console.log(currentJobList);
   useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id);
 
   return (

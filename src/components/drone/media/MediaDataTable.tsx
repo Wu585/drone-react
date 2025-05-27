@@ -1093,6 +1093,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                         key={cell.id}
                         className={cn(
                           "py-3",
+                          "text-base",
                           "align-middle",
                           "px-4",
                           "leading-none"

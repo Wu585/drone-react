@@ -130,7 +130,7 @@ const WorkOrderDataTable = () => {
         accessorKey: "name",
         header: "事件名称",
         cell: ({row}) => (
-          <div className={"w-[150px] whitespace-nowrap overflow-hidden text-ellipsis"}>{row.original.name}</div>
+          <div className={"w-[150px] whitespace-nowrap overflow-hidden text-ellipsis"} title={row.original.name}>{row.original.name}</div>
         )
       },
       {
@@ -309,7 +309,8 @@ const WorkOrderDataTable = () => {
   const currentIndex = utils.getIndex(stepper.current.id);
 
   const {data: currentOrderData, mutate: mutateCurrentOrder} = useWorkOrderById(currentOrder?.id);
-
+  console.log('currentOrderData=====');
+  console.log(currentOrderData);
   const [orderType, setOrderType] = useState<"create" | "edit" | "preview">("create");
   const [orderHandleType, setOrderHandleType] = useState<"handle" | "preview">("handle");
 
@@ -622,6 +623,7 @@ const WorkOrderDataTable = () => {
                       <TableCell
                         key={cell.id}
                         className={cn(
+                          "text-base",
                           "py-3",
                           "align-middle",
                           "px-4",

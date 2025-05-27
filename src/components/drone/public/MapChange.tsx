@@ -28,6 +28,10 @@ const MapChange = () => {
           setSelectedMap("bz");
           findMapLayer("矢量图").show = true;
           findMapLayer("影像").show = false;
+          if (viewer2) {
+            findMapLayer("矢量图", viewer2).show = true;
+            findMapLayer("影像", viewer2).show = false;
+          }
         }}
       >
         <img
@@ -47,6 +51,10 @@ const MapChange = () => {
         onClick={() => {
           findMapLayer("矢量图").show = false;
           findMapLayer("影像").show = true;
+          if (viewer2) {
+            findMapLayer("矢量图", viewer2).show = false;
+            findMapLayer("影像", viewer2).show = true;
+          }
         }}
       >
         <img

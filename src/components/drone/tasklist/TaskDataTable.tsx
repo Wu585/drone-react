@@ -436,101 +436,110 @@ const TaskDataTable = () => {
               </SelectContent>
             </Select>
           </div>
-          <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]"} onClick={onGenerateReports}>
+          <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]  text-base"} onClick={onGenerateReports}>
             <span>导出飞行报告</span>
           </Button>
         </div>
       </div>
 
       <div className="rounded-md border border-[#0A81E1] overflow-hidden bg-[#0A4088]/70">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="bg-[#0A81E1]/70 text-white h-10 font-medium"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
+        <div className="max-h-[calc(100vh-380px)] overflow-hidden flex flex-col">
+          <div className="w-full">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className="bg-[#0A81E1]/70 text-white h-10 font-medium"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
                 ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody className="bg-[#0A4088]/70">
-            {table.getRowModel().rows?.length ? (
-              groupTasksByDate(data?.list || []).map(([date, tasks]) => (
-                <>
-                  {/* 日期分组行 */}
-                  <TableRow key={`date-${date}`} className="bg-[#0A81E1]/20">
+              </TableHeader>
+            </Table>
+          </div>
+          <div className="flex-1 overflow-auto">
+            <Table>
+              <TableBody className="bg-[#0A4088]/70">
+                {table.getRowModel().rows?.length ? (
+                  groupTasksByDate(data?.list || []).map(([date, tasks]) => (
+                    <>
+                      {/* 日期分组行 */}
+                      <TableRow key={`date-${date}`} className="bg-[#0A81E1]/20 ">
+                        <TableCell
+                          colSpan={columns.length}
+                          className="py-[4px] px-4 font-medium text-[#43ABFF] border-b border-[#0A81E1]/30 "
+                        >
+                          {date}
+                        </TableCell>
+                      </TableRow>
+                      {/* 任务数据行 */}
+                      {tasks.map((task) => {
+                        const row = table.getRowModel().rows.find(
+                          r => r.original.job_id === task.job_id
+                        );
+                        if (!row) return null;
+
+                        return (
+                          <TableRow
+                            key={row.id}
+                            className={cn(
+                              "h-[46px]",
+                              "border-b border-[#0A81E1]/30  text-base",
+                              "hover:bg-[#0A4088]/90 transition-colors duration-200",
+                              "data-[state=selected]:bg-transparent"
+                            )}
+                            data-state={row.getIsSelected() && "selected"}
+                          >
+                            {row.getVisibleCells().map((cell) => (
+                              <TableCell
+                                key={cell.id}
+                                className={cn(
+                                  "py-3",
+                                  "text-base",
+                                  "align-middle",
+                                  "px-4",
+                                  "leading-none"
+                                )}
+                              >
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        );
+                      })}
+                    </>
+                  ))
+                ) : (
+                  <TableRow>
                     <TableCell
                       colSpan={columns.length}
-                      className="py-2 px-4 font-medium text-[#43ABFF] border-b border-[#0A81E1]/30"
+                      className="h-24 text-center text-[#43ABFF]  text-base"
                     >
-                      {date}
+                      暂无数据
                     </TableCell>
                   </TableRow>
-                  {/* 任务数据行 */}
-                  {tasks.map((task) => {
-                    const row = table.getRowModel().rows.find(
-                      r => r.original.job_id === task.job_id
-                    );
-                    if (!row) return null;
-
-                    return (
-                      <TableRow
-                        key={row.id}
-                        className={cn(
-                          "h-[46px]",
-                          "border-b border-[#0A81E1]/30",
-                          "hover:bg-[#0A4088]/90 transition-colors duration-200",
-                          "data-[state=selected]:bg-transparent"
-                        )}
-                        data-state={row.getIsSelected() && "selected"}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell
-                            key={cell.id}
-                            className={cn(
-                              "py-3",
-                              "align-middle",
-                              "px-4",
-                              "leading-none"
-                            )}
-                          >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    );
-                  })}
-                </>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center text-[#43ABFF]"
-                >
-                  暂无数据
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center justify-between">
         <Label className="text-gray-400">
           共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
         </Label>
-        <div className="space-x-2">
+        <div className="space-x-4 my-2">
           <Button
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}

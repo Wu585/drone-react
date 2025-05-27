@@ -219,7 +219,7 @@ const DroneDataTable = () => {
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className="text-[#D0D0D0] px-4"
+                      className="text-white px-4 text-base"
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
@@ -240,7 +240,7 @@ const DroneDataTable = () => {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between py-4 text-[#D0D0D0]">
+      <div className="flex items-center justify-between py-4 text-white">
         <Label className="text-left">
           共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
         </Label>

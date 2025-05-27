@@ -108,7 +108,9 @@ const AlgorithmGrid = () => {
             </div>
             <div></div>
             <div className={"flex flex-col justify-center items-center space-y-2"}>
-              <span>{record.algorithm_name}</span>
+              <span className="max-w-[220px] truncate text-center" title={record.algorithm_name}>
+                {record.algorithm_name}
+              </span>
               <span className={"text-[#9F9F9F]"}>
               {eventMap[record.order_type]}
             </span>

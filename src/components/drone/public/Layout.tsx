@@ -7,34 +7,34 @@ import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 const menuList = [
   {
     name: "tsa",
-    icon: <Send size={20}/>,
+    icon: <Send size={24}/>,
     href: "/tsa",
     permission: "Collection_DeviceDetail"
   },
   {
     name: "elements",
-    icon: <MapPin size={20}/>,
+    icon: <MapPin size={24}/>,
     href: "/elements",
     activeHref: "elements",
     permission: "Collection_AnnotationView"
   },
   {
     name: "map-photo",
-    icon: <Image size={20}/>,
+    icon: <Image size={24}/>,
     href: "/map-photo",
     activeHref: "map-photo",
     permission: "Collection_MediaVisual"
   },
   {
     name: "wayline",
-    icon: <Waypoints size={20}/>,
+    icon: <Waypoints size={24}/>,
     href: "/wayline",
     activeHref: "wayline",
     permission: "Collection_WaylineView"
   },
   {
     name: "task",
-    icon: <LayoutList size={20}/>,
+    icon: <LayoutList size={24}/>,
     href: "/task-list",
     activeHref: "task",
     permission: "Collection_PlanView"
@@ -47,14 +47,14 @@ const menuList = [
   },*/
   {
     name: "media",
-    icon: <Film size={20}/>,
+    icon: <Film size={24}/>,
     href: "/media",
     activeHref: "media",
     permission: "Collection_MediaView"
   },
   {
     name: "work-order",
-    icon: <BookText size={20}/>,
+    icon: <BookText size={24}/>,
     href: "/work-order",
     activeHref: "work-order",
     permission: "Collection_TicketView"
@@ -67,13 +67,13 @@ const menuList = [
   // },
   {
     name: "device-manage",
-    icon: <Proportions size={20}/>,
+    icon: <Proportions size={24}/>,
     href: "/device-manage",
     permission: "Collection_DeviceDetail"
   },
   {
     name: "algorithm-config",
-    icon: <Cog size={20}/>,
+    icon: <Cog size={24}/>,
     href: "/algorithm-config",
     permission: "Collection_DeviceDetail"
   }

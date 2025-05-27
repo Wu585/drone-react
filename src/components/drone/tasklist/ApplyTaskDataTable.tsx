@@ -302,7 +302,7 @@ const TaskDataTable = () => {
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className="text-[#D0D0D0] px-4 align-middle leading-none"
+                      className="text-white px-4 align-middle leading-none text-base"
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
@@ -370,24 +370,22 @@ const TaskDataTable = () => {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-4">
         <Label className="text-gray-400">
           共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
         </Label>
-        <div className="space-x-2">
+        <div className="space-x-4">
           <Button
-            variant="outline"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
+            className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
           >
             上一页
           </Button>
           <Button
-            variant="outline"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className="border-[#43ABFF] text-[#43ABFF] hover:bg-[#43ABFF]/10"
+            className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
           >
             下一页
           </Button>

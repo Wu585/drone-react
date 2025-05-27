@@ -189,7 +189,7 @@ const DronePanel = () => {
       <div className={"w-[422px] bg-control-panel bg-full-size relative"}>
         <X onClick={() => setOsdVisible({...osdVisible, visible: !osdVisible.visible})}
            className={"absolute right-2 top-2 cursor-pointer"}/>
-        <div className={"h-[46px] flex items-center pl-6"}>
+        <div className={"h-[46px] flex items-center pl-6 text-lg"}>
           {osdVisible.gateway_callsign} - {osdVisible.callsign ?? "暂无机器"}
         </div>
         <div className={"flex text-[12px] border-b-[1px] border-[#104992]/[.85] mr-[4px]"}>
@@ -198,18 +198,18 @@ const DronePanel = () => {
           </div>
           <div className={"flex-1 p-[12px] space-y-2 bg-[#001E37]/[.9]"}>
             <div className={"grid grid-cols-4"}>
-              <span className={"col-span-1 py-[2px] text-[#40F2FF]"}>设备状态</span>
+              <span className={"col-span-1 py-[2px] text-[#40F2FF] text-base"}>设备状态</span>
               <div
-                className={cn("col-span-3 py-[2px] bg-[#52607D] pl-4 font-bold",
+                className={cn("col-span-3 py-[2px] bg-[#52607D] pl-4 font-bold flex items-center text-base",
                   deviceInfo?.dock?.basic_osd?.mode_code === EDockModeCode.Disconnected ? "text-red-500" : "text-[#00ee8b]")}>
                 {EDockModeCodeMap[deviceInfo?.dock?.basic_osd?.mode_code]}
               </div>
             </div>
-            <div className={"grid grid-cols-4 whitespace-nowrap"}>
+            <div className={"grid grid-cols-4 whitespace-nowrap text-sm"}>
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
                   <TooltipTrigger>
-                    <div className={"flex items-center  grid-cols-2 gap-x-[2px]"}>
+                    <div className={"flex items-center grid-cols-2 gap-x-[2px]"}>
                       <span><Rocket size={10}/></span>
                       <span>{deviceInfo.dock?.basic_osd?.drone_in_dock ? "是" : "否"}</span>
                     </div>
@@ -248,7 +248,7 @@ const DronePanel = () => {
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
                   <TooltipTrigger>
-                    <div className={"flex items-center  grid-cols-2 gap-x-[2px]"}>
+                    <div className={"flex items-center grid-cols-2 gap-x-[2px]"}>
                       <span><Earth size={10}/></span>
                       <span>{deviceInfo.dock?.basic_osd?.network_state?.rate} kb/s</span>
                     </div>
@@ -259,7 +259,7 @@ const DronePanel = () => {
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <div className={"flex justify-between"}>
+            <div className={"flex justify-between text-base"}>
               <PermissionButton
                 permissionKey={"Collection_LiveStream"}
                 onClick={() => {
@@ -270,7 +270,7 @@ const DronePanel = () => {
                     startDockLive();
                   }
                 }}
-                className={cn("h-[24px] rounded-[2px] px-20 cursor-pointer content-center py-[2px] bg-[#104992]/[.85]",
+                className={cn("h-[24px] rounded-[2px] px-20 cursor-pointer content-center py-[2px] bg-[#104992]/[.85] text-base",
                   dockVideoVisible ? "border-[#43ABFF] border-[1px]" : "")}>
                 机场直播
               </PermissionButton>
@@ -320,9 +320,9 @@ const DronePanel = () => {
           </div>
           <div className={"flex-1 p-[12px] space-y-2 bg-[#001E37]/[.9]"}>
             <div className={"grid grid-cols-4"}>
-              <span className={"col-span-1 py-[2px] text-[#40F2FF]"}>设备状态</span>
+              <span className={"col-span-1 py-[2px] text-[#40F2FF] text-base"}>设备状态</span>
               <div
-                className={cn("col-span-3 py-[2px] bg-[#52607D] pl-4 font-bold",
+                className={cn("col-span-3 py-[2px] bg-[#52607D] pl-4 font-bold flex items-center text-base",
                   !deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected ? "text-red-500" : "text-[#00ee8b]")}>
                 {deviceStatus}
               </div>
@@ -344,7 +344,7 @@ const DronePanel = () => {
                         startDroneLive(false);
                       }
                     }}
-                    className={cn("col-span-8 border-[#43ABFF] rounded-[2px] cursor-pointer content-center py-[2px] bg-[#104992]/[.85]",
+                    className={cn("col-span-8 border-[#43ABFF] rounded-[2px] cursor-pointer content-center py-[2px] bg-[#104992]/[.85] text-base",
                       droneVideoVisible ? "border-[#43ABFF] border-[1px]" : "")}>
                     飞行器直播
                   </span>
@@ -397,7 +397,7 @@ const DronePanel = () => {
             <Tooltip>
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
-                  <Satellite size={14}/>
+                  <Satellite size={18}/>
                   <span>{deviceInfo.device ? deviceInfo.device?.position_state?.rtk_number : str}</span></div>
               </TooltipTrigger>
               <TooltipContent>
@@ -409,7 +409,7 @@ const DronePanel = () => {
             <Tooltip>
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
-                  <Zap size={14}/>
+                  <Zap size={18}/>
                   <span>{deviceInfo.device && deviceInfo.device?.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}</span>
                 </div>
               </TooltipTrigger>
@@ -496,7 +496,7 @@ const DronePanel = () => {
             <Tooltip>
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
-                  <LandPlot size={14}/>
+                  <LandPlot size={18}/>
                   <span>{deviceInfo.device && deviceInfo.device.home_distance !== str ? parseFloat(deviceInfo.device?.home_distance?.toString())?.toFixed(2) + " m" : str}</span>
                 </div>
               </TooltipTrigger>
@@ -563,27 +563,27 @@ const DronePanel = () => {
                  className={"will-change-transform"}/>
             <img src={pointerPng} alt="" className={"absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"}/>
           </div>
-          <div className={"flex flex-col text-[12px] text-[#D0D0D0] justify-center px-2 space-y-2"}>
+          <div className={"flex flex-col text-[12px] text-[#D0D0D0] justify-center px-2 space-y-2 text-sm"}>
             <span>指点飞行</span>
             <div className={"flex space-x-2"}>
-              <Button className={"bg-[#104992]/[.85] h-6 w-14"} onClick={() => {
+              <Button className={"bg-[#104992]/[.85] h-6 w-14 text-base"} onClick={() => {
                 show();
                 setTakeOffType("fly-to");
                 hideDebugPanel();
               }}>飞行</Button>
-              <Button className={"bg-[#104992]/[.85] h-6 w-14"} onClick={onStopFlyToPoint}>取消</Button>
+              <Button className={"bg-[#104992]/[.85] h-6 w-14 text-base"} onClick={onStopFlyToPoint}>取消</Button>
             </div>
-            <span>返航</span>
+            <span className={"text-base"}>返航</span>
             <div className={"flex space-x-2"}>
               {noDebugCmdList.map(cmdItem =>
                 <Button key={cmdItem.cmdKey} onClick={() => sendControlCmd(cmdItem)}
                         className={"bg-[#104992]/[.85] h-6 w-14"}>{cmdItem.operateText}</Button>)}
             </div>
             <PermissionButton permissionKey={"Button_EnterVirtualCockpit"}
-                              className={"content-center space-x-4 h-[24px] bg-[#104992]/[.85] px-2 py-[2px] cursor-pointer"}
+                              className={"content-center space-x-4 h-[24px] bg-[#104992]/[.85] px-2 py-[2px] cursor-pointer text-base"}
                               onClick={onClickCockpit}>
               <Airplay size={16}/>
-              <span>虚拟座舱</span>
+              <span className={"text-base"}>虚拟座舱</span>
             </PermissionButton>
           </div>
         </div>

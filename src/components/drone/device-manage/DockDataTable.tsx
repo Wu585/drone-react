@@ -262,7 +262,7 @@ const DockDataTable = () => {
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}
-                          className="text-[#D0D0D0] px-4"
+                          className="text-white px-4 text-base"
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
@@ -276,7 +276,7 @@ const DockDataTable = () => {
                         {row.getVisibleCells().map((cell, index) => (
                           <TableCell
                             key={`${cell.id}-child`}
-                            className="text-[#D0D0D0] px-4"
+                            className="text-white px-4"
                           >
                             {index === 0 ? (
                               <div className="flex items-center">

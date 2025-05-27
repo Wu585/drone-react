@@ -306,6 +306,7 @@ const CreateWayLine0517 = () => {
   const takeOffSecurityHeight = +form.watch("take_off_security_height");
   const fly_to_wayline_mode = form.watch("fly_to_wayline_mode");
 
+  // 起飞点线段终点高度
   const takeoffPointEndHeight = useMemo(() => {
     if (fly_to_wayline_mode === "pointToPoint") {
       return takeOffSecurityHeight;
@@ -351,7 +352,7 @@ const CreateWayLine0517 = () => {
     return () => {
       handler.destroy();
     };
-  }, [waypoints, globalHeight]);
+  }, [waypoints]);
 
   useEffect(() => {
     if (!selectedWaypointId) return;

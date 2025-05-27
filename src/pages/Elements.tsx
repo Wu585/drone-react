@@ -73,7 +73,7 @@ const GroupItem = ({
   const [editName, setEditName] = useState(group.name);
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 ">
       <div
         className={cn(
           "flex items-center h-9 cursor-pointer hover:bg-[#43ABFF]/10 group relative",
@@ -105,7 +105,7 @@ const GroupItem = ({
           )}
         </div>
 
-        <span className="text-sm text-white truncate flex-1">{group.name}</span>
+        <span className=" text-white truncate flex-1  text-base">{group.name}</span>
 
         {/* 操作按钮组 */}
         <div
@@ -211,7 +211,7 @@ const GroupItem = ({
                 {element.resource.type === MapElementEnum.CIRCLE && <Circle className="h-4 w-4 text-[#43ABFF]"/>}
               </div>
               <span onClick={() => onSelect(element.id)}
-                    className="w-40 text-sm text-white truncate">{element.name}</span>
+                    className="w-40 text-base text-white truncate ">{element.name}</span>
               <div
                 className={"opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 absolute right-2"}>
                 <PermissionButton
@@ -470,7 +470,7 @@ const Elements = () => {
         from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0 rounded-tr-lg rounded-br-lg flex flex-col">
         <div
           className="flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between">
-          <div className={"h-8"}>地图标注</div>
+          <div className={"h-8 text-base"}>地图标注</div>
           <div className="flex space-x-2">
             <Dialog>
               <DialogTrigger asChild>

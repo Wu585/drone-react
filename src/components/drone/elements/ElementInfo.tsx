@@ -65,7 +65,7 @@ export const PointElement = ({element, param, setParam}: {
   }, [element, setParam]);
 
   const map: Record<MapElementEnum, Element> = {
-    [MapElementEnum.PIN]: () => <div className={"grid grid-cols-4 text-sm gap-2 my-4"}>
+    [MapElementEnum.PIN]: () => <div className={"grid grid-cols-4 gap-2 my-4 text-base"}>
       <span>经度：</span>
       <span className={"col-span-3"}>{element.resource.content.geometry.coordinates[0]}</span>
       <span>纬度：</span>
@@ -97,8 +97,8 @@ export const PointElement = ({element, param, setParam}: {
   };
 
   return <div className={"my-2 space-y-4"}>
-    <div className={"grid grid-cols-6 items-center"}>
-      <Label className={"col-span-1"}>标注名</Label>
+    <div className={"grid grid-cols-6 items-center text-base"}>
+      <Label className={"col-span-1 text-base"}>标注名</Label>
       <Input
         className={"bg-transparent col-span-5"}
         value={param.name}
@@ -111,7 +111,7 @@ export const PointElement = ({element, param, setParam}: {
       />
     </div>
     <div className={"grid grid-cols-6 items-center"}>
-      <Label className={"col-span-1"}>颜色</Label>
+      <Label className={"col-span-1 text-base"}>颜色</Label>
       <div className={"col-span-5"}>
         <ColorPanel element={param} setParam={setParam}/>
       </div>
@@ -139,7 +139,7 @@ const ElementInfo = ({element, onParamChange}: {
   }, [elementParam, onParamChange]);
 
   return (
-    <div className={"space-y-4"}>
+    <div className={"space-y-4 "}>
       <PointElement element={element} param={elementParam} setParam={setElementParam}/>
     </div>
   );

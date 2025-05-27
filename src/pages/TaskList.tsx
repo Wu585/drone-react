@@ -24,9 +24,9 @@ const TaskList = () => {
     <div className={"w-full h-full flex"}>
       <div className={"flex-1 border-[#43ABFF] border-[1px] border-l-0 flex flex-col rounded-r-lg"}>
         <h1 className={"flex justify-between items-center"}>
-          <div className={"py-4 px-4 flex space-x-4"}>
+          <div className={"py-4 px-4 flex space-x-4 text-base"}>
             <img src={titleArrowPng} alt=""/>
-            <span>任务计划库</span>
+            <span className={"text-base"}>任务计划库</span>
           </div>
         </h1>
         <div className={"flex space-x-8 px-4 items-center justify-between"}>
@@ -43,13 +43,13 @@ const TaskList = () => {
             <PermissionButton
               permissionKey={"Collection_PlanCreate"}
               onClick={() => navigate("/task-create-apply")}
-              className={"mt-2 bg-[#43ABFF] hover:bg-[#43ABFF]"}
+              className={"mt-2 bg-[#43ABFF] hover:bg-[#43ABFF]  text-base"}
             >
               申请任务
             </PermissionButton>
             <PermissionButton
               permissionKey={"Collection_PlanCreate"}
-              className={"mt-2 bg-[#43ABFF] hover:bg-[#43ABFF]"}
+              className={"mt-2 bg-[#43ABFF] hover:bg-[#43ABFF]  text-base"}
               onClick={() => navigate("/task-create")}
             >
               创建任务

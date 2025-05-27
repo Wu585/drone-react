@@ -64,6 +64,8 @@ interface Props {
 }
 
 const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
+  console.log('currentOrder');
+  console.log(currentOrder);
   const [open, setOpen] = useState(false);
   const {post} = useAjax();
   const [mediaUrlList, setMediaUrlList] = useState<string[]>([]);

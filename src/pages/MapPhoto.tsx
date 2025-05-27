@@ -259,7 +259,7 @@ const FolderItem = ({folder, onVisibleChange, onClickFile}: {
         <div className="flex items-center space-x-2 flex-1 min-w-0">
           {isOpen ? <FolderOpen className="w-4 h-4 text-orange-400 shrink-0"/> :
             <Folder className="w-4 h-4 text-orange-400 shrink-0"/>}
-          <span className="text-sm text-white truncate" title={folder.file_name}>{folder.file_name}</span>
+          <span className="text-white truncate text-base" title={folder.file_name}>{folder.file_name}</span>
         </div>
         <ChevronRight className={cn(
           "w-4 h-4 text-white/60 transition-transform shrink-0",
@@ -283,7 +283,7 @@ const FolderItem = ({folder, onVisibleChange, onClickFile}: {
               ) : (
                 <Image className="w-4 h-4 text-orange-400 shrink-0"/>
               )}
-              <span className="text-sm text-white truncate flex-1"
+              <span className="text-base text-white truncate flex-1"
                     onClick={() => onClickFile?.(file)}
                     title={file.file_name}>
                 {file.file_name}
@@ -481,7 +481,7 @@ const MapPhoto = () => {
         from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0 rounded-tr-lg rounded-br-lg flex flex-col">
         <div
           className="flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between">
-          <div className={"h-8"}>地图照片</div>
+          <div className={"h-8 text-base"}>地图照片</div>
         </div>
         <div className="flex-1 px-[12px] py-4 space-y-2 overflow-y-auto">
           {/* 渲染文件夹列表 */}

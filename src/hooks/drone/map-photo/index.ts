@@ -60,6 +60,6 @@ export const useMapLoadMedia = () => {
   const changePhotoVisual = (body: { id: number, visual: boolean }) =>
     post(`${MEDIA_API}/files/${workspaceId}/setVisual`, body);
 
-  return {loadMedia,changePhotoVisual};
+  return {loadMedia, changePhotoVisual};
 };
 

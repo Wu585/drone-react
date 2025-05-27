@@ -100,7 +100,7 @@ const WayLine = () => {
         className={"w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r " +
           "from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0 rounded-tr-lg rounded-br-lg"}>
         <div
-          className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between"}>
+          className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-base justify-between"}>
           <span>航线列表</span>
           <div className={"flex space-x-4 h-8 items-center"}>
             <PermissionButton
@@ -130,12 +130,12 @@ const WayLine = () => {
           {!waylines || waylines.list.length === 0 ? <div className={"content-center py-8 text-[#d0d0d0]"}>
             暂无数据
           </div> : waylines.list.map(line =>
-            <div className={"bg-panel-item bg-full-size text-[14px] p-4 cursor-pointer"}
+            <div className={"bg-panel-item bg-full-size text-base p-4 cursor-pointer whitespace-nowrap"}
                  key={line.id}
                  onClick={() => onClickWayline(line)}
             >
               <div className={"grid grid-cols-6 space-x-8 relative"}>
-                <span className={"col-span-2"}>{line.name}</span>
+                <span className={"col-span-2 w-28 truncate"} title={line.name}>{line.name}</span>
                 <span className={"space-x-4 text-[12px] text-[#d0d0d0] grid grid-cols-6 items-center"}>
                 <User className={"col-span-2"} size={16}/>
                 <span>{line.user_name}</span>
