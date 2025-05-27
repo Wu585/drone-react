@@ -92,6 +92,7 @@ interface SceneActions {
   deleteMarkerInfoCoverMap: (key: string) => void;
   deleteMarkerInfoPathMap: (key: string) => void;
   setDevicesCmdExecuteInfo: (info: any) => void;
+  clearDeviceState: () => void;
 }
 
 export const useSceneStore = create<SceneState & SceneActions>()(
@@ -252,6 +253,21 @@ export const useSceneStore = create<SceneState & SceneActions>()(
       } else {
         state.devicesCmdExecuteInfo[info.sn] = [info];
       }
+    }),
+    clearDeviceState: () => set(state => {
+      state.deviceState = {
+        gatewayInfo: {},
+        deviceInfo: {},
+        dockInfo: {},
+        currentSn: "",
+        currentType: -1
+      };
+      state.deviceStatusEvent = {
+        deviceOnline: {} as DeviceStatus,
+        deviceOffline: {}
+      };
+      state.hmsInfo = {};
+      state.devicesCmdExecuteInfo = {};
     })
   }))
 );
