@@ -117,10 +117,10 @@ const Tsa = () => {
                 <div className={"h-[172px] bg-dock-panel bg-full-size flex flex-col"} key={dock.gateway.sn}>
                   <div className={"flex h-full"}>
                     <div className={"flex-1"}>
-                      <div className={"pl-[24px] pt-[16px] text-[18px]"}>
+                      <div className={"pl-[24px] pt-[16px] text-base"}>
                         {dock.gateway.callsign} - {dock.callsign ?? "暂无机器"}
                       </div>
-                      <div className={"pl-[24px] space-y-4 mt-2"}>
+                      <div className={"pl-[24px] space-y-2 mt-2"}>
                         <div className={"flex "}>
                           <div
                             className={cn("pl-4 w-2/3 bg-[#2E3751]/[.88] text-[#40F2FF] text-base",
