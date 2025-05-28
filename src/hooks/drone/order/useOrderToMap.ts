@@ -17,15 +17,11 @@ export const useOrderListVisual = () => {
 
 export const useOrderToMap = () => {
   const {data: orderListVisual} = useOrderListVisual();
-  console.log("orderListVisual");
-  console.log(orderListVisual);
   useEffect(() => {
     const source = getCustomSource("map-orders");
     if (source) {
       source.entities.removeAll();
       orderListVisual?.forEach(order => {
-        console.log("order");
-        console.log(order);
         if (!order.longitude || !order.latitude) return;
         if (!order.visual) return;
         source.entities.add({
