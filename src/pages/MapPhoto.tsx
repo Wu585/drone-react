@@ -9,7 +9,7 @@ import {
   Trash2,
   Video,
   Image, ImageIcon,
-  Loader
+  Loader, BookText
 } from "lucide-react";
 import Scene from "@/components/drone/public/Scene.tsx";
 import MapChange from "@/components/drone/public/MapChange.tsx";
@@ -45,6 +45,9 @@ import {getMediaType} from "@/hooks/drone/order";
 import ggpPng from "@/assets/images/ggp.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
 import {flyToDegree} from "@/lib/view.ts";
+import {useOrderListVisual} from "@/hooks/drone/order/useOrderToMap.ts";
+import {useWorkOrderByRealTimeId, WorkOrder} from "@/hooks/drone";
+import {useAjax} from "@/lib/http.ts";
 
 const GroupItem = ({
                      group,
@@ -311,7 +314,7 @@ const FolderItem = ({folder, onVisibleChange, onClickFile}: {
 };
 
 // 添加图片加载状态组件
-const ImagePreview = ({ url }: { url?: string }) => {
+const ImagePreview = ({url}: { url?: string }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -340,7 +343,7 @@ const ImagePreview = ({ url }: { url?: string }) => {
       {loading && !error && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="animate-spin">
-            <Loader className="w-6 h-6 text-[#43ABFF]" />
+            <Loader className="w-6 h-6 text-[#43ABFF]"/>
           </div>
         </div>
       )}
@@ -348,17 +351,20 @@ const ImagePreview = ({ url }: { url?: string }) => {
       {/* 错误状态 */}
       {error && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <ImageIcon className="w-8 h-8 text-white/60" />
+          <ImageIcon className="w-8 h-8 text-white/60"/>
         </div>
       )}
     </div>
   );
 };
 
+const OPERATION_HTTP_PREFIX = "operation/api/v1";
+
 const MapPhoto = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const {changePhotoVisual} = useMapLoadMedia();
   const {data: mapPhotoData, mutate} = useMapPhoto();
+  const {post} = useAjax();
 
   // 处理可见性变化
   const handleVisibleChange = useCallback(async (id: number, visible: boolean) => {
@@ -436,6 +442,11 @@ const MapPhoto = () => {
 
   const [currentPhoto, setCurrentPhoto] = useState<MapPhotoType | null>(null);
 
+  const [currentType, setCurrentType] = useState<"photo" | "order">();
+
+  const [currentOrderId, setCurrentOrderId] = useState<number>();
+  const {data: currentOrder} = useWorkOrderByRealTimeId(currentOrderId);
+
   useEffect(() => {
     const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     handler.setInputAction((movement: any) => {
@@ -446,6 +457,12 @@ const MapPhoto = () => {
           const selected = mapPhotoData?.list.find(item => item.id === +pickedObject.id.id.split("-")[1]);
           setCurrentPhoto(selected || null);
           setSheetOpen(true);
+          setCurrentType("photo");
+        } else if (pickedObject.id.id && pickedObject.id.id.includes("order")) {
+          setSheetOpen(true);
+          setCurrentType("order");
+          const id = pickedObject.id.id.split("-")[1];
+          setCurrentOrderId(id);
         }
       });
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
@@ -457,31 +474,98 @@ const MapPhoto = () => {
 
   }, [mapPhotoData]);
 
+
+  const {data: orderListVisual, mutate: mutateOrderListVisual} = useOrderListVisual();
+
+  const flyToOrder = (order: WorkOrder) => {
+    if (order.longitude && order.latitude) {
+      flyToDegree(order.longitude, order.latitude);
+    }
+  };
+
+  const onOrderCancelLoadMap = async (id?: number) => {
+    if (!id) return;
+    try {
+      await post(`${OPERATION_HTTP_PREFIX}/order/setVisual`, {
+        ids: [id],
+        visual: false
+      });
+      toast({
+        description: "地图取消加载工单成功！",
+      });
+      await mutateOrderListVisual();
+      setSheetOpen(false);
+    } catch (err) {
+      toast({
+        description: "地图取消加载工单失败！",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="h-full flex">
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="bg-[#072E62] border border-[#43ABFF] text-white">
           <SheetHeader>
-            <SheetTitle className="text-white mb-4">{currentPhoto?.file_name}</SheetTitle>
+            <SheetTitle
+              className="text-white mb-4 truncate"
+              title={currentOrder?.name}>{currentType === "photo" ? currentPhoto?.file_name : "工单信息"}</SheetTitle>
           </SheetHeader>
-          <div className={"grid grid-cols-6 gap-2"}>
-            <h3 className={"col-span-1"}>时间：</h3>
-            <div className={"col-span-5 text-[#43ABFF]"}>{currentPhoto?.create_time}</div>
-            <h3 className={"col-span-6"}>坐标经度：</h3>
-            <div className={"text-[#43ABFF]"}>{currentPhoto?.longitude}</div>
-            <h3 className={"col-span-6"}>坐标纬度：</h3>
-            <div className={"text-[#43ABFF]"}>{currentPhoto?.latitude}</div>
-          </div>
-          <div className={"my-4"}>
-            <ImagePreview url={currentPhoto?.preview_url} />
-          </div>
+          {currentType === "photo" &&
+            <div>
+              <div className={"grid grid-cols-6 gap-2"}>
+                <h3 className={"col-span-1"}>时间：</h3>
+                <div className={"col-span-5 text-[#43ABFF]"}>{currentPhoto?.create_time}</div>
+                <h3 className={"col-span-6"}>坐标经度：</h3>
+                <div className={"text-[#43ABFF]"}>{currentPhoto?.longitude}</div>
+                <h3 className={"col-span-6"}>坐标纬度：</h3>
+                <div className={"text-[#43ABFF]"}>{currentPhoto?.latitude}</div>
+              </div>
+              <div className={"my-4"}>
+                <ImagePreview url={currentPhoto?.preview_url}/>
+              </div>
+            </div>}
+
+          {currentType === "order" &&
+            <div className={""}>
+              <div className={"grid grid-cols-6 gap-2 gap-y-4"}>
+                <h3 className={"col-span-2"}>工单名称：</h3>
+                <div className={"col-span-4 text-[#43ABFF]"}>{currentOrder?.name}</div>
+                <h3 className={"col-span-2"}>发现时间：</h3>
+                <div className={"col-span-4 text-[#43ABFF]"}>{currentOrder?.found_time}</div>
+                <h3 className={"col-span-2"}>发现地址：</h3>
+                <div className={"text-[#43ABFF] col-span-4"}>{currentOrder?.address}</div>
+                <h3 className={"col-span-2"}>坐标经度：</h3>
+                <div className={"text-[#43ABFF] col-span-4"}>{currentOrder?.longitude}</div>
+                <h3 className={"col-span-2"}>坐标纬度：</h3>
+                <div className={"text-[#43ABFF] col-span-4"}>{currentOrder?.latitude}</div>
+                <h3 className={"col-span-2"}>联系人：</h3>
+                <div className={"text-[#43ABFF] col-span-4"}>{currentOrder?.contact}</div>
+                <h3 className={"col-span-2"}>联系电话：</h3>
+                <div className={"text-[#43ABFF] col-span-4"}>{currentOrder?.contact_phone}</div>
+                <h3 className={"col-span-2"}>事件描述：</h3>
+                <div className={"text-[#43ABFF] col-span-4"}>{currentOrder?.description}</div>
+              </div>
+              <div className={"my-4 space-y-4 max-h-[calc(100vh-500px)] overflow-auto"}>
+                {currentOrder?.pic_list.map(url => {
+                  const type = getMediaType(url);
+                  return type === "image" ? <ImagePreview url={currentPhoto?.preview_url}/> :
+                    <video controls className={"h-[300px] aspect-video object-fill"} src={url}></video>;
+                })}
+              </div>
+              <div className={"flex"}>
+                <Button className={"ml-auto bg-[#43ABFF]"}
+                        onClick={() => onOrderCancelLoadMap(currentOrder?.id)}>取消地图加载</Button>
+              </div>
+            </div>}
         </SheetContent>
       </Sheet>
       <div className="w-[340px] min-w-[340px] border-[1px] border-[#43ABFF] bg-gradient-to-r
         from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0 rounded-tr-lg rounded-br-lg flex flex-col">
         <div
           className="flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between">
-          <div className={"h-8 text-base"}>地图照片</div>
+          <div className={"h-8 text-base"}>媒体/工单照片</div>
         </div>
         <div className="flex-1 px-[12px] py-4 space-y-2 overflow-y-auto">
           {/* 渲染文件夹列表 */}
@@ -493,6 +577,14 @@ const MapPhoto = () => {
               onClickFile={onFlyTo}
             />
           ))}
+          <div className={""}>
+            {orderListVisual?.map(order =>
+              <div className={"flex items-center px-2 py-1.5 space-x-2"} key={order.id}
+                   onClick={() => flyToOrder(order)}>
+                <BookText className="w-4 h-4 text-orange-400 shrink-0"/>
+                <span className={"truncate"} title={order.name}>{order.name}</span>
+              </div>)}
+          </div>
         </div>
       </div>
       <div className="flex-1 min-w-0 ml-[20px] border-[2px] rounded-lg border-[#43ABFF] relative">

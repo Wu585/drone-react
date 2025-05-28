@@ -767,6 +767,7 @@ export interface WorkOrder {
   warning_level: number;
   create_time: string; // ISO 8601 date string
   update_time: string; // ISO 8601 date string
+  visual?: boolean;
 }
 
 export const eventMap = {
@@ -816,6 +817,13 @@ export const useWorkOrderById = (id?: number) => {
   const key = id ? [`${OPERATION_HTTP_PREFIX}/order/get?id=${id}`] : null;
   return useSWRImmutable(key, async ([path]) => (await get<Resource<WorkOrder>>(path)).data.data);
 };
+
+export const useWorkOrderByRealTimeId = (id?: number) => {
+  const {get} = useAjax();
+  const key = id ? [`${OPERATION_HTTP_PREFIX}/order/get?id=${id}`] : null;
+  return useSWRImmutable(key, async ([path]) => (await get<Resource<WorkOrder>>(path)).data.data);
+};
+
 
 // 查看图片url
 export const useGetImageUrl = (file: string) => {

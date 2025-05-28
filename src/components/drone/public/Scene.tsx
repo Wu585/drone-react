@@ -4,6 +4,7 @@ import {useSceneStore} from "@/store/useSceneStore.ts";
 import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-source.ts";
 import dockPng from "@/assets/images/drone/dock.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
+import {useOrderToMap} from "@/hooks/drone/order/useOrderToMap.ts";
 
 const mapLayerList = [
   {
@@ -70,6 +71,8 @@ const Scene = () => {
   useEntityCustomSource("elements");
   // 地图加载的图片的结合
   useEntityCustomSource("map-photos");
+  // 地图加载工单的entity集合
+  useEntityCustomSource("map-orders");
 
   useEffect(() => {
     getCustomSource("dock")?.entities.removeAll();
@@ -92,6 +95,7 @@ const Scene = () => {
   }, [deviceState]);
 
   // useAddAllElements();
+  useOrderToMap();
 
   return (
     <div id="cesiumContainer" className={"h-full rounded-lg"}></div>

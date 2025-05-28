@@ -155,7 +155,8 @@ const WorkOrderDataTable = () => {
         accessorKey: "name",
         header: "事件名称",
         cell: ({row}) => (
-          <div className={"w-[150px] whitespace-nowrap overflow-hidden text-ellipsis"} title={row.original.name}>{row.original.name}</div>
+          <div className={"w-[150px] whitespace-nowrap overflow-hidden text-ellipsis"}
+               title={row.original.name}>{row.original.name}</div>
         )
       },
       {
@@ -334,7 +335,7 @@ const WorkOrderDataTable = () => {
   const currentIndex = utils.getIndex(stepper.current.id);
 
   const {data: currentOrderData, mutate: mutateCurrentOrder} = useWorkOrderById(currentOrder?.id);
-  console.log('currentOrderData=====');
+  console.log("currentOrderData=====");
   console.log(currentOrderData);
   const [orderType, setOrderType] = useState<"create" | "edit" | "preview">("create");
   const [orderHandleType, setOrderHandleType] = useState<"handle" | "preview">("handle");
@@ -384,8 +385,25 @@ const WorkOrderDataTable = () => {
   const getSelectedFileIds = (): number[] => {
     return table.getSelectedRowModel().rows.map(row => row.original.id);
   };
-  console.log('getSelectedFileIds');
-  console.log(getSelectedFileIds());
+
+  const onLoadOrderToMap = async () => {
+    const ids = getSelectedFileIds();
+    try {
+      await post(`${OPERATION_HTTP_PREFIX}/order/setVisual`, {
+        ids,
+        visual: true
+      });
+      toast({
+        description: "地图加载工单成功！",
+      });
+    } catch (err) {
+      toast({
+        description: "地图加载工单失败！",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <Uploady
       destination={{
@@ -470,8 +488,9 @@ const WorkOrderDataTable = () => {
             </Select>
           </div>
 
-          <Button className={"bg-[#43ABFF] w-20"}>地图加载</Button>
-          <Button className={"bg-[#43ABFF] w-24"}>取消地图加载</Button>
+          {getSelectedFileIds().length > 0 &&
+            <Button className={"bg-[#43ABFF] w-20"} onClick={onLoadOrderToMap}>地图加载</Button>}
+          {/*<Button className={"bg-[#43ABFF] w-24"}>取消地图加载</Button>*/}
 
           <Dialog open={open} onOpenChange={(value) => {
             console.log("Dialog onOpenChange:", value);

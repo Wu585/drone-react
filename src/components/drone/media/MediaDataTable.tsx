@@ -11,7 +11,7 @@ import {
 } from "@tanstack/react-table";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {downloadFile, FileItem, MEDIA_HTTP_PREFIX, useMediaList, WorkOrder} from "@/hooks/drone";
+import {FileItem, MEDIA_HTTP_PREFIX, useMediaList, WorkOrder} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
@@ -30,7 +30,6 @@ import {
 import {Input} from "@/components/ui/input.tsx";
 import {CameraType, MediaFileMap, MediaFileType, useDirectory} from "@/hooks/drone/media";
 import {useBatchFinishListener} from "@rpldy/uploady";
-import {HoverCard, HoverCardContent, HoverCardTrigger} from "@/components/ui/hover-card";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -51,104 +50,6 @@ import {useNavigate} from "react-router-dom";
 import {useMapLoadMedia} from "@/hooks/drone/map-photo";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {MediaPreview} from "@/components/drone/MediaPreview.tsx";
-
-const OPERATION_HTTP_PREFIX = "operation/api/v1";
-
-const fallbackData: FileItem[] = [];
-
-const GridView = ({
-                    data,
-                    onClickFolder,
-                    onDownload,
-                    onUpdateFileName,
-                    onDeleteFile
-                  }: {
-  data: FileItem[];
-  onClickFolder: (file: Partial<FileItem>) => void;
-  onDownload: (file: FileItem) => void;
-  onUpdateFileName: (file: FileItem) => void;
-  onDeleteFile: (file: FileItem) => void;
-}) => {
-  return (
-    <div className="grid grid-cols-6 gap-4 p-4">
-      {data?.map((file) => (
-        <div
-          key={file.id}
-          className="group relative flex flex-col items-center p-4 rounded-lg hover:bg-[#43ABFF]/10 cursor-pointer"
-          onClick={() => file.type === MediaFileType.DIR && onClickFolder(file)}
-        >
-          {/* 文件图标 */}
-          <div className="w-full aspect-square flex items-center justify-center mb-2">
-            {file.type === MediaFileType.DIR ? (
-              <FolderClosed className="w-16 h-16 text-orange-400"/>
-            ) : file.type === MediaFileType.VIDEO ? (
-              <div className="relative w-full h-full">
-                <img
-                  src={`${MEDIA_HTTP_PREFIX}${file.thumbnail_path}`}
-                  className="w-full h-full object-cover rounded-lg"
-                  alt={file.file_name}
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                  <Play className="w-8 h-8 text-white"/>
-                </div>
-              </div>
-            ) : (
-              <img
-                src={`${MEDIA_HTTP_PREFIX}${file.thumbnail_path}`}
-                className="w-full h-full object-cover rounded-lg"
-                alt={file.file_name}
-              />
-            )}
-          </div>
-
-          {/* 文件名 */}
-          <span className="text-sm text-gray-300 truncate w-full text-center">
-            {file.file_name}
-          </span>
-
-          {/* 悬浮操作按钮 */}
-          <div className="absolute top-2 right-2 hidden group-hover:flex items-center space-x-1">
-            {file.type !== MediaFileType.DIR && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDownload(file);
-                }}
-              >
-                <Download className="h-4 w-4"/>
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdateFileName(file);
-              }}
-            >
-              <Edit className="h-4 w-4"/>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteFile(file);
-              }}
-            >
-              <Trash className="h-4 w-4"/>
-            </Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
 
 const InfiniteGridView = ({
                             data,
@@ -302,7 +203,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
 
   const {get} = useAjax();
   const navigate = useNavigate();
-  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+  const [downloadingIds] = useState<Set<string>>(new Set());
   const [displayType, setDisplayType] = useState<0 | 1>(0);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -356,18 +257,6 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     moveFile,
     updateFile,
   } = useDirectory(() => mutate());
-
-  const addDownloadingId = (id: string) => {
-    setDownloadingIds(prev => new Set(prev).add(id));
-  };
-
-  const removeDownloadingId = (id: string) => {
-    setDownloadingIds(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(id);
-      return newSet;
-    });
-  };
 
   // 添加面包屑状态
   const [breadcrumbList, setBreadcrumbList] = useState<Partial<FileItem>[]>([
@@ -608,7 +497,6 @@ const MediaDataTable = ({onChangeDir}: Props) => {
       header: "操作",
       cell: ({row}) => {
         const isDir = row.original.type === MediaFileType.DIR;
-        const isDownloading = downloadingIds.has(row.original.file_id);
         return (
           <div className={"flex items-center space-x-2"}>
             {!isDir && getMediaType(row.original.preview_url) === "image" &&
@@ -629,7 +517,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               />}
             {row.original.type !== MediaFileType.DIR && <PermissionButton
               permissionKey={"Collection_MediaDownload"}
-              className={`flex items-center px-0 bg-transparent h-4 ${isDownloading ? "opacity-50" : "cursor-pointer hover:opacity-80"}`}
+              className={`flex items-center px-0 bg-transparent h-4`}
             >
               <a href={row.original.preview_url} download>
                 <Download size={18}/>
