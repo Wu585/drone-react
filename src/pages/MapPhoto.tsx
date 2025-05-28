@@ -550,7 +550,7 @@ const MapPhoto = () => {
               <div className={"my-4 space-y-4 max-h-[calc(100vh-500px)] overflow-auto"}>
                 {currentOrder?.pic_list.map(url => {
                   const type = getMediaType(url);
-                  return type === "image" ? <ImagePreview url={currentPhoto?.preview_url}/> :
+                  return type === "image" ? <ImagePreview url={url}/> :
                     <video controls className={"h-[300px] aspect-video object-fill"} src={url}></video>;
                 })}
               </div>
