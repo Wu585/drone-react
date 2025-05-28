@@ -57,7 +57,7 @@ const SearchPositionInput = () => {
 
   const onSelectItem = (result: SearchResult) => {
     viewer.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(result.location.lng, result.location.lat, 200),
+      destination: Cesium.Cartesian3.fromDegrees(result.location.lng, result.location.lat, 500),
       orientation: {
         heading: 0,
         pitch: Cesium.Math.toRadians(-90),
