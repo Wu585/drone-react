@@ -42,6 +42,7 @@ import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePick
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
+import {Checkbox} from "@/components/ui/checkbox.tsx";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -119,12 +120,36 @@ const WorkOrderDataTable = () => {
   const columns: ColumnDef<WorkOrder>[] = useMemo(() => {
     return [
       {
-        header: "序号",
+        id: "id",
+        header: ({table}) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+            className={cn(
+              "border-[#43ABFF] data-[state=checked]:bg-[#43ABFF]",
+              "h-4 w-4",
+              "transition-colors duration-200"
+            )}
+          />
+        ),
         cell: ({row}) => (
-          <span>
-          {row.index + 1}
-        </span>
-        )
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+            className={cn(
+              "border-[#43ABFF] data-[state=checked]:bg-[#43ABFF]",
+              "h-4 w-4",
+              "transition-colors duration-200"
+            )}
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
       },
       {
         accessorKey: "name",
@@ -356,6 +381,11 @@ const WorkOrderDataTable = () => {
     }
   };
 
+  const getSelectedFileIds = (): number[] => {
+    return table.getSelectedRowModel().rows.map(row => row.original.id);
+  };
+  console.log('getSelectedFileIds');
+  console.log(getSelectedFileIds());
   return (
     <Uploady
       destination={{
@@ -390,7 +420,7 @@ const WorkOrderDataTable = () => {
               })}
               value={queryParams.status?.toString() || "all"}
             >
-              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
+              <SelectTrigger className="w-[120px] bg-transparent border-[#43ABFF] border-[1px]">
                 <SelectValue placeholder="事件状态"/>
               </SelectTrigger>
               <SelectContent>
@@ -409,7 +439,7 @@ const WorkOrderDataTable = () => {
               })}
               value={queryParams.order_type?.toString() || "all"}
             >
-              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
+              <SelectTrigger className="w-[120px] bg-transparent border-[#43ABFF] border-[1px]">
                 <SelectValue placeholder="事件类型"/>
               </SelectTrigger>
               <SelectContent>
@@ -428,7 +458,7 @@ const WorkOrderDataTable = () => {
               })}
               value={queryParams.warning_level?.toString() || "all"}
             >
-              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
+              <SelectTrigger className="w-[120px] bg-transparent border-[#43ABFF] border-[1px]">
                 <SelectValue placeholder="告警等级"/>
               </SelectTrigger>
               <SelectContent>
@@ -440,6 +470,9 @@ const WorkOrderDataTable = () => {
             </Select>
           </div>
 
+          <Button className={"bg-[#43ABFF] w-20"}>地图加载</Button>
+          <Button className={"bg-[#43ABFF] w-24"}>取消地图加载</Button>
+
           <Dialog open={open} onOpenChange={(value) => {
             console.log("Dialog onOpenChange:", value);
             if (!value) {
@@ -450,7 +483,7 @@ const WorkOrderDataTable = () => {
             <DialogTrigger asChild>
               <PermissionButton
                 permissionKey={"Collection_TicketCreateEdit"}
-                className={"bg-[#43ABFF] w-24"}
+                className={"bg-[#43ABFF] w-20"}
                 onClick={() => {
                   setCurrentOrder(null);
                   setOrderType("create");
