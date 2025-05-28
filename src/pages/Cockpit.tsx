@@ -17,7 +17,7 @@ import {Input} from "@/components/ui/input.tsx";
 import {clarityList} from "@/hooks/drone/useDeviceVideo.ts";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
-import {useOnlineDocks} from "@/hooks/drone";
+import {useOnlineDocks, usePermission} from "@/hooks/drone";
 import {z} from "zod";
 import {
   CommanderFlightModeInCommandFlightOptions,
@@ -435,14 +435,14 @@ const Cockpit = () => {
   const otherPlatFormAiRef = useRef<HTMLVideoElement>(null);
 
   const onChangeAiVideo = (platform: AlgorithmPlatform, video_id: string) => {
-    console.log("instanceId");
-    console.log(instanceId);
+    console.log("video_id");
+    console.log(video_id);
     setInstanceId(video_id);
     setCurrentPlatform(platform);
   };
 
   useEffect(() => {
-    if (currentPlatform === AlgorithmPlatform.Other && instanceId) {
+    if (currentPlatform === AlgorithmPlatform.Other && instanceId && otherPlatFormAiRef.current) {
       const webrtcUrl = instanceId.replace("rtmp", "webrtc");
       console.log("webrtcUrl");
       console.log(webrtcUrl);
@@ -467,6 +467,9 @@ const Cockpit = () => {
   const switchVideos = () => {
     setVideoLayout(prev => prev === "default" ? "switched" : "default");
   };
+
+  const {hasPermission} = usePermission();
+  const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
 
   return (
     <FitScreen width={1920} height={1080} mode="full">
@@ -920,7 +923,7 @@ const Cockpit = () => {
                 />
                 <img src={pointerPng} alt=""
                      className={"absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[50px]"}/>
-                <Button type={"submit"} className={"bg-transparent absolute bottom-0"}>
+                <Button disabled={!hasFlyControlPermission} type={"submit"} className={"bg-transparent absolute bottom-0"}>
                   <img src={yjqfPng} alt=""/>
                 </Button>
               </div>
@@ -1026,8 +1029,9 @@ const Cockpit = () => {
                   </iframe> :
                   <video ref={otherPlatFormAiRef}
                          controls
-                         autoPlay>
-
+                         autoPlay
+                         className={"aspect-video w-80 rounded-lg mt-4"}
+                  >
                   </video>
             ) : (
               <div className={"text-[#d0d0d0] h-[200px] flex items-center pl-6"}>

@@ -14,13 +14,14 @@ import {useCallback, useEffect, useRef, useState} from "react";
 import {pickPosition} from "@/components/toolbar/tools";
 import {useItemFinishListener} from "@rpldy/uploady";
 import UploadButton from "@rpldy/upload-button";
-import {UploadCloud, X} from "lucide-react";
+import {Eye, UploadCloud, X} from "lucide-react";
 import {cn, uuidv4} from "@/lib/utils";
 import {eventMap, WorkOrder} from "@/hooks/drone";
 import {PreviewMethods, UploadPreview} from "@rpldy/upload-preview";
 import {getMediaType} from "@/hooks/drone/order";
 import {Button} from "@/components/ui/button.tsx";
 import ReviewSheet from "@/components/drone/work-order/ReviewSheet.tsx";
+import {MediaPreview} from "@/components/drone/MediaPreview.tsx";
 
 const createOrderSchema = z.object({
   name: z.string().min(1, "请输入事件名称"),
@@ -64,7 +65,7 @@ interface Props {
 }
 
 const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
-  console.log('currentOrder');
+  console.log("currentOrder");
   console.log(currentOrder);
   const [open, setOpen] = useState(false);
   const {post} = useAjax();
@@ -410,7 +411,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
         <div className="grid grid-cols-2 gap-4 mt-4 ml-24 overflow-auto max-h-[168px]">
           {(type === "edit" || type === "form-media") && mediaUrlList.map(url => {
             const fileType = getMediaType(url);
-            return <div className="relative group aspect-video">
+            return <div className="relative group aspect-video" key={url}>
               {fileType === "video" ? <video
                 key={url}
                 muted
@@ -464,18 +465,35 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
           {type === "preview" && mediaUrlList.map(url => {
             const fileType = getMediaType(url);
             return <div className="relative group aspect-video">
-              {fileType === "video" ? <video
-                key={url}
-                muted
-                loop
-                controls
-                className="w-full h-full object-cover rounded-sm"
-                src={url}
-              /> : <img
-                key={url}
-                src={url}
-                className="w-full h-full object-cover rounded-sm"
-              />}
+              {fileType === "video" ?
+                <MediaPreview
+                  src={url}
+                  type="video"
+                  alt="Example Video"
+                  modalWidth="70vw"
+                  modalHeight="70vh"
+                  triggerElement={<video
+                    controls
+                    key={url}
+                    muted
+                    className="w-full h-full object-cover rounded-sm"
+                    src={url}
+                  />}
+                />
+                :
+                <MediaPreview
+                  src={url}
+                  type="image"
+                  alt="Example Image"
+                  modalWidth="1000px"
+                  modalHeight="800px"
+                  triggerElement={<img
+                    key={url}
+                    src={url}
+                    className="w-full h-full object-cover rounded-sm border-2"
+                  />}
+                />
+              }
             </div>;
           })}
         </div>

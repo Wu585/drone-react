@@ -49,7 +49,6 @@ export type AlgorithmFormValues = z.infer<typeof algorithmFormSchema>;
 
 const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
   const {post, put} = useAjax();
-
   const {data: currentConfig} = useAlgorithmConfigById(id);
 
   const defaultValues: AlgorithmFormValues = {
@@ -71,9 +70,6 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
 
   const algorithm_platform = form.watch("algorithm_platform");
 
-  console.log("algorithm_platform");
-  console.log(algorithm_platform);
-
   const {fields, append, remove} = useFieldArray({
     control: form.control,
     name: "device_list",
@@ -81,6 +77,7 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
 
   const _onOpenChange = (visible: boolean) => {
     onOpenChange?.(visible);
+    form.reset(defaultValues);
   };
 
   const _onSubmit = async (values: AlgorithmFormValues) => {

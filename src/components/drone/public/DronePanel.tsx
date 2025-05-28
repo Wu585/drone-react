@@ -39,6 +39,7 @@ import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
 import dockDemoPng from "@/assets/images/drone/dock-demo.png";
 import droneDemoPng from "@/assets/images/drone/drone-demo.png";
+import {usePermission} from "@/hooks/drone";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -183,6 +184,9 @@ const DronePanel = () => {
       setOsdVisible({...osdVisible, visible: false});
     };
   }, []);
+
+  const {hasPermission} = usePermission();
+  const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
 
   return (
     <div className={"flex relative"}>
@@ -546,14 +550,16 @@ const DronePanel = () => {
           </TooltipProvider>
         </div>
         <div className={"bg-[#001E37]/[.9] mr-[4px] py-2 grid grid-cols-3"}>
-          <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center"}>
-            {isRemoteControl ? <KeyboardControl onMouseUp={onMouseUp} onMouseDown={onMouseDown}/> :
-              <img src={yjqfPng} alt="" className={"cursor-pointer"} onClick={() => {
-                show();
-                setTakeOffType("take-off");
-                hideDebugPanel();
-              }}/>}
-          </div>
+          {hasFlyControlPermission ?
+            <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center"}>
+              {isRemoteControl ? <KeyboardControl onMouseUp={onMouseUp} onMouseDown={onMouseDown}/> :
+                <img src={yjqfPng} alt="" className={"cursor-pointer"} onClick={() => {
+                  show();
+                  setTakeOffType("take-off");
+                  hideDebugPanel();
+                }}/>}
+            </div> : <div
+              className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center text-sm text-[#d0d0d0]"}>无飞控权限</div>}
           <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center relative"}>
             <img src={compassPng} alt=""
                  style={{
@@ -564,21 +570,21 @@ const DronePanel = () => {
             <img src={pointerPng} alt="" className={"absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"}/>
           </div>
           <div className={"flex flex-col text-[12px] text-[#D0D0D0] justify-center px-2 space-y-2 text-sm"}>
-            <span>指点飞行</span>
-            <div className={"flex space-x-2"}>
+            {hasFlyControlPermission && <span>指点飞行</span>}
+            {hasFlyControlPermission && <div className={"flex space-x-2"}>
               <Button className={"bg-[#104992]/[.85] h-6 w-14 text-base"} onClick={() => {
                 show();
                 setTakeOffType("fly-to");
                 hideDebugPanel();
               }}>飞行</Button>
               <Button className={"bg-[#104992]/[.85] h-6 w-14 text-base"} onClick={onStopFlyToPoint}>取消</Button>
-            </div>
-            <span className={"text-base"}>返航</span>
-            <div className={"flex space-x-2"}>
+            </div>}
+            {hasFlyControlPermission && <span className={"text-base"}>返航</span>}
+            {hasFlyControlPermission && <div className={"flex space-x-2"}>
               {noDebugCmdList.map(cmdItem =>
                 <Button key={cmdItem.cmdKey} onClick={() => sendControlCmd(cmdItem)}
                         className={"bg-[#104992]/[.85] h-6 w-14"}>{cmdItem.operateText}</Button>)}
-            </div>
+            </div>}
             <PermissionButton permissionKey={"Button_EnterVirtualCockpit"}
                               className={"content-center space-x-4 h-[24px] bg-[#104992]/[.85] px-2 py-[2px] cursor-pointer text-base"}
                               onClick={onClickCockpit}>

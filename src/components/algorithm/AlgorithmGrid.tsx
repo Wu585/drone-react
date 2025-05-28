@@ -96,7 +96,7 @@ const AlgorithmGrid = () => {
                 }}>添加</Button>
       </div>
       <div className={"grid grid-cols-6 gap-4 h-[calc(100vh-250px)] overflow-auto"}>
-        <AlgorithmDialog key={configId} open={open} onOpenChange={setOpen} onSuccess={onSuccess} id={configId}/>
+        <AlgorithmDialog open={open} onOpenChange={setOpen} onSuccess={onSuccess} id={configId}/>
         {algorithmConfigList?.records.map((record) => (
           <div
             className={"bg-algorithm-panel bg-full-size flex flex-col justify-between items-center py-4 relative space-y-8"}

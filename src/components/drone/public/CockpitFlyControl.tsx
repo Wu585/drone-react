@@ -11,6 +11,8 @@ import {DeviceCmdItem, noDebugCmdList} from "@/types/device-cmd.ts";
 import {useDockControl} from "@/hooks/drone/useDockControl.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
+import {usePermission} from "@/hooks/drone";
+import {Button} from "@/components/ui/button.tsx";
 
 const CockpitFlyControl = ({sn}: { sn?: string }) => {
   const {
@@ -56,16 +58,19 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
     }
   };
 
+  const {hasPermission} = usePermission();
+  const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
+
   return (
     <>
       <div className={"flex justify-between pr-14"}>
         <CockpitTitle title={"飞行控制"}/>
-        <span
+        {hasFlyControlPermission && <span
           onClick={onClickFightControl}
           className={cn("w-[32px] h-[32px] content-center border-[1px] border-[#43ABFF] cursor-pointer",
             isRemoteControl ? "bg-[#43ABFF]" : "")}>
                         <img src={remoteControlPng} className={"w-[24px]"} alt=""/>
-        </span>
+        </span>}
       </div>
 
       <div className={"grid grid-cols-4 px-[48px] pt-[24px] gap-[32px]"}>
@@ -108,13 +113,19 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
       </div>
       <div className={"px-[48px] pt-[24px] grid grid-cols-2 gap-x-[32px] gap-y-2"}>
         {noDebugCmdList.map(cmdItem =>
-          <CockpitButton type={"button"} onClick={() => sendControlCmd(cmdItem)} key={cmdItem.cmdKey}>
+          <CockpitButton disabled={!hasFlyControlPermission} type={"button"} onClick={() => sendControlCmd(cmdItem)}
+                         key={cmdItem.cmdKey}>
             {cmdItem.operateText}
           </CockpitButton>)}
-        <div className={"bg-break bg-full-size w-[117px] h-[36px] content-center cursor-pointer"}
-             onClick={handleEmergencyStop}>
+        <Button
+          style={{
+            backgroundSize: "100% 100%"
+          }}
+          disabled={!hasFlyControlPermission}
+          className={"bg-break w-[117px] h-[36px] content-center cursor-pointer"}
+          onClick={handleEmergencyStop}>
           急停 Space
-        </div>
+        </Button>
       </div>
 
     </>

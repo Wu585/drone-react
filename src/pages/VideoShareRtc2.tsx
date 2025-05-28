@@ -13,7 +13,7 @@ const VideoShareRtc2 = () => {
   // startLive();
 
   useEffect(() => {
-    new JSWebrtc.Player("webrtc://36.139.117.52/live/test3", {
+    new JSWebrtc.Player("webrtc://36.152.38.220/live/test2", {
       video: videoRef.current,
       autoplay: true,
       onPlay: () => {
