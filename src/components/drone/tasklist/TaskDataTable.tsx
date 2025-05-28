@@ -46,6 +46,7 @@ const TaskDataTable = () => {
     return [
       {
         header: "计划时间 | 实际时间",
+        size: 220,
         cell: ({row}) => {
           // 格式化时间函数
           const formatTime = (timeStr: string) => {
@@ -55,7 +56,7 @@ const TaskDataTable = () => {
           };
 
           return (
-            <div className="flex gap-0.5 space-x-2">
+            <div className="flex gap-0.5 space-x-2 whitespace-nowrap">
               <div className="text-gray-400 text-[13px]">
                 [{formatTime(row.original.begin_time)}-{formatTime(row.original.end_time)}]
               </div>
@@ -70,34 +71,61 @@ const TaskDataTable = () => {
       },
       {
         header: "执行状态",
+        size: 100,
         cell: ({row}) =>
           <span style={{
             color: formatTaskStatus(row.original).color
-          }} className={""}>{formatTaskStatus(row.original).text}</span>
+          }} className={"whitespace-nowrap"}>{formatTaskStatus(row.original).text}</span>
       },
       {
         accessorKey: "job_name",
         header: "计划名称",
+        size: 160,
+        cell: ({row}) => (
+          <div className="max-w-[160px] truncate" title={row.original.job_name}>
+            {row.original.job_name}
+          </div>
+        )
       },
       {
         accessorKey: "task_type",
         header: "类型",
-        cell: ({row}) => <span>{TaskTypeMap[row.original.task_type]}</span>
+        size: 100,
+        cell: ({row}) => <span className="whitespace-nowrap">{TaskTypeMap[row.original.task_type]}</span>
       },
       {
         accessorKey: "file_name",
         header: "航线名称",
+        size: 160,
+        cell: ({row}) => (
+          <div className="max-w-[160px] truncate" title={row.original.file_name}>
+            {row.original.file_name}
+          </div>
+        )
       },
       {
         accessorKey: "dock_name",
         header: "机场",
+        size: 140,
+        cell: ({row}) => (
+          <div className="max-w-[140px] truncate" title={row.original.dock_name}>
+            {row.original.dock_name}
+          </div>
+        )
       },
       {
         accessorKey: "username",
         header: "创建人",
+        size: 100,
+        cell: ({row}) => (
+          <div className="max-w-[100px] truncate" title={row.original.username}>
+            {row.original.username}
+          </div>
+        )
       },
       {
         header: "媒体上传",
+        size: 120,
         cell: ({row}) => {
           return <div className={"flex items-center whitespace-nowrap"}>
             <Circle fill={formatMediaTaskStatus(row.original).color} size={16}/>
@@ -108,6 +136,7 @@ const TaskDataTable = () => {
       },
       {
         header: "操作",
+        size: 120,
         cell: ({row}) =>
           <div className={"flex whitespace-nowrap space-x-2"}>
             {row.original.status === TaskStatus.Wait && <AlertDialog>
@@ -442,42 +471,49 @@ const TaskDataTable = () => {
         </div>
       </div>
 
-      <div className="rounded-md border border-[#0A81E1] overflow-hidden bg-[#0A4088]/70">
-        <div className="max-h-[calc(100vh-380px)] overflow-hidden flex flex-col">
-          <div className="w-full">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
-                    {headerGroup.headers.map((header) => (
-                      <TableHead
-                        key={header.id}
-                        className="bg-[#0A81E1]/70 text-white h-10 font-medium"
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-            </Table>
+      <div className="rounded-md border border-[#0A81E1] bg-[#0A4088]/70">
+        <div className="flex flex-col">
+          <div className="w-full bg-[#0A81E1]/70">
+            <div className="w-full" style={{ paddingRight: '8px' }}>  {/* 补偿滚动条宽度 */}
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
+                      {headerGroup.headers.map((header) => (
+                        <TableHead
+                          key={header.id}
+                          style={{ 
+                            width: header.getSize(),
+                            minWidth: header.getSize(),
+                            maxWidth: header.getSize()
+                          }}
+                          className="text-white h-10 font-medium"
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+              </Table>
+            </div>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 430px)' }}>
             <Table>
               <TableBody className="bg-[#0A4088]/70">
                 {table.getRowModel().rows?.length ? (
                   groupTasksByDate(data?.list || []).map(([date, tasks]) => (
                     <>
                       {/* 日期分组行 */}
-                      <TableRow key={`date-${date}`} className="bg-[#0A81E1]/20 ">
+                      <TableRow key={`date-${date}`} className="bg-[#0A81E1]/20">
                         <TableCell
                           colSpan={columns.length}
-                          className="py-[4px] px-4 font-medium text-[#43ABFF] border-b border-[#0A81E1]/30 "
+                          className="py-[4px] px-4 font-medium text-[#43ABFF] border-b border-[#0A81E1]/30"
                         >
                           {date}
                         </TableCell>
@@ -503,6 +539,11 @@ const TaskDataTable = () => {
                             {row.getVisibleCells().map((cell) => (
                               <TableCell
                                 key={cell.id}
+                                style={{ 
+                                  width: cell.column.getSize(),
+                                  minWidth: cell.column.getSize(),
+                                  maxWidth: cell.column.getSize()
+                                }}
                                 className={cn(
                                   "py-3",
                                   "text-base",
@@ -523,7 +564,7 @@ const TaskDataTable = () => {
                   <TableRow>
                     <TableCell
                       colSpan={columns.length}
-                      className="h-24 text-center text-[#43ABFF]  text-base"
+                      className="h-24 text-center text-[#43ABFF] text-base"
                     >
                       暂无数据
                     </TableCell>
