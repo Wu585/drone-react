@@ -64,6 +64,7 @@ export const dynamicAddDroneModel = (dronePosition: {
   heading?: number // 添加航向角属性
 }, sourceName = "waylines-create") => {
   const takeoffDroneEntity = getCustomSource("waylines-create")?.entities.getById("takeoff-drone");
+
   if (takeoffDroneEntity) {
     getCustomSource(sourceName)?.entities.remove(takeoffDroneEntity);
   }
@@ -153,6 +154,41 @@ export const removePyramid = () => {
     }
   });
 };
+
+// alert(getHeading(Cesium.Cartesian3.fromDegrees(133.0, 30.0), Cesium.Cartesian3.fromDegrees(130.0, 80.0)));
+
+interface WGS84 {
+  longitude: number;
+  latitude: number;
+}
+
+export function calculateHeading(startPoint: WGS84, endPoint: WGS84) {
+  // 将经纬度转换为弧度
+  const start = Cesium.Cartographic.fromDegrees(startPoint.longitude, startPoint.latitude);
+  const end = Cesium.Cartographic.fromDegrees(endPoint.longitude, endPoint.latitude);
+
+  const lon1 = start.longitude;
+  const lat1 = start.latitude;
+  const lon2 = end.longitude;
+  const lat2 = end.latitude;
+
+  // 计算经度差
+  const dLon = lon2 - lon1;
+
+  // 使用方位角公式
+  const y = Math.sin(dLon) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+
+  // 计算初始朝向弧度（范围：-π 到 π）
+  let heading = Math.atan2(y, x);
+
+  // 将结果转换为0到2π的范围（正北为0，顺时针增加）
+  if (heading < 0) {
+    heading += Cesium.Math.TWO_PI;
+  }
+
+  return heading;
+}
 
 // 添加棱锥和中心线
 export const addPyramid = ({position, direction, sideAndDistance}: {

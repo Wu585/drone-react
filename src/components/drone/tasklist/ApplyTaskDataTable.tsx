@@ -34,6 +34,7 @@ import {Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTi
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import dayjs from "dayjs";
 import {ELocalStorageKey} from "@/types/enum.ts";
+import {cn} from "@/lib/utils.ts";
 
 const TaskDataTable = () => {
   const {delete: deleteClient, post} = useAjax();
@@ -47,21 +48,35 @@ const TaskDataTable = () => {
     {
       accessorKey: "name",
       header: "计划名称",
+      size: 160,
+      cell: ({row}) => (
+        <div className="max-w-[160px] truncate" title={row.original.name}>
+          {row.original.name}
+        </div>
+      )
     },
     {
       accessorKey: "create_time",
       header: "申请时间",
-      cell: ({row}) => <span>{dayjs(row.original.create_time).format("YYYY-MM-DD HH:mm:ss")}</span>
+      size: 160,
+      cell: ({row}) => <span className="whitespace-nowrap">{dayjs(row.original.create_time).format("YYYY-MM-DD HH:mm:ss")}</span>
     },
     {
       accessorKey: "task_days",
       header: "执行日期",
-      cell: ({row}) => <span>{row.original.task_days?.length > 0 &&
-        dayjs.unix(row.original.task_days[0]).format("YYYY-MM-DD") + "~" + dayjs.unix(row.original.task_days[row.original.task_days.length - 1]).format("YYYY-MM-DD")}</span>
+      size: 160,
+      cell: ({row}) => (
+        <div className="max-w-[160px] truncate" title={row.original.task_days?.length > 0 ? 
+          `${dayjs.unix(row.original.task_days[0]).format("YYYY-MM-DD")}~${dayjs.unix(row.original.task_days[row.original.task_days.length - 1]).format("YYYY-MM-DD")}` : ""}>
+          {row.original.task_days?.length > 0 &&
+            dayjs.unix(row.original.task_days[0]).format("YYYY-MM-DD") + "~" + dayjs.unix(row.original.task_days[row.original.task_days.length - 1]).format("YYYY-MM-DD")}
+        </div>
+      )
     },
     {
       accessorKey: "task_periods",
       header: "执行时间",
+      size: 160,
       cell: ({row}) => {
         const {task_periods, task_type} = row.original;
         let time;
@@ -70,35 +85,58 @@ const TaskDataTable = () => {
         } else if (task_type === TaskType.Condition) {
           time = task_periods.map(item => dayjs.unix(item[0]).format("HH:mm:ss") + "-" + dayjs.unix(item[1]).format("HH:mm:ss")).join(",");
         }
-        return <span>{time}</span>;
+        return (
+          <div className="max-w-[160px] truncate" title={time}>
+            {time}
+          </div>
+        );
       }
     },
     {
       accessorKey: "task_type",
       header: "类型",
-      cell: ({row}) => <span>{TaskTypeMap[row.original.task_type]}</span>
+      size: 100,
+      cell: ({row}) => <span className="whitespace-nowrap">{TaskTypeMap[row.original.task_type]}</span>
     },
     {
       accessorKey: "wayline_name",
       header: "航线名称",
-      cell: ({row}) => <span>{row.original.wayline_name ?? "--"}</span>
+      size: 160,
+      cell: ({row}) => (
+        <div className="max-w-[160px] truncate" title={row.original.wayline_name}>
+          {row.original.wayline_name ?? "--"}
+        </div>
+      )
     },
     {
       accessorKey: "dock_name",
       header: "机场",
+      size: 140,
+      cell: ({row}) => (
+        <div className="max-w-[140px] truncate" title={row.original.dock_name}>
+          {row.original.dock_name}
+        </div>
+      )
     },
     {
       accessorKey: "username",
       header: "创建人",
+      size: 100,
+      cell: ({row}) => (
+        <div className="max-w-[100px] truncate" title={row.original.username}>
+          {row.original.username}
+        </div>
+      )
     },
     {
       accessorKey: "status",
       header: "审核状态",
-      cell: ({row}) => <span
-        className={applyTaskStatusMap[row.original.status].color}>{applyTaskStatusMap[row.original.status].name}</span>
+      size: 100,
+      cell: ({row}) => <span className={cn("whitespace-nowrap", applyTaskStatusMap[row.original.status].color)}>{applyTaskStatusMap[row.original.status].name}</span>
     },
     {
       header: "操作",
+      size: 120,
       cell: ({row}) =>
         <div className={"flex whitespace-nowrap space-x-2"}>
           <Button className={"p-0 h-4 bg-transparent"}
@@ -271,103 +309,88 @@ const TaskDataTable = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="rounded-md border border-[#0A81E1] overflow-hidden bg-[#0A4088]/70">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="bg-[#0A81E1]/70 text-white h-10 font-medium"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody className="bg-[#0A4088]/70">
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className="border-b border-[#43ABFF]/30 hover:bg-[#0A81E1]/10 transition-colors h-[46px]"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="text-white px-4 align-middle leading-none text-base"
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+      <div className="rounded-md border border-[#0A81E1] bg-[#0A4088]/70">
+        <div className="flex flex-col">
+          <div className="w-full bg-[#0A81E1]/70">
+            <div className="w-full" style={{ paddingRight: '8px' }}>  {/* 补偿滚动条宽度 */}
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
+                      {headerGroup.headers.map((header) => (
+                        <TableHead
+                          key={header.id}
+                          style={{ 
+                            width: header.getSize(),
+                            minWidth: header.getSize(),
+                            maxWidth: header.getSize()
+                          }}
+                          className="text-white h-10 font-medium"
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
                   ))}
-                </TableRow>
-              ))
-              /*groupTasksByDate(data?.list || []).map(([date, tasks]) => (
-                <>
-                  {/!* 日期分组行 *!/}
-                  <TableRow key={`date-${date}`} className="bg-[#0A81E1]/20">
+                </TableHeader>
+              </Table>
+            </div>
+          </div>
+          <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 430px)' }}>
+            <Table>
+              <TableBody className="bg-[#0A4088]/70">
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      className={cn(
+                        "h-[46px]",
+                        "border-b border-[#43ABFF]/30",
+                        "hover:bg-[#0A81E1]/10 transition-colors duration-200",
+                        "data-[state=selected]:bg-transparent"
+                      )}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          style={{ 
+                            width: cell.column.getSize(),
+                            minWidth: cell.column.getSize(),
+                            maxWidth: cell.column.getSize()
+                          }}
+                          className={cn(
+                            "py-3",
+                            "text-base",
+                            "align-middle",
+                            "px-4",
+                            "leading-none"
+                          )}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
                     <TableCell
                       colSpan={columns.length}
-                      className="py-2 px-4 font-medium text-[#43ABFF] border-b border-[#0A81E1]/30"
+                      className="h-24 text-center text-[#43ABFF] text-base"
                     >
-                      {date}
+                      暂无数据
                     </TableCell>
                   </TableRow>
-                  {/!* 任务数据行 *!/}
-                  {tasks.map((task) => {
-                    const row = table.getRowModel().rows.find(
-                      r => r.original.job_id === task.job_id
-                    );
-                    if (!row) return null;
-
-                    return (
-                      <TableRow
-                        key={row.id}
-                        className={cn(
-                          "h-[46px]",
-                          "border-b border-[#0A81E1]/30",
-                          "hover:bg-[#0A4088]/90 transition-colors duration-200",
-                          "data-[state=selected]:bg-transparent"
-                        )}
-                        data-state={row.getIsSelected() && "selected"}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell
-                            key={cell.id}
-                            className={cn(
-                              "py-3",
-                              "align-middle",
-                              "px-4",
-                              "leading-none"
-                            )}
-                          >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    );
-                  })}
-                </>
-              ))*/
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center text-[#43ABFF]"
-                >
-                  暂无数据
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center justify-between pt-4">

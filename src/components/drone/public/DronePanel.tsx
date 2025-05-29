@@ -366,7 +366,7 @@ const DronePanel = () => {
                         <Forward size={17} className="cursor-pointer" onClick={onShareDroneLink}/>
                       </div>
                     )}
-                    <TooltipProvider delayDuration={100}>
+                    {hasFlyControlPermission && <TooltipProvider delayDuration={100}>
                       <Tooltip>
                         <TooltipTrigger>
                           <span
@@ -380,7 +380,7 @@ const DronePanel = () => {
                           <p>{isRemoteControl ? "离开远程控制" : "进入远程控制"}</p>
                         </TooltipContent>
                       </Tooltip>
-                    </TooltipProvider>
+                    </TooltipProvider>}
                   </div>
                 </>
               )}
