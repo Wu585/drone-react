@@ -46,8 +46,9 @@ import ggpPng from "@/assets/images/ggp.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
 import {flyToDegree} from "@/lib/view.ts";
 import {useOrderListVisual} from "@/hooks/drone/order/useOrderToMap.ts";
-import {useWorkOrderByRealTimeId, WorkOrder} from "@/hooks/drone";
+import {MEDIA_HTTP_PREFIX, useWorkOrderByRealTimeId, WorkOrder} from "@/hooks/drone";
 import {useAjax} from "@/lib/http.ts";
+import {ELocalStorageKey} from "@/types/enum.ts";
 
 const GroupItem = ({
                      group,
@@ -365,7 +366,7 @@ const MapPhoto = () => {
   const {changePhotoVisual} = useMapLoadMedia();
   const {data: mapPhotoData, mutate} = useMapPhoto();
   const {post} = useAjax();
-
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   // 处理可见性变化
   const handleVisibleChange = useCallback(async (id: number, visible: boolean) => {
     console.log("Visibility changed:", id, visible);
@@ -474,7 +475,6 @@ const MapPhoto = () => {
 
   }, [mapPhotoData]);
 
-
   const {data: orderListVisual, mutate: mutateOrderListVisual} = useOrderListVisual();
 
   const flyToOrder = (order: WorkOrder) => {
@@ -503,6 +503,23 @@ const MapPhoto = () => {
     }
   };
 
+  const onMediaCancelLoadMap = async (id: string) => {
+    try {
+      await post(`${MEDIA_HTTP_PREFIX}/files/${workspaceId}/cancelMap`, {
+        ids: [id]
+      });
+      toast({
+        description: "地图取消加载图片成功！",
+      });
+      await mutate();
+    } catch (err) {
+      toast({
+        description: "地图取消加载图片失败！",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="h-full flex">
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -524,6 +541,10 @@ const MapPhoto = () => {
               </div>
               <div className={"my-4"}>
                 <ImagePreview url={currentPhoto?.preview_url}/>
+              </div>
+              <div className={"flex"}>
+                <Button className={"ml-auto bg-[#43ABFF]"}
+                        onClick={() => onMediaCancelLoadMap(currentPhoto?.id)}>取消地图加载</Button>
               </div>
             </div>}
 

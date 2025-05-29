@@ -258,6 +258,7 @@ export interface CreatePlan {
   min_storage_capacity?: number, // The minimum storage capacity of dock and aircraft.
   select_execute_date: string[]
   select_time: string[][]
+  organ: number | string
 }
 
 export interface Task {
@@ -285,6 +286,7 @@ export interface Task {
   uploaded_count: number // 已上传媒体数量
   contact: string,
   contactPhone: string
+  organ_name: string
 }
 
 export const useWaylinJobs = (workspaceId: string, body: Pagination) => {
@@ -354,6 +356,7 @@ export interface ApplyTask {
   task_days: number[];
   task_periods: [number, number][];
   create_time: number;
+  organ_name: string;
 }
 
 

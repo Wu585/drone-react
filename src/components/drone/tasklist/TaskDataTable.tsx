@@ -41,6 +41,7 @@ import dayjs from "dayjs";
 
 const TaskDataTable = () => {
   const {delete: deleteClient, put, post} = useAjax();
+  const departId = localStorage.getItem("departId");
 
   const columns: ColumnDef<Task>[] = useMemo(() => {
     return [
@@ -120,6 +121,16 @@ const TaskDataTable = () => {
         cell: ({row}) => (
           <div className="max-w-[100px] truncate" title={row.original.username}>
             {row.original.username}
+          </div>
+        )
+      },
+      {
+        accessorKey: "organ_name",
+        header: "部门",
+        size: 100,
+        cell: ({row}) => (
+          <div className="max-w-[100px] truncate" title={row.original.organ_name}>
+            {row.original.organ_name}
           </div>
         )
       },
@@ -303,7 +314,8 @@ const TaskDataTable = () => {
     task_type: undefined as TaskType | undefined,
     dock_sn: "",
     keyword: "",
-    status: undefined as TaskStatus | undefined
+    status: undefined as TaskStatus | undefined,
+    organs: [departId]
   });
 
   const {data, mutate: mutateWaylineJobs} = useWaylinJobs(workspaceId, queryParams);
@@ -474,7 +486,7 @@ const TaskDataTable = () => {
       <div className="rounded-md border border-[#0A81E1] bg-[#0A4088]/70">
         <div className="flex flex-col">
           <div className="w-full bg-[#0A81E1]/70">
-            <div className="w-full" style={{ paddingRight: '8px' }}>  {/* 补偿滚动条宽度 */}
+            <div className="w-full" style={{paddingRight: "8px"}}>  {/* 补偿滚动条宽度 */}
               <Table>
                 <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -482,7 +494,7 @@ const TaskDataTable = () => {
                       {headerGroup.headers.map((header) => (
                         <TableHead
                           key={header.id}
-                          style={{ 
+                          style={{
                             width: header.getSize(),
                             minWidth: header.getSize(),
                             maxWidth: header.getSize()
@@ -503,7 +515,7 @@ const TaskDataTable = () => {
               </Table>
             </div>
           </div>
-          <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 430px)' }}>
+          <div className="overflow-auto" style={{maxHeight: "calc(100vh - 430px)"}}>
             <Table>
               <TableBody className="bg-[#0A4088]/70">
                 {table.getRowModel().rows?.length ? (
@@ -539,7 +551,7 @@ const TaskDataTable = () => {
                             {row.getVisibleCells().map((cell) => (
                               <TableCell
                                 key={cell.id}
-                                style={{ 
+                                style={{
                                   width: cell.column.getSize(),
                                   minWidth: cell.column.getSize(),
                                   maxWidth: cell.column.getSize()

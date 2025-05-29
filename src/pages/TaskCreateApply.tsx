@@ -112,6 +112,7 @@ const TaskCreateApply = () => {
   console.log(currentApplyWaylineJob);
 
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const departId = localStorage.getItem("departId");
 
   const {downloadWayline} = useDownloadWayline(workspaceId);
   const {deleteWaylineFile} = useDeleteWalineFile(workspaceId);
@@ -184,9 +185,11 @@ const TaskCreateApply = () => {
       createPlanBody.wayline_type = selectedWayline.template_types[0];
     }
 
-    if(currentApplyWaylineJob){
-      createPlanBody.id = currentApplyWaylineJob.id
+    if (currentApplyWaylineJob) {
+      createPlanBody.id = currentApplyWaylineJob.id;
     }
+
+    createPlanBody.organ = departId || 0;
 
     try {
       await post(`${HTTP_PREFIX_Wayline}/wayline-job-audit/save`, createPlanBody as any);

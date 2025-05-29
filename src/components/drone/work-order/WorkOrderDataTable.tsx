@@ -109,6 +109,7 @@ type OrderStatus = keyof typeof OrderStatusMap;
 
 const WorkOrderDataTable = () => {
   const [open, setOpen] = useState(false);
+  const departId = localStorage.getItem("departId");
 
   const {data: currentUser} = useCurrentUser();
   const {post} = useAjax();
@@ -184,6 +185,10 @@ const WorkOrderDataTable = () => {
       {
         accessorKey: "contact_phone",
         header: "联系方式",
+      },
+      {
+        accessorKey: "organ_name",
+        header: "部门",
       },
       {
         accessorKey: "order_type",
@@ -264,6 +269,7 @@ const WorkOrderDataTable = () => {
     order_type: undefined as EventMap | undefined,
     found_time_begin: "",
     found_time_end: "",
+    organs: [departId]
   });
 
   // 处理分页变化

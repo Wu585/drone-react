@@ -94,6 +94,8 @@ const defaultValue = {
 };
 
 const TaskCreate = () => {
+  const departId = localStorage.getItem("departId");
+
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const {visible: selectPanelVisible, show, hide} = useVisible();
@@ -129,9 +131,9 @@ const TaskCreate = () => {
   }, [bindingDevices]);
 
   const onerr = (err) => {
-    console.log('err===');
+    console.log("err===");
     console.log(err);
-  }
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("values");
@@ -171,6 +173,8 @@ const TaskCreate = () => {
 
     console.log("createPlanBody");
     console.log(createPlanBody);
+
+    createPlanBody.organ = departId || 0;
 
     try {
       await post(`${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/flight-tasks`, createPlanBody as any);
@@ -339,7 +343,7 @@ const TaskCreate = () => {
     <div className={"w-full h-full flex text-[16px]"}>
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit,onerr)}
+          onSubmit={form.handleSubmit(onSubmit, onerr)}
           className={cn("w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0", selectPanelVisible ? "" : "rounded-tr-lg rounded-br-lg")}>
           <div
             className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-[14px] justify-between text-[14px]"}>

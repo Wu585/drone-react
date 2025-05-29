@@ -43,6 +43,7 @@ const TaskDataTable = () => {
   const [open, setOpen] = useState(false);
   const [currentId, setCurrentId] = useState<number | undefined>();
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const departId = localStorage.getItem("departId");
 
   const columns: ColumnDef<ApplyTask>[] = [
     {
@@ -66,7 +67,7 @@ const TaskDataTable = () => {
       header: "执行日期",
       size: 160,
       cell: ({row}) => (
-        <div className="max-w-[160px] truncate" title={row.original.task_days?.length > 0 ? 
+        <div className="max-w-[160px] truncate" title={row.original.task_days?.length > 0 ?
           `${dayjs.unix(row.original.task_days[0]).format("YYYY-MM-DD")}~${dayjs.unix(row.original.task_days[row.original.task_days.length - 1]).format("YYYY-MM-DD")}` : ""}>
           {row.original.task_days?.length > 0 &&
             dayjs.unix(row.original.task_days[0]).format("YYYY-MM-DD") + "~" + dayjs.unix(row.original.task_days[row.original.task_days.length - 1]).format("YYYY-MM-DD")}
@@ -125,6 +126,16 @@ const TaskDataTable = () => {
       cell: ({row}) => (
         <div className="max-w-[100px] truncate" title={row.original.username}>
           {row.original.username}
+        </div>
+      )
+    },
+    {
+      accessorKey: "organ_name",
+      header: "部门",
+      size: 100,
+      cell: ({row}) => (
+        <div className="max-w-[100px] truncate" title={row.original.organ_name}>
+          {row.original.organ_name}
         </div>
       )
     },
@@ -320,7 +331,7 @@ const TaskDataTable = () => {
                       {headerGroup.headers.map((header) => (
                         <TableHead
                           key={header.id}
-                          style={{ 
+                          style={{
                             width: header.getSize(),
                             minWidth: header.getSize(),
                             maxWidth: header.getSize()
@@ -359,7 +370,7 @@ const TaskDataTable = () => {
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}
-                          style={{ 
+                          style={{
                             width: cell.column.getSize(),
                             minWidth: cell.column.getSize(),
                             maxWidth: cell.column.getSize()

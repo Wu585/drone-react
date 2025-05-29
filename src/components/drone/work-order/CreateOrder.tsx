@@ -67,6 +67,8 @@ interface Props {
 const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
   console.log("currentOrder");
   console.log(currentOrder);
+  const departId = localStorage.getItem("departId");
+
   const [open, setOpen] = useState(false);
   const {post} = useAjax();
   const [mediaUrlList, setMediaUrlList] = useState<string[]>([]);
@@ -150,7 +152,8 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
       ...values,
       found_time: dayjs(values.found_time).format("YYYY-MM-DD HH:mm:ss"),
       street: "",
-      street_code: ""
+      street_code: "",
+      organ: departId
     };
     console.log("data===");
     console.log(data);
