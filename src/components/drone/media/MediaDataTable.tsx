@@ -201,7 +201,7 @@ interface Props {
 const MediaDataTable = ({onChangeDir}: Props) => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
-  const {get} = useAjax();
+  const {get, post} = useAjax();
   const navigate = useNavigate();
   const [downloadingIds] = useState<Set<string>>(new Set());
   const [displayType, setDisplayType] = useState<0 | 1>(0);
@@ -326,6 +326,13 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   const onDeleteFile = async (file: FileItem) => {
     try {
       await removeFile({ids: [file.id]});
+      const files = table.getSelectedRowModel().rows.map(row => row.original);
+      const canLoad = !files.find(file => [MediaFileType.DIR, MediaFileType.ZIP, MediaFileType.VIDEO, MediaFileType.MANUAL].includes(file.type));
+      if (canLoad) {
+        await post(`${MEDIA_HTTP_PREFIX}/files/${workspaceId}/cancelMap`, {
+          ids: [file.id]
+        });
+      }
       toast({
         description: "删除文件成功"
       });
@@ -551,7 +558,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                 <DialogHeader>
                   <DialogTitle>删除文件</DialogTitle>
                 </DialogHeader>
-                <div>确认删除文件吗？</div>
+                <div>删除后地图加载图片也会同步删除，确认删除吗？</div>
                 <DialogFooter>
                   <DialogClose>
                     <Button onClick={() => onDeleteFile(row.original)}>确认</Button>

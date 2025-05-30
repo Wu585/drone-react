@@ -415,6 +415,7 @@ export interface FileItem {
   longitude: string;
   latitude: string;
   thumbnail_url?: string;
+  wayline_name?: string;
 }
 
 interface FileData {
