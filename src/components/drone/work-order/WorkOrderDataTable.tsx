@@ -354,7 +354,7 @@ const WorkOrderDataTable = () => {
     try {
       setLoading(true);
       const res: any = await post(
-        `${OPERATION_HTTP_PREFIX}/order/${13}/exportReport`,
+        `${OPERATION_HTTP_PREFIX}/order/${departId}/exportReport`,
         queryParams,
         // 设置响应类型为 blob
         {responseType: "blob"}
