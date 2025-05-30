@@ -81,12 +81,18 @@ export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, dr
   const {data: allDeviceList} = useDeviceTopo();
   const dock = deviceList?.find(item => item.sn === dockSn);
   const realtime = useRealTimeDeviceInfo(dockSn);
-
+  console.log("realtime");
+  console.log(realtime);
   const dockVideoId = useMemo(() => {
+    // return "165-0-7"
+    // return dockSn + "/" + "165-0-7" + "/" + "normal-0";
     if (!dock) return;
     const dock_cameras_list = dock?.cameras_list;
-    if (!dock_cameras_list || dock_cameras_list.length <= 0) return;
-    return dockSn + "/" + dock_cameras_list[0].index + "/" + dock_cameras_list[0].videos_list[0].index;
+    if (!dock_cameras_list || dock_cameras_list.length <= 0) {
+      return dockSn + "/" + "165-0-7" + "/" + "normal-0";
+    } else {
+      return dockSn + "/" + dock_cameras_list[0].index + "/" + dock_cameras_list[0].videos_list[0].index;
+    }
   }, [dock, dockSn]);
 
   const droneVideoId = useMemo(() => {

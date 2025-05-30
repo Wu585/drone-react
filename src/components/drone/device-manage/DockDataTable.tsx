@@ -5,7 +5,7 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {useState} from "react";
+import {useMemo, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {Device, useBindingDevice} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
@@ -55,113 +55,115 @@ const DockDataTable = () => {
     }
   };
 
-  const columns: ColumnDef<Device>[] = [
-    {
-      accessorKey: "device_name",
-      header: "型号",
-      cell: ({row}) => (
-        <div className="truncate" title={row.getValue("device_name")}>
-          {row.getValue("device_name")}
-        </div>
-      )
-    },
-    {
-      accessorKey: "device_sn",
-      header: "设备SN",
-      cell: ({row}) => (
-        <div className=" truncate" title={row.getValue("device_sn")}>
-          {row.getValue("device_sn")}
-        </div>
-      )
-    },
-    {
-      accessorKey: "nickname",
-      header: "名称",
-      cell: ({row}) => (
-        <div className=" truncate" title={row.getValue("nickname")}>
-          {row.getValue("nickname")}
-        </div>
-      )
-    },
-    {
-      accessorKey: "firmware_version",
-      header: "固件版本",
-      cell: ({row}) => (
-        <div className="truncate" title={row.getValue("firmware_version")}>
-          {row.getValue("firmware_version")}
-        </div>
-      )
-    },
-    {
-      accessorKey: "status",
-      header: "状态",
-      cell: ({row}) => (
-        <div className="">
+  const columns: ColumnDef<Device>[] = useMemo(() => {
+    return [
+      {
+        accessorKey: "device_name",
+        header: "型号",
+        cell: ({row}) => (
+          <div className="truncate" title={row.getValue("device_name")}>
+            {row.getValue("device_name")}
+          </div>
+        )
+      },
+      {
+        accessorKey: "device_sn",
+        header: "设备SN",
+        cell: ({row}) => (
+          <div className=" truncate" title={row.getValue("device_sn")}>
+            {row.getValue("device_sn")}
+          </div>
+        )
+      },
+      {
+        accessorKey: "nickname",
+        header: "名称",
+        cell: ({row}) => (
+          <div className=" truncate" title={row.getValue("nickname")}>
+            {row.getValue("nickname")}
+          </div>
+        )
+      },
+      {
+        accessorKey: "firmware_version",
+        header: "固件版本",
+        cell: ({row}) => (
+          <div className="truncate" title={row.getValue("firmware_version")}>
+            {row.getValue("firmware_version")}
+          </div>
+        )
+      },
+      {
+        accessorKey: "status",
+        header: "状态",
+        cell: ({row}) => (
+          <div className="">
           <span className={row.original.status ? "text-green-500" : "text-red-500"}>
             {row.original.status ? "在线" : "离线"}
           </span>
-        </div>
-      )
-    },
-    {
-      accessorKey: "workspace_name",
-      header: "组织",
-      cell: ({row}) => (
-        <div className=" truncate" title={row.getValue("workspace_name")}>
-          {row.getValue("workspace_name")}
-        </div>
-      )
-    },
-    {
-      accessorKey: "bound_time",
-      header: "加入组织时间",
-      cell: ({row}) => (
-        <div className="truncate" title={row.getValue("bound_time")}>
-          {row.getValue("bound_time")}
-        </div>
-      )
-    },
-    {
-      accessorKey: "login_time",
-      header: "最后在线时间",
-      cell: ({row}) => (
-        <div className=" truncate" title={row.getValue("login_time")}>
-          {row.getValue("login_time")}
-        </div>
-      )
-    },
-    {
-      header: "操作",
-      cell: ({row}) => {
-        return (
-          <div className="flex space-x-2 items-center">
-            <Edit
-              size={16}
-              className="cursor-pointer hover:text-[#43ABFF] transition-colors"
-              onClick={() => handleEdit(row.original)}
-            />
-            <SquareGanttChart
-              size={16}
-              className="cursor-pointer hover:text-[#43ABFF] transition-colors"
-              onClick={() => {
-                setInsuranceSheetVisible(true);
-                setCurrentDock(row.original);
-                setCurrentDockId(row.original.id);
-              }}
-            />
-            <BookImage
-              size={16}
-              className="cursor-pointer hover:text-[#43ABFF] transition-colors"
-              onClick={() => {
-                setMaintainanceSheetVisible(true);
-                setCurrentDock(row.original);
-              }}
-            />
           </div>
-        );
-      }
-    },
-  ];
+        )
+      },
+      {
+        accessorKey: "workspace_name",
+        header: "组织",
+        cell: ({row}) => (
+          <div className=" truncate" title={row.getValue("workspace_name")}>
+            {row.getValue("workspace_name")}
+          </div>
+        )
+      },
+      {
+        accessorKey: "bound_time",
+        header: "加入组织时间",
+        cell: ({row}) => (
+          <div className="truncate" title={row.getValue("bound_time")}>
+            {row.getValue("bound_time")}
+          </div>
+        )
+      },
+      {
+        accessorKey: "login_time",
+        header: "最后在线时间",
+        cell: ({row}) => (
+          <div className=" truncate" title={row.getValue("login_time")}>
+            {row.getValue("login_time")}
+          </div>
+        )
+      },
+      {
+        header: "操作",
+        cell: ({row}) => {
+          return (
+            <div className="flex space-x-2 items-center">
+              <Edit
+                size={16}
+                className="cursor-pointer hover:text-[#43ABFF] transition-colors"
+                onClick={() => handleEdit(row.original)}
+              />
+              <SquareGanttChart
+                size={16}
+                className="cursor-pointer hover:text-[#43ABFF] transition-colors"
+                onClick={() => {
+                  setInsuranceSheetVisible(true);
+                  setCurrentDock(row.original);
+                  setCurrentDockId(row.original.id);
+                }}
+              />
+              <BookImage
+                size={16}
+                className="cursor-pointer hover:text-[#43ABFF] transition-colors"
+                onClick={() => {
+                  setMaintainanceSheetVisible(true);
+                  setCurrentDock(row.original);
+                }}
+              />
+            </div>
+          );
+        }
+      },
+    ];
+  }, []);
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     []

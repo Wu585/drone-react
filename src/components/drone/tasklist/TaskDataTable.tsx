@@ -47,7 +47,7 @@ const TaskDataTable = () => {
     return [
       {
         header: "计划时间 | 实际时间",
-        size: 220,
+        size: 230,
         cell: ({row}) => {
           // 格式化时间函数
           const formatTime = (timeStr: string) => {
@@ -72,7 +72,7 @@ const TaskDataTable = () => {
       },
       {
         header: "执行状态",
-        size: 100,
+        size: 80,
         cell: ({row}) =>
           <span style={{
             color: formatTaskStatus(row.original).color
@@ -91,7 +91,7 @@ const TaskDataTable = () => {
       {
         accessorKey: "task_type",
         header: "类型",
-        size: 100,
+        size: 80,
         cell: ({row}) => <span className="whitespace-nowrap">{TaskTypeMap[row.original.task_type]}</span>
       },
       {
@@ -136,10 +136,10 @@ const TaskDataTable = () => {
       },
       {
         header: "媒体上传",
-        size: 120,
+        size: 140,
         cell: ({row}) => {
-          return <div className={"flex items-center whitespace-nowrap"}>
-            <Circle fill={formatMediaTaskStatus(row.original).color} size={16}/>
+          return <div className={"flex items-center "}>
+            <Circle fill={formatMediaTaskStatus(row.original).color} className={"w-4 h-4"}/>
             <span>{formatMediaTaskStatus(row.original).text}
               {formatMediaTaskStatus(row.original).number && `${formatMediaTaskStatus(row.original).number}`}</span>
           </div>;
