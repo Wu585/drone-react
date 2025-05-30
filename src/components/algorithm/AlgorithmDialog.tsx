@@ -65,7 +65,7 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
   const form = useForm<AlgorithmFormValues>({
     resolver: zodResolver(algorithmFormSchema),
     defaultValues,
-    values: currentConfig
+    values: id ? currentConfig : defaultValues
   });
 
   const algorithm_platform = form.watch("algorithm_platform");
@@ -77,7 +77,6 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
 
   const _onOpenChange = (visible: boolean) => {
     onOpenChange?.(visible);
-    form.reset(defaultValues);
   };
 
   const _onSubmit = async (values: AlgorithmFormValues) => {
