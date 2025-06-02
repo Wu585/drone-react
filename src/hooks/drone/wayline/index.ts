@@ -187,7 +187,38 @@ export function calculateHeading(startPoint: WGS84, endPoint: WGS84) {
     heading += Cesium.Math.TWO_PI;
   }
 
-  return heading;
+  let degrees = Math.round(heading * (180 / Math.PI));
+  degrees = ((degrees + 180) % 360) - 180;
+  console.log("degrees");
+  console.log(degrees);
+  return degrees;
+}
+
+/**
+ * 根据偏航角(heading)和俯仰角(pitch)计算方向向量
+ * @param {number} headingDegrees - 偏航角（度数）
+ * @param {number} pitchDegrees - 俯仰角（度数）
+ * @returns {Cesium.Cartesian3} 归一化的方向向量
+ */
+export function calculateDirection( headingDegrees, pitchDegrees) {
+  // 计算方向向量
+  const headingRad = Cesium.Math.toRadians(headingDegrees);
+  const pitchRad = Cesium.Math.toRadians(pitchDegrees);
+
+  // 计算方向向量的分量
+  const eastComponent = Math.cos(pitchRad) * Math.sin(headingRad);  // 东分量
+  const northComponent = Math.cos(pitchRad) * Math.cos(headingRad); // 北分量
+  const upComponent = Math.sin(pitchRad);                           // 天分量
+
+  // 创建方向向量（东，北，天）
+  const direction = new Cesium.Cartesian3(
+    eastComponent,
+    northComponent,
+    upComponent
+  );
+
+  // 返回归一化后的向量
+  return Cesium.Cartesian3.normalize(direction, direction);
 }
 
 // 添加棱锥和中心线

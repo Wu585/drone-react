@@ -51,6 +51,8 @@ const DronePanel = () => {
   const {visible: debugPanelvisible, hide: hideDebugPanel, show: showDebugPanel} = useVisible();
   const navigate = useNavigate();
   const deviceInfo = useRealTimeDeviceInfo(osdVisible.gateway_sn, osdVisible.sn);
+  // console.log("deviceInfo");
+  // console.log(deviceInfo);
   const [takeOffType, setTakeOffType] = useState<"take-off" | "fly-to">("take-off");
   const {sendDockControlCmd} = useDockControl();
   const {visible: dockVideoVisible, show: showDockVideo, hide: hideDockVideo} = useVisible();
@@ -138,7 +140,9 @@ const DronePanel = () => {
     stopLive: stopDroneLive
   } = useDeviceLive(droneVideoRef.current, osdVisible.gateway_sn, osdVisible.sn);
 
-  const deviceStatus = !deviceInfo.device ? EModeCodeMap[EModeCode.Disconnected] : EModeCodeMap[deviceInfo.device?.mode_code];
+  const deviceStatus = useMemo(() => {
+    return !deviceInfo.device ? EModeCodeMap[EModeCode.Disconnected] : EModeCodeMap[deviceInfo.device?.mode_code];
+  }, [deviceInfo]);
 
   const onPintoDock = () => {
     viewer.camera.flyTo({

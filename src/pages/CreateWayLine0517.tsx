@@ -42,7 +42,7 @@ import {
   addLabelWithin, addPyramid, addTakeOffPoint,
   addWayPointWithIndex,
   removeDroneModel, removePyramid,
-  removeTakeoffPoint, getHeading, calculateHeading
+  removeTakeoffPoint, getHeading, calculateHeading, calculateDirection
 } from "@/hooks/drone/wayline";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
@@ -355,18 +355,18 @@ const CreateWayLine0517 = () => {
     };
   }, [waypoints]);
 
-  useEffect(() => {
-    if (!selectedWaypointId) return;
-    const waypoint = waypoints[selectedWaypointId - 1];
-    if (waypoint) {
-      const action1 = waypoint.actions?.find((action: any) => action.type === "gimbal_yaw_rotate_angle");
-      const action2 = waypoint.actions?.find((action: any) => action.type === "gimbal_pitch_rotate_angle");
-      setMiniSceneCameraHp({
-        heading: action1 ? action1.param * (Math.PI / 180) : 0,
-        pitch: action2 ? action2.param * (Math.PI / 180) : 0
-      });
-    }
-  }, [selectedWaypointId, waypoints]);
+  /* useEffect(() => {
+     if (!selectedWaypointId) return;
+     const waypoint = waypoints[selectedWaypointId - 1];
+     if (waypoint) {
+       const action1 = waypoint.actions?.find((action: any) => action.type === "gimbal_yaw_rotate_angle");
+       const action2 = waypoint.actions?.find((action: any) => action.type === "gimbal_pitch_rotate_angle");
+       setMiniSceneCameraHp({
+         heading: action1 ? action1.param * (Math.PI / 180) : 0,
+         pitch: action2 ? action2.param * (Math.PI / 180) : 0
+       });
+     }
+   }, [selectedWaypointId, waypoints]);*/
 
   // 选中拖拽
   useEffect(() => {
@@ -472,19 +472,23 @@ const CreateWayLine0517 = () => {
     pitch: number
   } | undefined>(undefined);
 
-  /*useEffect(() => {
+  useEffect(() => {
     if (selectedWaypointId) {
       const currentWayPoint = waypoints[selectedWaypointId - 1];
       const height = currentWayPoint.useGlobalHeight ? globalHeight : currentWayPoint.height!;
       const {longitude, latitude} = currentWayPoint;
       setMiniSceneCameraPosition({longitude, latitude, height});
+      // setMiniSceneCameraHp({
+      //   heading: Cesium.Math.toRadians(30),
+      //   pitch: 0
+      // });
     } else if (takeoffPoint) {
       setMiniSceneCameraPosition({
         ...takeoffPoint,
         height: takeoffPointEndHeight
       });
     }
-  }, [takeoffPoint, waypoints, globalHeight, takeoffPointEndHeight, selectedWaypointId]);*/
+  }, [takeoffPoint, waypoints, globalHeight, takeoffPointEndHeight, selectedWaypointId]);
 
   // 无人机模型的坐标及偏航角参数
   const dronePositionRef = useRef<{
@@ -817,11 +821,15 @@ const CreateWayLine0517 = () => {
     } else {
       if (!selectedWaypointId) return;
       const index = selectedWaypointId - 1;
+      console.log('index');
+      console.log(index);
       removePyramid();
       const longitude = waypoints[index].longitude;
       const latitude = waypoints[index].latitude;
       const height = waypoints[index].useGlobalHeight ? globalHeight : waypoints[index].height!;
       const heading = waypoints[index].actions?.find(action => action.func === "rotateYaw")?.param || 0;
+      const gimbal_yaw_rotate_angle = waypoints[index].actions?.find(action => action.type === "gimbal_yaw_rotate_angle")?.param || 0;
+      const gimbal_pitch_rotate_angle = waypoints[index].actions?.find(action => action.type === "gimbal_pitch_rotate_angle")?.param || 0;
       dronePositionRef.current = {
         longitude,
         latitude,
@@ -831,6 +839,9 @@ const CreateWayLine0517 = () => {
       if (selectedWaypointId === 1) {
         const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
         const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
+        const direction = calculateDirection(gimbal_yaw_rotate_angle || 0, gimbal_pitch_rotate_angle || 0);
+        console.log("direction");
+        console.log(direction);
         pyramidPositionRef.current = {
           position: {
             longitude,
@@ -844,7 +855,13 @@ const CreateWayLine0517 = () => {
             distance: 200
           }
         };
+        console.log(11111);
+        setMiniSceneCameraHp({
+          heading: Cesium.Math.toRadians(gimbal_yaw_rotate_angle || 0),
+          pitch: Cesium.Math.toRadians(gimbal_pitch_rotate_angle || 0)
+        });
       } else {
+        // const pitch_rotate_angle =
         if (waypoint_heading_mode !== "followWayline") {
           // 视棱锥朝向朝北
           const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
@@ -886,13 +903,14 @@ const CreateWayLine0517 = () => {
               distance: 200
             }
           };
-          const droneHeading = calculateHeading({
+          dronePositionRef.current.heading = heading || calculateHeading({
             longitude: lastLongitude,
             latitude: lastLatitude
           }, {longitude, latitude});
-          let degrees = Math.round(droneHeading * (180 / Math.PI));
-          degrees = ((degrees + 180) % 360) - 180;
-          dronePositionRef.current.heading = heading || degrees;
+          setMiniSceneCameraHp({
+            heading: Cesium.Math.toRadians(gimbal_yaw_rotate_angle || dronePositionRef.current.heading),
+            pitch: Cesium.Math.toRadians(gimbal_pitch_rotate_angle || 0)
+          });
         }
       }
       addPyramid(pyramidPositionRef.current);
@@ -2518,13 +2536,15 @@ const CreateWayLine0517 = () => {
             <SearchPositionInput/>
           </div>
           <div className={"absolute bottom-0 right-[180px] w-[360px] h-[280px]"}>
-            {/*{miniSceneCameraPosition && <SceneMini onCameraChange={onCameraChange}
-                                                   hp={miniSceneCameraHp}
-                                                   onChangeHp={setMiniSceneCameraHp}
-                                                   initialPosition={miniSceneCameraPosition}
-                                                   onZoomChange={onZoomChange}
-                                                   onChangeMode={onChangeMode}
-            />}*/}
+            {miniSceneCameraPosition &&
+              <SceneMini
+                onCameraChange={onCameraChange}
+                hp={miniSceneCameraHp}
+                onChangeHp={setMiniSceneCameraHp}
+                initialPosition={miniSceneCameraPosition}
+                onZoomChange={onZoomChange}
+                onChangeMode={onChangeMode}
+              />}
 
             {/*<SceneMini onCameraChange={onCameraChange}
                        hp={miniSceneCameraHp}
