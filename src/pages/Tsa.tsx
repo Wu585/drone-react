@@ -95,7 +95,7 @@ const Tsa = () => {
       }
     } catch (err: any) {
       toast({
-        description: err.data.message,
+        description: "飞行失败！",
         variant: "destructive"
       });
     }

@@ -383,7 +383,7 @@ const Audit = ({currentOrder, onSuccess}: Props) => {
                   </SelectContent>
                 </Select>
                 <FormMessage className="col-span-3 col-start-2"/>
-                <Button className="bg-[#43ABFF] w-24" onClick={() => setSheetVisible(true)}>无人机复核</Button>
+                <Button className="bg-[#43ABFF] w-24" type={"button"} onClick={() => setSheetVisible(true)}>无人机复核</Button>
               </FormItem>
             )}
           />

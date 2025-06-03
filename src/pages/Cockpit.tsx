@@ -41,7 +41,7 @@ import yjqfPng from "@/assets/images/drone/cockpit/yjqf.png";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
-import {EModeCode, EModeCodeMap, RainfallEnum} from "@/types/device.ts";
+import {EDockModeCode, EModeCode, EModeCodeMap, RainfallEnum} from "@/types/device.ts";
 import {cn} from "@/lib/utils.ts";
 import PayloadControl from "@/components/drone/PayloadControl.tsx";
 import compassWrapperPng from "@/assets/images/drone/cockpit/compass-wrapper.png";
@@ -98,6 +98,16 @@ const Cockpit = () => {
   // const instanceId = searchParams.get("instance_id") || "";
   const [instanceId, setInstanceId] = useState("");
   const deviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
+
+  const deviceStatus2 = useMemo(() => {
+    if (!deviceInfo?.dock) return "离线";
+    if (deviceInfo.dock?.basic_osd?.drone_in_dock && !deviceInfo.device) {
+      return "飞行器在舱内，暂无执行任务";
+    } else {
+      return EModeCodeMap[deviceInfo.device?.mode_code];
+    }
+  }, [deviceInfo]);
+
   const deviceStatus = !deviceInfo.device ? EModeCodeMap[EModeCode.Disconnected] : EModeCodeMap[deviceInfo.device?.mode_code];
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -479,7 +489,7 @@ const Cockpit = () => {
           <header
             className={"bg-cockpit-header h-[164px] bg-full-size absolute top-0 w-full left-0 flex justify-center py-4 z-[5] text-lg"}>
             远程控制 - <span
-            className={!deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected ? "text-red-500 px-2 font-bold" : "text-[#00ee8b] px-2 font-bold"}>{deviceStatus}</span>
+            className={deviceInfo.dock?.basic_osd?.drone_in_dock && !deviceInfo.device ? "text-yellow-500 px-2 font-bold" : !deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected ? "text-red-500 px-2 font-bold" : "text-[#00ee8b] px-2 font-bold"}>{deviceStatus2}</span>
           </header>
           <div className={"col-span-1 z-50"}>
             <div
@@ -923,7 +933,8 @@ const Cockpit = () => {
                 />
                 <img src={pointerPng} alt=""
                      className={"absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[50px]"}/>
-                <Button disabled={!hasFlyControlPermission} type={"submit"} className={"bg-transparent absolute bottom-0"}>
+                <Button disabled={!hasFlyControlPermission} type={"submit"}
+                        className={"bg-transparent absolute bottom-0"}>
                   <img src={yjqfPng} alt=""/>
                 </Button>
               </div>

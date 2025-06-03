@@ -1,16 +1,4 @@
-import {
-  AlignJustify, ArrowDown, ArrowUp,
-  ChevronDown,
-  ChevronLeft, ChevronRight,
-  ChevronUp,
-  Copy,
-  Edit,
-  Info,
-  RedoDot,
-  Save,
-  Trash2,
-  XIcon
-} from "lucide-react";
+import {AlignJustify, ChevronLeft, Copy, Save, Trash2, XIcon} from "lucide-react";
 import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
@@ -53,9 +41,8 @@ import {
   dynamicAddDroneModel,
   addLabelWithin, addPyramid, addTakeOffPoint,
   addWayPointWithIndex,
-  moveDroneToTarget,
   removeDroneModel, removePyramid,
-  removeTakeoffPoint, calculateHeading
+  removeTakeoffPoint, getHeading, calculateHeading, calculateDirection
 } from "@/hooks/drone/wayline";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
@@ -66,8 +53,6 @@ import * as egm96 from "egm96-universal";
 import {useSetViewByWaylineData} from "@/hooks/drone/wayline/useSetViewByWaylineData.ts";
 import CreateWaylineScene from "@/components/drone/wayline/CreateWaylineScene.tsx";
 import SearchPositionInput from "@/components/drone/SearchPositionInput.tsx";
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip.tsx";
-import Keyboard from "@/components/drone/public/Keyboard.tsx";
 
 interface WayPoint {
   id: string;
@@ -171,7 +156,7 @@ const actionList = [
   {
     name: "变焦",
     func: "zoom",
-    param: 1
+    param: 5
   },
   {
     name: "全景拍照",
@@ -320,6 +305,7 @@ const CreateWayLine0517 = () => {
   const globalHeight = +form.watch("global_height"); // 提供默认值
   const takeOffSecurityHeight = +form.watch("take_off_security_height");
   const fly_to_wayline_mode = form.watch("fly_to_wayline_mode");
+  const waypoint_heading_mode = form.watch("waypoint_heading_mode");
 
   // 起飞点线段终点高度
   const takeoffPointEndHeight = useMemo(() => {
@@ -369,18 +355,18 @@ const CreateWayLine0517 = () => {
     };
   }, [waypoints]);
 
-  useEffect(() => {
-    if (!selectedWaypointId) return;
-    const waypoint = waypoints[selectedWaypointId - 1];
-    if (waypoint) {
-      const action1 = waypoint.actions?.find((action: any) => action.type === "gimbal_yaw_rotate_angle");
-      const action2 = waypoint.actions?.find((action: any) => action.type === "gimbal_pitch_rotate_angle");
-      setMiniSceneCameraHp({
-        heading: action1 ? action1.param * (Math.PI / 180) : 0,
-        pitch: action2 ? action2.param * (Math.PI / 180) : 0
-      });
-    }
-  }, [selectedWaypointId, waypoints]);
+  /* useEffect(() => {
+     if (!selectedWaypointId) return;
+     const waypoint = waypoints[selectedWaypointId - 1];
+     if (waypoint) {
+       const action1 = waypoint.actions?.find((action: any) => action.type === "gimbal_yaw_rotate_angle");
+       const action2 = waypoint.actions?.find((action: any) => action.type === "gimbal_pitch_rotate_angle");
+       setMiniSceneCameraHp({
+         heading: action1 ? action1.param * (Math.PI / 180) : 0,
+         pitch: action2 ? action2.param * (Math.PI / 180) : 0
+       });
+     }
+   }, [selectedWaypointId, waypoints]);*/
 
   // 选中拖拽
   useEffect(() => {
@@ -492,6 +478,10 @@ const CreateWayLine0517 = () => {
       const height = currentWayPoint.useGlobalHeight ? globalHeight : currentWayPoint.height!;
       const {longitude, latitude} = currentWayPoint;
       setMiniSceneCameraPosition({longitude, latitude, height});
+      // setMiniSceneCameraHp({
+      //   heading: Cesium.Math.toRadians(30),
+      //   pitch: 0
+      // });
     } else if (takeoffPoint) {
       setMiniSceneCameraPosition({
         ...takeoffPoint,
@@ -499,20 +489,6 @@ const CreateWayLine0517 = () => {
       });
     }
   }, [takeoffPoint, waypoints, globalHeight, takeoffPointEndHeight, selectedWaypointId]);
-
-  /*const miniSceneCameraPosition = useMemo(() => {
-    if (selectedWaypointId) {
-      const currentWayPoint = waypoints[selectedWaypointId - 1];
-      const height = currentWayPoint.useGlobalHeight ? globalHeight : currentWayPoint.height!;
-      const {longitude, latitude} = currentWayPoint;
-      return {longitude, latitude, height};
-    } else if (takeoffPoint) {
-      return {
-        ...takeoffPoint,
-        height: takeoffPointEndHeight
-      };
-    }
-  }, [takeoffPoint, waypoints, globalHeight, takeoffPointEndHeight, selectedWaypointId]);*/
 
   // 无人机模型的坐标及偏航角参数
   const dronePositionRef = useRef<{
@@ -845,36 +821,103 @@ const CreateWayLine0517 = () => {
     } else {
       if (!selectedWaypointId) return;
       const index = selectedWaypointId - 1;
+      console.log('index');
+      console.log(index);
       removePyramid();
       const longitude = waypoints[index].longitude;
       const latitude = waypoints[index].latitude;
       const height = waypoints[index].useGlobalHeight ? globalHeight : waypoints[index].height!;
       const heading = waypoints[index].actions?.find(action => action.func === "rotateYaw")?.param || 0;
+      const gimbal_yaw_rotate_angle = waypoints[index].actions?.find(action => action.type === "gimbal_yaw_rotate_angle")?.param || 0;
+      const gimbal_pitch_rotate_angle = waypoints[index].actions?.find(action => action.type === "gimbal_pitch_rotate_angle")?.param || 0;
       dronePositionRef.current = {
         longitude,
         latitude,
         height,
         heading
       };
-      const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
-      const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
-      pyramidPositionRef.current = {
-        position: {
-          longitude,
-          latitude,
-          height,
-        },
-        direction: pyramidPositionRef.current?.direction || Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
-        sideAndDistance: {
-          side: 50,
-          distance: 200
+      if (selectedWaypointId === 1) {
+        const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
+        const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
+        const direction = calculateDirection(gimbal_yaw_rotate_angle || 0, gimbal_pitch_rotate_angle || 0);
+        console.log("direction");
+        console.log(direction);
+        pyramidPositionRef.current = {
+          position: {
+            longitude,
+            latitude,
+            height,
+          },
+          // direction: pyramidPositionRef.current?.direction || Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
+          direction: Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
+          sideAndDistance: {
+            side: 50,
+            distance: 200
+          }
+        };
+        console.log(11111);
+        setMiniSceneCameraHp({
+          heading: Cesium.Math.toRadians(gimbal_yaw_rotate_angle || 0),
+          pitch: Cesium.Math.toRadians(gimbal_pitch_rotate_angle || 0)
+        });
+      } else {
+        // const pitch_rotate_angle =
+        if (waypoint_heading_mode !== "followWayline") {
+          // 视棱锥朝向朝北
+          const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, height);
+          const forwardPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude + 0.1, height);  // 正北方向
+          pyramidPositionRef.current = {
+            position: {
+              longitude,
+              latitude,
+              height,
+            },
+            // direction: pyramidPositionRef.current?.direction || Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
+            direction: Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(forwardPosition, topPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
+            sideAndDistance: {
+              side: 50,
+              distance: 200
+            }
+          };
+        } else {
+          // 视棱锥朝向跟随航线
+          const topPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude, 0);
+          const lastLongitude = waypoints[selectedWaypointId - 2].longitude;
+          const lastLatitude = waypoints[selectedWaypointId - 2].latitude;
+          // const lastPoiHeight = waypoints[selectedWaypointId - 2].height;
+          const forwardPosition = Cesium.Cartesian3.fromDegrees(lastLongitude, lastLatitude, 0);
+          // 计算方向向量（从forwardPosition指向topPosition）
+          const directionVector = Cesium.Cartesian3.subtract(topPosition, forwardPosition, new Cesium.Cartesian3());
+          // 归一化
+          const direction = Cesium.Cartesian3.normalize(directionVector, new Cesium.Cartesian3());
+          pyramidPositionRef.current = {
+            position: {
+              longitude,
+              latitude,
+              height,
+            },
+            // direction: pyramidPositionRef.current?.direction || Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(topPosition, forwardPosition, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
+            direction,
+            sideAndDistance: {
+              side: 50,
+              distance: 200
+            }
+          };
+          dronePositionRef.current.heading = heading || calculateHeading({
+            longitude: lastLongitude,
+            latitude: lastLatitude
+          }, {longitude, latitude});
+          setMiniSceneCameraHp({
+            heading: Cesium.Math.toRadians(gimbal_yaw_rotate_angle || dronePositionRef.current.heading),
+            pitch: Cesium.Math.toRadians(gimbal_pitch_rotate_angle || 0)
+          });
         }
-      };
+      }
       addPyramid(pyramidPositionRef.current);
       removeDroneModel();
       dynamicAddDroneModel(dronePositionRef.current);
     }
-  }, [takeoffPointEndHeight, takeoffPoint, globalHeight, waypoints, selectedWaypointId]);
+  }, [takeoffPointEndHeight, takeoffPoint, globalHeight, waypoints, selectedWaypointId, waypoint_heading_mode]);
 
   const addWaypointAfter = (currentIndex: number) => {
     if (!takeoffPoint) return toast({
@@ -1181,26 +1224,6 @@ const CreateWayLine0517 = () => {
     }
   }, [form.watch("auto_flight_speed"), waylineInfo.distance]);
 
-  const onChangeWaypointPosition = (e, waypoint: WayPoint) => {
-    const [newLongitude, newLatitude] = e.target.value.split(",").map(Number);
-    if (isNaN(newLongitude) || isNaN(newLatitude)) {
-      return;
-    }
-
-    // Update the waypoint position
-    const newWaypoints = waypoints.map(wp => {
-      if (wp.id === waypoint.id) {
-        return {
-          ...wp,
-          longitude: newLongitude,
-          latitude: newLatitude
-        };
-      }
-      return wp;
-    });
-    setWaypoints(newWaypoints);
-  };
-
   return (
     <Form {...form}>
       <form className={"w-full h-full flex flex-col"} onSubmit={form.handleSubmit(onSubmit, onError)}>
@@ -1251,16 +1274,9 @@ const CreateWayLine0517 = () => {
                         </div>
                         <div className="flex flex-col">
                           <span className="text-sm">高度: {waypoint.height}m</span>
-                          <div className={"flex items-center space-x-2"}>
-                            <Input className={"text-xs text-gray-400 h-6 bg-transparent px-0 border-none"}
-                                   value={`${waypoint.longitude.toFixed(6)},${waypoint.latitude.toFixed(6)}`}
-                                   onChange={(e) => onChangeWaypointPosition(e, waypoint)}
-                            />
-                            {/*<span className="text-xs text-gray-400 whitespace-nowrap">*/}
-                            {/*  {waypoint.longitude.toFixed(6)},{waypoint.latitude.toFixed(6)}*/}
-                            {/*</span>*/}
-                            {/*<Edit size={12} color={"#d0d0d0"} className={"cursor-pointer"}/>*/}
-                          </div>
+                          <span className="text-xs text-gray-400">
+                            {waypoint.longitude.toFixed(6)}, {waypoint.latitude.toFixed(6)}
+                          </span>
                         </div>
                       </div>
                       <div className="flex space-x-2">
@@ -1412,19 +1428,7 @@ const CreateWayLine0517 = () => {
                   name="global_height"
                   render={({field}) => (
                     <FormItem className={"rounded-md flex bg-[#3c3c3c] px-2 py-2 flex-col space-y-2"}>
-                      <FormLabel className={"flex items-center space-x-2"}>
-                        <span>航线高度(海拔高度)</span>
-                        <TooltipProvider delayDuration={300}>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info size={14}/>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>建议80~120米</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </FormLabel>
+                      <FormLabel>航线高度(海拔高度)</FormLabel>
                       <FormControl>
                         <div className={"flex space-x-2 items-center"}>
                           <Input className={"bg-transparent"} {...field} onChange={(e) => {
@@ -1447,19 +1451,7 @@ const CreateWayLine0517 = () => {
                   name="auto_flight_speed"
                   render={({field}) => (
                     <FormItem className={"rounded-md flex bg-[#3c3c3c] px-2 py-2 flex-col space-y-2"}>
-                      <FormLabel className={"flex items-center space-x-2"}>
-                        <span>全局航线速度</span>
-                        <TooltipProvider delayDuration={300}>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info size={14}/>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>建议8~12米每秒</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </FormLabel>
+                      <FormLabel>全局航线速度</FormLabel>
                       <FormControl>
                         <div className="flex items-center space-x-2 justify-between">
                           <Button
@@ -1505,19 +1497,7 @@ const CreateWayLine0517 = () => {
                   name="global_transitional_speed"
                   render={({field}) => (
                     <FormItem className={"rounded-md flex bg-[#3c3c3c] px-2 py-2 flex-col space-y-2"}>
-                      <FormLabel className={"flex items-center space-x-2"}>
-                        <span>起飞速度</span>
-                        <TooltipProvider delayDuration={300}>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info size={14}/>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>建议8~12米每秒</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </FormLabel>
+                      <FormLabel>起飞速度</FormLabel>
                       <FormControl>
                         <div className="flex items-center space-x-2 justify-between">
                           <Button
@@ -1699,11 +1679,6 @@ const CreateWayLine0517 = () => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
-                        disabled={currentWayPoint?.useGlobalHeight}
-                        onClick={() => setCurrentWayPoint({
-                          ...currentWayPoint!,
-                          height: +(currentWayPoint?.height - 0.1).toFixed(1)
-                        })}
                         className="w-6 h-6 bg-[#3c3c3c] rounded-full flex items-center justify-center hover:bg-[#4c4c4c]">-
                       </button>
                       <Slider disabled={currentWayPoint?.useGlobalHeight}
@@ -1714,11 +1689,6 @@ const CreateWayLine0517 = () => {
                                 });
                               }} max={200} min={20} step={1} value={[currentWayPoint?.height || 0]}/>
                       <button
-                        disabled={currentWayPoint?.useGlobalHeight}
-                        onClick={() => setCurrentWayPoint({
-                          ...currentWayPoint!,
-                          height: +(currentWayPoint?.height + 0.1).toFixed(1)
-                        })}
                         className="w-6 h-6 bg-[#3c3c3c] rounded-full flex items-center justify-center hover:bg-[#4c4c4c]">+
                       </button>
                     </div>
@@ -1749,11 +1719,6 @@ const CreateWayLine0517 = () => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
-                        disabled={currentWayPoint?.useGlobalSpeed}
-                        onClick={() => setCurrentWayPoint({
-                          ...currentWayPoint!,
-                          speed: +(currentWayPoint?.speed - 0.1).toFixed(1)
-                        })}
                         className="w-6 h-6 bg-[#3c3c3c] rounded-full flex items-center justify-center hover:bg-[#4c4c4c]">-
                       </button>
                       <Slider onValueChange={(value) => setCurrentWayPoint({
@@ -1762,11 +1727,6 @@ const CreateWayLine0517 = () => {
                       })} min={1} max={15} value={[currentWayPoint?.speed || 0]}
                               disabled={currentWayPoint?.useGlobalSpeed}/>
                       <button
-                        disabled={currentWayPoint?.useGlobalSpeed}
-                        onClick={() => setCurrentWayPoint({
-                          ...currentWayPoint!,
-                          speed: +(currentWayPoint?.speed + 0.1).toFixed(1)
-                        })}
                         className="w-6 h-6 bg-[#3c3c3c] rounded-full flex items-center justify-center hover:bg-[#4c4c4c]">+
                       </button>
                     </div>
@@ -2576,68 +2536,26 @@ const CreateWayLine0517 = () => {
             <SearchPositionInput/>
           </div>
           <div className={"absolute bottom-0 right-[180px] w-[360px] h-[280px]"}>
-            {miniSceneCameraPosition && <SceneMini onCameraChange={onCameraChange}
-                                                   hp={miniSceneCameraHp}
-                                                   onChangeHp={setMiniSceneCameraHp}
-                                                   initialPosition={miniSceneCameraPosition}
-                                                   onZoomChange={onZoomChange}
-                                                   onChangeMode={onChangeMode}
-            />}
+            {miniSceneCameraPosition &&
+              <SceneMini
+                onCameraChange={onCameraChange}
+                hp={miniSceneCameraHp}
+                onChangeHp={setMiniSceneCameraHp}
+                initialPosition={miniSceneCameraPosition}
+                onZoomChange={onZoomChange}
+                onChangeMode={onChangeMode}
+              />}
+
+            {/*<SceneMini onCameraChange={onCameraChange}
+                       hp={miniSceneCameraHp}
+                       onChangeHp={setMiniSceneCameraHp}
+                       initialPosition={miniSceneCameraPosition}
+                       onZoomChange={onZoomChange}
+                       onChangeMode={onChangeMode}
+            />*/}
           </div>
-          <div className={"absolute bottom-12 left-1/2 -translate-x-1/2 overflow-hidden flex items-center "}>
-            <div className={"grid grid-cols-4 pl-[24px]"}>
-              <div className={"col-span-3 grid grid-cols-3 gap-x-4 gap-y-4"}>
-                <div className={"content-center flex flex-col space-y-2"}>
-                  <RedoDot className={"transform scale-x-[-1]"} color={"#6f6767"}/>
-                  <Keyboard keyboard={"Q"}/>
-                </div>
-                <div className={"content-center flex flex-col space-y-2"}>
-                  <ChevronUp color={"#6f6767"}/>
-                  <Keyboard keyboard={"W"}/>
-                </div>
-                <div className={"content-center flex flex-col space-y-2"}>
-                  <RedoDot color={"#6f6767"}/>
-                  <Keyboard keyboard={"E"}/>
-                </div>
-                <div className={"content-center flex flex-col space-y-2"}>
-                  <Keyboard keyboard={"A"}/>
-                  <ChevronLeft color={"#6f6767"}/>
-                </div>
-                <div className={"content-center flex flex-col space-y-2"}>
-                  <Keyboard keyboard={"S"}/>
-                  <ChevronDown color={"#6f6767"}/>
-                </div>
-                <div className={"content-center flex flex-col space-y-2"}>
-                  <Keyboard keyboard={"D"}/>
-                  <ChevronRight color={"#6f6767"}/>
-                </div>
-              </div>
-            </div>
-            <div className={"w-64"}>
-              {miniSceneCameraPosition && <Compass heading={miniSceneCameraHp?.heading || 0}/>}
-            </div>
-            <div className={"w-64 text-[#6f6767] space-y-2 font-semibold"}>
-              <div>
-                <span>当前高度：</span>
-                <span>{waypoints[selectedWaypointId - 1]?.height || globalHeight} m</span>
-              </div>
-              <div>
-                <span>当前速度：</span>
-                <span>{waypoints[selectedWaypointId - 1]?.speed || +form.getValues("auto_flight_speed")} m/s</span>
-              </div>
-              <div>
-                <span>飞行器偏航角：</span>
-                <span>{waypoints[selectedWaypointId - 1]?.actions?.find(action => action.func === "rotateYaw")?.param || 0} °</span>
-              </div>
-              <div>
-                <span>云台偏航角：</span>
-                <span>{waypoints[selectedWaypointId - 1]?.actions?.find(action => action.type === "gimbal_yaw_rotate_angle")?.param || 0} °</span>
-              </div>
-              <div>
-                <span>云台俯仰角：</span>
-                <span>{waypoints[selectedWaypointId - 1]?.actions?.find(action => action.type === "gimbal_pitch_rotate_angle")?.param || 0} °</span>
-              </div>
-            </div>
+          <div className={"absolute bottom-12 left-1/2 -translate-x-1/2 overflow-hidden"}>
+            {miniSceneCameraPosition && <Compass heading={miniSceneCameraHp?.heading || 0}/>}
           </div>
           <div className={"absolute right-0 bottom-0 z-100"}>
             <MapChange/>

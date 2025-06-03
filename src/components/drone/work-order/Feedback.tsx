@@ -12,6 +12,7 @@ import {useState} from "react";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useOperationList, WorkOrder} from "@/hooks/drone";
 import dayjs from "dayjs";
+import {MediaPreview} from "@/components/drone/MediaPreview.tsx";
 
 const feedbackSchema = z.object({
   operate_pic_list: z.array(z.string()).min(1, "请至少上传一张图片"),
@@ -135,10 +136,17 @@ const Feedback = ({currentOrder, onSuccess, type = "handle"}: Props) => {
                     <div className="grid grid-cols-8 gap-4">
                       {record.operate_pic_list?.map((pic: string, picIndex: number) => (
                         <div key={picIndex} className="relative aspect-video">
-                          <img
+                          <MediaPreview
                             src={pic}
-                            alt={`处理图片 ${picIndex + 1}`}
-                            className="w-full h-full object-fill rounded-sm"
+                            type="image"
+                            alt="Example Image"
+                            modalWidth="1000px"
+                            modalHeight="800px"
+                            triggerElement={<img
+                              src={pic}
+                              alt={`处理图片 ${picIndex + 1}`}
+                              className="w-full h-full object-fill rounded-sm"
+                            />}
                           />
                         </div>
                       ))}

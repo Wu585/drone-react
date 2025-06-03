@@ -27,7 +27,7 @@ export const useDockControl = () => {
       });
     } catch (err: any) {
       tip && toast({
-        description: `${err.data.message} 指令发送失败！`,
+        description: `指令发送失败！`,
         variant: "destructive"
       });
       throw err.data.message;

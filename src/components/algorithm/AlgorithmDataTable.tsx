@@ -142,7 +142,7 @@ const AlgorithmDataTable = () => {
       await mutateAlgorithmConfigList();
     } catch (err: any) {
       toast({
-        description: err.data.message
+        description: "删除配置失败！"
       });
     }
   };

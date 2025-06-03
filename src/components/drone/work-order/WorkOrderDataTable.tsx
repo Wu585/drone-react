@@ -114,7 +114,10 @@ const WorkOrderDataTable = () => {
   const {data: currentUser} = useCurrentUser();
   const {post} = useAjax();
   const {hasPermission} = usePermission();
-  const isGly = hasPermission("Collection_TicketReview");
+  const isGly = hasPermission("Collection_TicketAssign");
+
+  console.log('isGly');
+  console.log(isGly);
   const urlFix = isGly ? "page" : "pageByOperator";
   const [currentOrder, setCurrentOrder] = useState<WorkOrder | null>(null);
 

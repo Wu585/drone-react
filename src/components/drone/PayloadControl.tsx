@@ -103,7 +103,7 @@ const PayloadControl: FC<Props> = ({
       }, 1000);
     } catch (err: any) {
       toast({
-        description: err.data.message,
+        description: "拍照失败！",
         variant: "destructive"
       });
     }
@@ -136,7 +136,7 @@ const PayloadControl: FC<Props> = ({
       }, 1000);
     } catch (err: any) {
       toast({
-        description: err.data.message,
+        description: recordState ? "停止录像失败！" : "开始录像失败！",
         variant: "destructive"
       });
     }
@@ -168,7 +168,7 @@ const PayloadControl: FC<Props> = ({
       });
     } catch (err: any) {
       toast({
-        description: err.data.message,
+        description: "云台重置失败！",
         variant: "destructive"
       });
     }

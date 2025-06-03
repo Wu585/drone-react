@@ -46,7 +46,7 @@ import dayjs from "dayjs";
 import CreateOrder from "@/components/drone/work-order/CreateOrder.tsx";
 import UploadButton from "@rpldy/upload-button";
 import {getMediaType} from "@/hooks/drone/order";
-import {useNavigate} from "react-router-dom";
+import {useNavigate, useSearchParams} from "react-router-dom";
 import {useMapLoadMedia} from "@/hooks/drone/map-photo";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {MediaPreview} from "@/components/drone/MediaPreview.tsx";
@@ -200,7 +200,8 @@ interface Props {
 
 const MediaDataTable = ({onChangeDir}: Props) => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
-
+  const [searchParams] = useSearchParams();
+  const job_id = searchParams.get("job_id");
   const {get, post} = useAjax();
   const navigate = useNavigate();
   const [downloadingIds] = useState<Set<string>>(new Set());
@@ -224,7 +225,8 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     wayline_name: "",
     parent: 0,
     page: pagination.pageIndex + 1,
-    page_size: pagination.pageSize
+    page_size: pagination.pageSize,
+    job_id
   });
 
   useEffect(() => {
