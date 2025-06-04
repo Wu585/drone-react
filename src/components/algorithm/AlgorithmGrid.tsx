@@ -84,8 +84,6 @@ const AlgorithmGrid = () => {
     await mutateAlgorithmConfigList();
   };
 
-  // max-h-[calc(100vh - 200px)]
-
   return (
     <div className="relative ">
       <div className="flex justify-end mb-4">

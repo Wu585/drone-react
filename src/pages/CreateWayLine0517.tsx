@@ -2589,26 +2589,27 @@ const CreateWayLine0517 = () => {
               <div className={"col-span-3 grid grid-cols-3 gap-x-4 gap-y-4"}>
                 <div className={"content-center flex flex-col space-y-2"}>
                   <RedoDot className={"transform scale-x-[-1]"} color={"#6f6767"}/>
-                  <Keyboard keyboard={"Q"}/>
+                  {/*<Keyboard keyboard={"Q"}/>*/}
+                  <Button type={"button"} className={"bg-[#6f6767]"}>Q</Button>
                 </div>
                 <div className={"content-center flex flex-col space-y-2"}>
                   <ChevronUp color={"#6f6767"}/>
-                  <Keyboard keyboard={"W"}/>
+                  <Button type={"button"} className={"bg-[#6f6767]"}>W</Button>
                 </div>
                 <div className={"content-center flex flex-col space-y-2"}>
                   <RedoDot color={"#6f6767"}/>
-                  <Keyboard keyboard={"E"}/>
+                  <Button type={"button"} className={"bg-[#6f6767]"}>E</Button>
                 </div>
                 <div className={"content-center flex flex-col space-y-2"}>
-                  <Keyboard keyboard={"A"}/>
+                  <Button type={"button"} className={"bg-[#6f6767]"}>A</Button>
                   <ChevronLeft color={"#6f6767"}/>
                 </div>
                 <div className={"content-center flex flex-col space-y-2"}>
-                  <Keyboard keyboard={"S"}/>
+                  <Button type={"button"} className={"bg-[#6f6767]"}>S</Button>
                   <ChevronDown color={"#6f6767"}/>
                 </div>
                 <div className={"content-center flex flex-col space-y-2"}>
-                  <Keyboard keyboard={"D"}/>
+                  <Button type={"button"} className={"bg-[#6f6767]"}>D</Button>
                   <ChevronRight color={"#6f6767"}/>
                 </div>
               </div>
@@ -2616,7 +2617,7 @@ const CreateWayLine0517 = () => {
             <div className={"w-64"}>
               {miniSceneCameraPosition && <Compass heading={miniSceneCameraHp?.heading || 0}/>}
             </div>
-            <div className={"w-64 text-[#6f6767] space-y-2 font-semibold"}>
+            <div className={" text-[#6f6767] space-y-2 font-semibold flex flex-col content-center rounded-lg px-8"}>
               <div>
                 <span>当前高度：</span>
                 <span>{waypoints[selectedWaypointId - 1]?.height || globalHeight} m</span>
