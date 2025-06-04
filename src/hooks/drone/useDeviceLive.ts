@@ -144,7 +144,7 @@ export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, dr
         url: CURRENT_CONFIG.rtmpURL,
         url_type: 1,
         video_id: isDock ? dockVideoId : droneVideoId,
-        video_quality: 0,
+        video_quality: 2,
       });
       if (ele) {
         const url = res.data.data.url;

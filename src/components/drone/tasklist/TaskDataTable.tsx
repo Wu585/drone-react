@@ -38,10 +38,12 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {Input} from "@/components/ui/input.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import dayjs from "dayjs";
+import {useNavigate} from "react-router-dom";
 
 const TaskDataTable = () => {
   const {delete: deleteClient, put, post} = useAjax();
   const departId = localStorage.getItem("departId");
+  const navigate = useNavigate();
 
   const columns: ColumnDef<Task>[] = useMemo(() => {
     return [
@@ -138,7 +140,9 @@ const TaskDataTable = () => {
         header: "媒体上传",
         size: 140,
         cell: ({row}) => {
-          return <div className={"flex items-center "}>
+          return <div
+            className={cn("flex items-center ", row.original.uploaded_count > 0 && "cursor-pointer hover:text-green-500")}
+            onClick={() => row.original.uploaded_count > 0 && row.original.job_id && navigate(`/media?job_id=${row.original.job_id}`)}>
             <Circle fill={formatMediaTaskStatus(row.original).color} className={"w-4 h-4"}/>
             <span>{formatMediaTaskStatus(row.original).text}
               {formatMediaTaskStatus(row.original).number && `${formatMediaTaskStatus(row.original).number}`}</span>

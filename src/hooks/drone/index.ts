@@ -72,6 +72,7 @@ export interface Pagination {
   type?: number;
   dock_sn?: string;
   keyword?: string;
+  job_id?: string | null;
 }
 
 export interface WaylineItem {
@@ -424,7 +425,7 @@ interface FileData {
 }
 
 // Get Media files
-export const useMediaList = (workspaceId: string, body: Pagination) => {
+export const useMediaList = (workspaceId: string, body?: Pagination) => {
   const {post} = useAjax();
   // const url = `${MEDIA_HTTP_PREFIX}/files/${workspaceId}/files`;
   const url = `${MEDIA_HTTP_PREFIX}/files/${workspaceId}/page`;

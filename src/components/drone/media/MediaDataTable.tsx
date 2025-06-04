@@ -202,9 +202,8 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const [searchParams] = useSearchParams();
   const job_id = searchParams.get("job_id");
-  const {get, post} = useAjax();
+  const {post} = useAjax();
   const navigate = useNavigate();
-  const [downloadingIds] = useState<Set<string>>(new Set());
   const [displayType, setDisplayType] = useState<0 | 1>(0);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -216,7 +215,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     pageSize: 10
   });
 
-  const [queryParams, setQueryParams] = useState({
+  const defaultParams = {
     types: [] as number[],
     payloads: [] as string[],
     begin_time: "",
@@ -226,8 +225,9 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     parent: 0,
     page: pagination.pageIndex + 1,
     page_size: pagination.pageSize,
-    job_id
-  });
+  };
+
+  const [queryParams, setQueryParams] = useState(defaultParams);
 
   useEffect(() => {
     setQueryParams(prev => ({
@@ -251,6 +251,12 @@ const MediaDataTable = ({onChangeDir}: Props) => {
 
   const {data, mutate} = useMediaList(workspaceId, queryParams);
 
+  const {data: defaultData} = useMediaList(workspaceId, job_id ? {
+    page: 1,
+    page_size: 10,
+    job_id
+  } : undefined);
+
   const {
     setName,
     name,
@@ -268,6 +274,16 @@ const MediaDataTable = ({onChangeDir}: Props) => {
       type: MediaFileType.DIR
     }
   ]);
+
+  useEffect(() => {
+    if (!defaultData) return;
+    updateQuery({parent: defaultData.list?.[0]?.id});
+    setBreadcrumbList([...breadcrumbList, {
+      id: 660,
+      file_name: defaultData.list?.[0]?.file_name,
+      type: MediaFileType.DIR
+    }]);
+  }, [defaultData, updateQuery]);
 
   // 创建工单面板控制
   const [createOrderVisible, setCreateOrderVisible] = useState(false);
@@ -311,6 +327,9 @@ const MediaDataTable = ({onChangeDir}: Props) => {
           file_name: "全部文件夹",
           type: MediaFileType.DIR
         }]);
+        updateQuery({
+          parent: 0,
+        });
       } else {
         // 如果点击的是已存在的面包屑项
         const existingIndex = breadcrumbList.findIndex(item => item.id === file.id);
@@ -943,6 +962,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          {/*<Button className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]">重置</Button>*/}
           <SquareMenu onClick={() => setDisplayType(0)} size={18} color={displayType === 0 && "#1997e6" || "white"}
                       className={cn("cursor-pointer")}/>
           <Grid3X3 onClick={() => setDisplayType(1)} size={18} color={displayType === 1 && "#1997e6" || "white"}

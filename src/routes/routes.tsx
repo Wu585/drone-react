@@ -15,7 +15,6 @@ import DepartPage from "@/pages/DepartPage.tsx";
 import Screen from "@/pages/Screen.tsx";
 import BookOrderPage from "@/pages/BookOrderPage.tsx";
 import TestStep from "@/pages/TestStep.tsx";
-import CreateWayLine from "@/pages/CreateWayLine.tsx";
 import Elements from "@/pages/Elements.tsx";
 import MapPhoto from "@/pages/MapPhoto.tsx";
 import TaskCreateApply from "@/pages/TaskCreateApply.tsx";
