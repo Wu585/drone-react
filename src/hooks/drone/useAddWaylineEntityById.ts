@@ -6,12 +6,14 @@ import {waylinePointConfig} from "@/lib/wayline.ts";
 import * as egm96 from "egm96-universal";
 
 export const useAddWaylineEntityById = (waylineId?: string) => {
+  console.log('waylineId');
+  console.log(waylineId);
   const {data: currentWaylineData} = useWaylineById(waylineId);
 
   // 撒点撒线
   useEffect(() => {
     if (!currentWaylineData) return;
-    if (currentWaylineData && currentWaylineData.route_point_list && currentWaylineData.route_point_list.length > 0) {
+    if (currentWaylineData.route_point_list && currentWaylineData.route_point_list.length > 0) {
       getCustomSource("waylines-preview")?.entities.removeAll();
       const takeoffPoint = currentWaylineData.take_off_ref_point?.split(",");
       if (takeoffPoint && takeoffPoint.length > 1) {

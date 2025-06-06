@@ -258,7 +258,7 @@ const DronePanel = () => {
                   <TooltipTrigger>
                     <div className={"flex items-center grid-cols-2 gap-x-[2px]"}>
                       <span><Earth size={10}/></span>
-                      <span>{deviceInfo.dock?.basic_osd?.network_state?.rate} kb/s</span>
+                      <span>{deviceInfo.dock?.basic_osd?.network_state?.rate.toFixed(2)} kb/s</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>

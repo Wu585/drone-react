@@ -143,7 +143,7 @@ const Tsa = () => {
                     </div>
                     <div className={"px-[20px] content-center"}>
                       <Button
-                        disabled={deviceState.dockInfo[dock.gateway.sn]?.basic_osd?.mode_code === EModeCode.Disconnected}
+                        disabled={!deviceState.dockInfo[dock.gateway.sn] || deviceState.dockInfo[dock.gateway.sn]?.basic_osd?.mode_code === EModeCode.Disconnected}
                         onClick={() => switchVisible(dock)}
                         className={cn("cursor-pointer p-0 bg-transparent", deviceState.dockInfo[dock.gateway.sn] && deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code !== EModeCode.Disconnected ? "" : "cursor-not-allowed")}>
                         {osdVisible.gateway_sn === dock.gateway.sn && osdVisible.visible ? <Eye/> : <EyeOff/>}

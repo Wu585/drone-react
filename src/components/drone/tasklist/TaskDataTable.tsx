@@ -20,7 +20,7 @@ import {cn} from "@/lib/utils.ts";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {formatMediaTaskStatus, formatTaskStatus, groupTasksByDate, UpdateTaskStatus} from "@/hooks/drone/task";
-import {Circle} from "lucide-react";
+import {Circle, Loader2} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -372,8 +372,11 @@ const TaskDataTable = () => {
     },
   });
 
+  const [loading, setLoading] = useState(false);
+
   const onGenerateReports = async () => {
     try {
+      setLoading(true);
       const res: any = await post(
         `${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/flight-reports/generate`,
         queryParams,
@@ -406,6 +409,8 @@ const TaskDataTable = () => {
         variant: "destructive",
         description: "下载报告失败"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -481,7 +486,10 @@ const TaskDataTable = () => {
               </SelectContent>
             </Select>
           </div>
-          <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]  text-base"} onClick={onGenerateReports}>
+          <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]  text-base"}
+                  disabled={loading}
+                  onClick={onGenerateReports}>
+            {loading && <Loader2 className="h-4 w-4 animate-spin" size={16}/>}
             <span>导出飞行报告</span>
           </Button>
         </div>

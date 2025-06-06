@@ -9,12 +9,11 @@ import {Input} from "@/components/ui/input.tsx";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {DateTimePicker} from "@/components/ui/date-time-picker.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
-import Scene from "@/components/drone/public/Scene.tsx";
 import {useCallback, useEffect, useRef, useState} from "react";
 import {pickPosition} from "@/components/toolbar/tools";
 import {useItemFinishListener} from "@rpldy/uploady";
 import UploadButton from "@rpldy/upload-button";
-import {Eye, UploadCloud, X} from "lucide-react";
+import {UploadCloud, X} from "lucide-react";
 import {cn, uuidv4} from "@/lib/utils";
 import {eventMap, WorkOrder} from "@/hooks/drone";
 import {PreviewMethods, UploadPreview} from "@rpldy/upload-preview";
@@ -22,6 +21,7 @@ import {getMediaType} from "@/hooks/drone/order";
 import {Button} from "@/components/ui/button.tsx";
 import ReviewSheet from "@/components/drone/work-order/ReviewSheet.tsx";
 import {MediaPreview} from "@/components/drone/MediaPreview.tsx";
+import CreateOrderScene from "@/components/drone/public/CreateOrderScene.tsx";
 
 const createOrderSchema = z.object({
   name: z.string().min(1, "请输入事件名称"),
@@ -399,7 +399,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
                 <div className={"col-span-3 space-y-4 whitespace-nowrap"}>
                   <Input disabled={isPreview} {...field} className="rounded-none bg-[#072E62]/[.7] border-[#43ABFF]"/>
                   <div>
-                    <Scene/>
+                    <CreateOrderScene/>
                   </div>
                   <span>经纬度：{formattedLongitude}, {formattedLatitude}</span>
                   {isPreview && <Button className={"h-8 ml-2 bg-[#43ABFF]"} type={"button"}

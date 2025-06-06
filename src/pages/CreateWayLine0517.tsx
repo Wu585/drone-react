@@ -2617,28 +2617,29 @@ const CreateWayLine0517 = () => {
             <div className={"w-64"}>
               {miniSceneCameraPosition && <Compass heading={miniSceneCameraHp?.heading || 0}/>}
             </div>
-            <div className={" text-[#6f6767] space-y-2 font-semibold flex flex-col content-center rounded-lg px-8"}>
-              <div>
-                <span>当前高度：</span>
-                <span>{waypoints[selectedWaypointId - 1]?.height || globalHeight} m</span>
-              </div>
-              <div>
-                <span>当前速度：</span>
-                <span>{waypoints[selectedWaypointId - 1]?.speed || +form.getValues("auto_flight_speed")} m/s</span>
-              </div>
-              <div>
-                <span>飞行器偏航角：</span>
-                <span>{waypoints[selectedWaypointId - 1]?.actions?.find(action => action.func === "rotateYaw")?.param || 0} °</span>
-              </div>
-              <div>
-                <span>云台偏航角：</span>
-                <span>{waypoints[selectedWaypointId - 1]?.actions?.find(action => action.type === "gimbal_yaw_rotate_angle")?.param || 0} °</span>
-              </div>
-              <div>
-                <span>云台俯仰角：</span>
-                <span>{waypoints[selectedWaypointId - 1]?.actions?.find(action => action.type === "gimbal_pitch_rotate_angle")?.param || 0} °</span>
-              </div>
-            </div>
+            {selectedWaypointId &&
+              <div className={"text-[#6f6767] space-y-2 font-semibold flex flex-col content-center rounded-lg px-8"}>
+                <div>
+                  <span>当前高度：</span>
+                  <span>{waypoints[selectedWaypointId - 1]?.height || globalHeight} m</span>
+                </div>
+                <div>
+                  <span>当前速度：</span>
+                  <span>{waypoints[selectedWaypointId - 1]?.speed || +form.getValues("auto_flight_speed")} m/s</span>
+                </div>
+                <div>
+                  <span>飞行器偏航角：</span>
+                  <span>{waypoints[selectedWaypointId - 1]?.actions?.find(action => action.func === "rotateYaw")?.param || 0} °</span>
+                </div>
+                <div>
+                  <span>云台偏航角：</span>
+                  <span>{waypoints[selectedWaypointId - 1]?.actions?.find(action => action.type === "gimbal_yaw_rotate_angle")?.param || 0} °</span>
+                </div>
+                <div>
+                  <span>云台俯仰角：</span>
+                  <span>{waypoints[selectedWaypointId - 1]?.actions?.find(action => action.type === "gimbal_pitch_rotate_angle")?.param || 0} °</span>
+                </div>
+              </div>}
           </div>
           <div className={"absolute right-0 bottom-0 z-100"}>
             <MapChange/>

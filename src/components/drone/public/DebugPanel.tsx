@@ -54,7 +54,7 @@ const DebugPanel = ({sn, onClose}: Props) => {
       });
     } catch (err: any) {
       toast({
-        description: err.data.message,
+        description: mode ? "开启debug模式失败！" : "关闭debug模式失败！",
         variant: "destructive"
       });
     }
@@ -72,13 +72,19 @@ const DebugPanel = ({sn, onClose}: Props) => {
       }
     } catch (e: any) {
       toast({
-        description: e.data.message,
+        description: "指令下发失败",
         variant: "destructive"
       });
     }
   };
 
   const onResetPosition = async () => {
+    if (!realTimeDeviceInfo.dock || !realTimeDeviceInfo.dock.basic_osd) {
+      return toast({
+        description: "机场无OSD数据信息！",
+        variant: "destructive"
+      });
+    }
     const position = {
       longitude: realTimeDeviceInfo.dock.basic_osd.longitude,
       latitude: realTimeDeviceInfo.dock.basic_osd.latitude,

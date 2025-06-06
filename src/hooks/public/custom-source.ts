@@ -8,7 +8,7 @@ export const useEntityCustomSource = (sourceName: string) => {
     return () => {
       viewer.dataSources.remove(dataSource);
     };
-  }, []);
+  }, [sourceName]);
 };
 
 export const getCustomSource = (sourceName: string): {

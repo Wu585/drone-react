@@ -81,8 +81,7 @@ export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, dr
   const {data: allDeviceList} = useDeviceTopo();
   const dock = deviceList?.find(item => item.sn === dockSn);
   const realtime = useRealTimeDeviceInfo(dockSn);
-  console.log("realtime");
-  console.log(realtime);
+
   const dockVideoId = useMemo(() => {
     // return "165-0-7"
     // return dockSn + "/" + "165-0-7" + "/" + "normal-0";

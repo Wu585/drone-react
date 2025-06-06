@@ -41,7 +41,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/iServerApi/, ""),
       },
       '/weatherApi': {
-        target: 'http://aider.meizu.com/',
+        target: 'https://aider.meizu.com/',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/weatherApi/, ""),
       },

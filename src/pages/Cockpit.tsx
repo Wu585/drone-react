@@ -17,7 +17,7 @@ import {Input} from "@/components/ui/input.tsx";
 import {clarityList} from "@/hooks/drone/useDeviceVideo.ts";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
-import {useOnlineDocks, usePermission} from "@/hooks/drone";
+import {useOnlineDocks, usePermission, useWaylinJobs} from "@/hooks/drone";
 import {z} from "zod";
 import {
   CommanderFlightModeInCommandFlightOptions,
@@ -64,6 +64,8 @@ import CockpitScene from "@/components/drone/public/CockpitScene.tsx";
 import {AlgorithmConfig, AlgorithmPlatform, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
 import JSWebrtc from "@/vendor/jswebrtc.min.js";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
+import {useWeatherInfo} from "@/hooks/flood-prevention/api.ts";
+import {ELocalStorageKey} from "@/types/enum.ts";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -307,6 +309,29 @@ const Cockpit = () => {
     }
   };
 
+  const onFlyTo = async () => {
+    try {
+      await post(`${DRC_API_PREFIX}/devices/${dockSn}/jobs/fly-to-point`, {
+        max_speed: 14,
+        points: [
+          {
+            latitude: contextMenu.latitude,
+            longitude: contextMenu.longitude,
+            height: 100
+          }
+        ]
+      });
+      toast({
+        description: "指点飞行成功"
+      });
+    } catch (err: any) {
+      toast({
+        description: "指点飞行失败！",
+        variant: "destructive"
+      });
+    }
+  };
+
   // 添加状态记录鼠标按下的位置和是否正在拖动
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({x: 0, y: 0});
@@ -466,6 +491,14 @@ const Cockpit = () => {
     }
   }, [currentPlatform, instanceId]);
 
+  const {data: weatherInfo} = useWeatherInfo("101021000");
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const {data: currentJobList} = useWaylinJobs(workspaceId, {
+    page: 1,
+    page_size: 10,
+    status: 2,
+    dock_sn: dockSn
+  });
 
   const result = groupByDevicePlatformAndName(algorithmConfigList?.records || []);
 
@@ -571,7 +604,8 @@ const Cockpit = () => {
             )}>
               <CockpitScene/>
               <RightClickPanel>
-                <MenuItem onClick={onLookAt}>看向这里</MenuItem>
+                {/*<MenuItem onClick={onLookAt}>看向这里</MenuItem>*/}
+                <MenuItem onClick={onFlyTo}>飞向这里</MenuItem>
               </RightClickPanel>
             </div>
             <div className={"ml-[53px] py-[30px]"}>
@@ -940,11 +974,31 @@ const Cockpit = () => {
               </div>
               <div className={"col-span-1"}>
                 <CockpitTitle title={"飞行器当前状态"}/>
-                <div className={"space-y-[10px] mt-[64px]"}>
+                <div className={"space-y-[10px] mt-[16px]"}>
                   <div className={"grid grid-cols-2 px-[26px]"}>
                     <span>当前状态：</span>
                     <span
                       className={cn("font-bold", !deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected ? "text-red-500" : "text-[#00ee8b]")}>{deviceStatus}</span>
+                  </div>
+                  <div>
+                    <div
+                      className={cn("grid grid-cols-2 px-[26px]")}>
+                      <span>当前任务：</span>
+                      <span
+                        className={cn("font-bold", currentJobList?.list?.length && currentJobList?.list?.length > 0 ? "text-green-500" : "text-yellow-500")}>
+                        {currentJobList?.list?.[0]?.job_name || "暂无任务"}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      className={cn("grid grid-cols-2 px-[26px]")}>
+                      <span>当前航线：</span>
+                      <span
+                        className={cn("font-bold", currentJobList?.list?.length && currentJobList?.list?.length > 0 ? "text-green-500" : "text-yellow-500")}>
+                        {currentJobList?.list?.[0]?.file_name || "暂无航线"}
+                      </span>
+                    </div>
                   </div>
                   <div>
                     <div className={"grid grid-cols-2 px-[26px]"}>
@@ -968,6 +1022,18 @@ const Cockpit = () => {
                     <div className={"grid grid-cols-2 px-[26px]"}>
                       <span>设备SN：</span>
                       <span>{deviceType?.sn || str}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className={"grid grid-cols-2 px-[26px]"}>
+                      <span>当前经度：</span>
+                      <span>{deviceInfo?.device?.longitude || str} °</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className={"grid grid-cols-2 px-[26px]"}>
+                      <span>当前纬度：</span>
+                      <span>{deviceInfo?.device?.latitude || str} °</span>
                     </div>
                   </div>
                 </div>
@@ -1058,7 +1124,7 @@ const Cockpit = () => {
                 <img src={weatherBasePng} alt=""/>
               </div>*/}
               <div className={"pl-[32px] flex justify-center items-center space-x-2"}>
-                <span>温度：</span>
+                <span>环境温度：</span>
                 <div className={"text-[34px]"}>
                   {deviceInfo.dock?.basic_osd?.environment_temperature}°C
                 </div>
@@ -1087,14 +1153,14 @@ const Cockpit = () => {
                 <img src={windyPng} alt=""/>
                 <div className={"flex flex-col"}>
                   <span>风向</span>
-                  <span className={"text-[18px] text-[#32A3FF]"}>东南风</span>
+                  <span className={"text-[18px] text-[#32A3FF]"}>{weatherInfo?.[0]?.realtime.wD}</span>
                 </div>
               </div>
               <div className={"flex"}>
                 <img src={windPowerPng} alt=""/>
                 <div className={"flex flex-col"}>
                   <span>风力</span>
-                  <span className={"text-[18px] text-[#32A3FF]"}>2级</span>
+                  <span className={"text-[18px] text-[#32A3FF]"}>{weatherInfo?.[0]?.realtime.wS}</span>
                 </div>
               </div>
             </div>

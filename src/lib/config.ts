@@ -25,8 +25,8 @@ export const CURRENT_CONFIG = {
   gbAgentPort: 'Please enter the local port.',
   gbAgentChannel: 'Please enter the channel.',
   // RTSP
-  rtspUserName: 'Please enter the username.',
-  rtspPassword: 'Please enter the password.',
+  rtspUserName: 'admin',
+  rtspPassword: 'password',
   rtspPort: '8554',
   // Agora
   agoraAPPID: '07e91bdb84714bbba89bccc474059503',
