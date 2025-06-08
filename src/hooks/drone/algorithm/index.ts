@@ -14,7 +14,7 @@ export interface AlgorithmConfig {
   description: string;
   id: number;
   warning_level: number;
-  device_list: {
+  device_list?: {
     device_sn: string;
     instance_id: string;
   }[];

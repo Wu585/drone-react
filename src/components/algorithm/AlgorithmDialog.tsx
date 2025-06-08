@@ -12,6 +12,7 @@ import {ALGORITHM_CONFIG_API_PREFIX, AlgorithmPlatform, useAlgorithmConfigById} 
 import {toast} from "@/components/ui/use-toast.ts";
 import {eventMap} from "@/hooks/drone";
 import {Plus, Trash2} from "lucide-react";
+import {useEffect} from "react";
 
 interface Props {
   open: boolean;
@@ -65,7 +66,10 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
   const form = useForm<AlgorithmFormValues>({
     resolver: zodResolver(algorithmFormSchema),
     defaultValues,
-    values: id ? currentConfig : defaultValues
+    values: currentConfig ? {
+      ...currentConfig,
+      device_list: currentConfig.device_list || []
+    } : defaultValues
   });
 
   const algorithm_platform = form.watch("algorithm_platform");
@@ -77,6 +81,7 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
 
   const _onOpenChange = (visible: boolean) => {
     onOpenChange?.(visible);
+    // form.reset(defaultValues);
   };
 
   const _onSubmit = async (values: AlgorithmFormValues) => {
