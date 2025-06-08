@@ -1088,14 +1088,15 @@ const Cockpit = () => {
                     )}
                   >
                   </video>
-                  : <iframe
-                    className={""}
-                    src={`http://218.78.133.200:9090/tm?instanceId=${instanceId || "ce2bd19b-d039-4c5c-b49d-abc8a87696d5"}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}
-                    id={"player3"}></iframe>
-                : currentPlatform === AlgorithmPlatform.CloudPlatForm ? <iframe
+                  : (instanceId ? <iframe
+                      className={""}
+                      src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}
+                      id={"player3"}/> :
+                    <div className={"h-[200px] flex items-center pl-24 text-[#d0d0d0]"}>请选择算法</div>)
+                : currentPlatform === AlgorithmPlatform.CloudPlatForm ? (instanceId ? <iframe
                     className={"w-80 h-60 rounded-[16px]"}
                     id={"player3"}
-                    src={`http://218.78.133.200:9090/tm?instanceId=${instanceId || "b211d582-1211-4f24-b196-60c731eee84c"}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
+                    src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
                     {isFpvFullscreen && (
                       <X
                         className="absolute top-4 right-4 cursor-pointer text-white z-10"
@@ -1103,7 +1104,7 @@ const Cockpit = () => {
                         onClick={exitFpvFullscreen}
                       />
                     )}
-                  </iframe> :
+                  </iframe> : <div className={"h-[200px] flex items-center pl-24 text-[#d0d0d0]"}>请选择算法</div>) :
                   <video ref={otherPlatFormAiRef}
                          controls
                          autoPlay

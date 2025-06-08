@@ -3,6 +3,7 @@ import titleBar from "@/assets/images/drone/cockpit/title-bar.png";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
 import {AlgorithmConfig, AlgorithmPlatform, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
+import {ChevronsUpDown} from "lucide-react";
 
 interface Props {
   title?: string;
@@ -71,7 +72,10 @@ const CockpitTitle = ({title, groupList, onGroupChange, groupValue, sn, onClickP
           title === "AI识别" ?
             <Popover>
               <PopoverTrigger>
-                <span className={"text-[18px]"}>{title}</span>
+                <span className={"text-[18px] flex items-center"}>
+                  {title}
+                  <ChevronsUpDown size={18}/>
+                </span>
               </PopoverTrigger>
               <PopoverContent className={"w-48"}>
                 <ToggleGroup type="single" className={"flex flex-col"}>
