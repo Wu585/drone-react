@@ -399,7 +399,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
                 <div className={"col-span-3 space-y-4 whitespace-nowrap"}>
                   <Input disabled={isPreview} {...field} className="rounded-none bg-[#072E62]/[.7] border-[#43ABFF]"/>
                   <div>
-                    <CreateOrderScene/>
+                    <CreateOrderScene currentOrder={currentOrder}/>
                   </div>
                   <span>经纬度：{formattedLongitude}, {formattedLatitude}</span>
                   {isPreview && <Button className={"h-8 ml-2 bg-[#43ABFF]"} type={"button"}

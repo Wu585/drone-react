@@ -160,8 +160,7 @@ const CockpitScene = () => {
     status: 2,
     dock_sn: dockSn
   });
-  console.log('currentJobList');
-  console.log(currentJobList);
+
   useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id, viewerInitialized);
 
   /*useEffect(() => {
