@@ -5,14 +5,19 @@ import takeOffPng from "@/assets/images/drone/wayline/takeoff.svg";
 import {waylinePointConfig} from "@/lib/wayline.ts";
 import * as egm96 from "egm96-universal";
 
-export const useAddWaylineEntityById = (waylineId?: string) => {
-  console.log('waylineId');
-  console.log(waylineId);
+export const useAddWaylineEntityById = (waylineId?: string, viewerInitialized?: boolean) => {
+  // console.log("waylineId");
+  // console.log(waylineId);
   const {data: currentWaylineData} = useWaylineById(waylineId);
+
+  useEffect(() => {
+    if (!waylineId && viewerInitialized)
+      getCustomSource("waylines-preview")?.entities.removeAll();
+  }, [waylineId, viewerInitialized]);
 
   // 撒点撒线
   useEffect(() => {
-    if (!currentWaylineData) return;
+    if (!currentWaylineData || !viewerInitialized) return;
     if (currentWaylineData.route_point_list && currentWaylineData.route_point_list.length > 0) {
       getCustomSource("waylines-preview")?.entities.removeAll();
       const takeoffPoint = currentWaylineData.take_off_ref_point?.split(",");
@@ -89,5 +94,5 @@ export const useAddWaylineEntityById = (waylineId?: string) => {
         });
       });
     }
-  }, [currentWaylineData]);
+  }, [currentWaylineData, viewerInitialized]);
 };

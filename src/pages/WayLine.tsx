@@ -59,7 +59,7 @@ const WayLine = () => {
 
   const [currentWayline, setCurrentWayline] = useState("");
   const {data: currentWaylineData} = useWaylineById(currentWayline);
-  useAddWaylineEntityById(currentWayline);
+  useAddWaylineEntityById(currentWayline, true);
 
   // 计算航线长度
   useEffect(() => {

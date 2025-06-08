@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import {findMapLayer, resetView} from "@/lib/view.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
@@ -51,6 +51,8 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
 
   const {data: deviceTopo} = useDeviceTopo();
 
+  const [viewerInitialized, setViewerInitialized] = useState(false);
+
   useEffect(() => {
     window.viewer = new Cesium.Viewer("cesiumContainer", {
       shadows: true,
@@ -78,7 +80,11 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
 
     const yx = findMapLayer("影像");
     yx && (yx.show = false);
+    setViewerInitialized(true);
 
+    return () => {
+      setViewerInitialized(false);
+    };
   }, []);
 
   useEntityCustomSource("dock");
@@ -197,7 +203,7 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
       }
     } else {
       removeDroneModel();
-      getCustomSource("waylines-preview")?.entities.removeAll();
+      // getCustomSource("waylines-preview")?.entities.removeAll();
     }
   }, [realTimeDeviceInfo]);
 
@@ -209,9 +215,12 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
     status: 2,
     dock_sn: dockSn
   });
-  // console.log('currentJobList');
-  // console.log(currentJobList);
-  useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id);
+
+  if (!dockSn && viewerInitialized) {
+    getCustomSource("waylines-preview")?.entities.removeAll();
+  }
+
+  useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id, viewerInitialized);
 
   return (
     <div id="cesiumContainer" className={"h-full relative"}>

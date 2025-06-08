@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {findMapLayer, resetView} from "@/lib/view.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-source.ts";
@@ -57,6 +57,8 @@ const CockpitScene = () => {
     heading: 0
   });
 
+  const [viewerInitialized, setViewerInitialized] = useState(false);
+
   // const dock = realTimeDeviceInfo
   useEffect(() => {
     window.viewer = new Cesium.Viewer("cesiumContainer", {
@@ -83,6 +85,12 @@ const CockpitScene = () => {
 
     const yx = findMapLayer("影像");
     yx && (yx.show = false);
+
+    setViewerInitialized(true);
+
+    return () => {
+      setViewerInitialized(false);
+    };
   }, []);
 
   // 机场坐标字符串
@@ -142,7 +150,7 @@ const CockpitScene = () => {
       }
     } else {
       removeDroneModel();
-      getCustomSource("waylines-preview")?.entities.removeAll();
+      // getCustomSource("waylines-preview")?.entities.removeAll();
     }
   }, [realTimeDeviceInfo]);
 
@@ -152,8 +160,9 @@ const CockpitScene = () => {
     status: 2,
     dock_sn: dockSn
   });
-
-  useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id);
+  console.log('currentJobList');
+  console.log(currentJobList);
+  useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id, viewerInitialized);
 
   /*useEffect(() => {
     dynamicAddSceneDroneModel(dronePositionRef.current);
