@@ -47,7 +47,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog.tsx";
-import {useWaylineById} from "@/hooks/drone";
+import {useDeviceTopo, useWaylineById} from "@/hooks/drone";
 import {
   addConnectLines,
   dynamicAddDroneModel,
@@ -1201,6 +1201,8 @@ const CreateWayLine0517 = () => {
     setWaypoints(newWaypoints);
   };
 
+  const {data: deviceList} = useDeviceTopo();
+
   return (
     <Form {...form}>
       <form className={"w-full h-full flex flex-col"} onSubmit={form.handleSubmit(onSubmit, onError)}>
@@ -1312,6 +1314,18 @@ const CreateWayLine0517 = () => {
                   render={({field}) => (
                     <FormItem className={"rounded-md flex bg-[#3c3c3c] px-2 py-2 flex-col space-y-2"}>
                       <FormLabel>飞行器选择</FormLabel>
+                      {/*<Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className={"bg-transparent"}>
+                            <SelectValue/>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {deviceList?.map(device => <SelectItem
+                            key={device.id}
+                            value="coordinateTurn">{device.nickname}-{device.children?.nickname}</SelectItem>)}
+                        </SelectContent>
+                      </Select>*/}
                       <FormControl>
                         <Cascader
                           className={"bg-transparent text-white border-white"}
@@ -1322,7 +1336,6 @@ const CreateWayLine0517 = () => {
                               const [droneType, subType] = values;
                               const selectedSeries = deviceData.find(series => series.value === droneType);
                               const selectedModel = selectedSeries?.children?.find(model => model.value === subType);
-
                               if (selectedModel) {
                                 field.onChange({
                                   drone_type: droneType,
@@ -1355,7 +1368,9 @@ const CreateWayLine0517 = () => {
                         >
                           <ToggleGroupItem value="wide">广角</ToggleGroupItem>
                           <ToggleGroupItem value="zoom">变焦</ToggleGroupItem>
-                          <ToggleGroupItem value="ir">红外</ToggleGroupItem>
+                          {/*{form.getValues("device").sub_drone_type}*/}
+                          {form.getValues("device").sub_drone_type === 1 &&
+                            <ToggleGroupItem value="ir">红外</ToggleGroupItem>}
                           <ToggleGroupItem value="visable">可见光</ToggleGroupItem>
                         </ToggleGroup>
                       </FormControl>
@@ -2297,7 +2312,8 @@ const CreateWayLine0517 = () => {
                             >
                               <ToggleGroupItem value="wide">广角</ToggleGroupItem>
                               <ToggleGroupItem value="zoom">变焦</ToggleGroupItem>
-                              <ToggleGroupItem value="ir">红外</ToggleGroupItem>
+                              {+form.getValues("device.sub_drone_type") === 1 &&
+                                <ToggleGroupItem value="ir">红外</ToggleGroupItem>}
                               <ToggleGroupItem value="visable">可见光</ToggleGroupItem>
                             </ToggleGroup>
                           </div>;
@@ -2371,7 +2387,8 @@ const CreateWayLine0517 = () => {
                             >
                               <ToggleGroupItem value="wide">广角</ToggleGroupItem>
                               <ToggleGroupItem value="zoom">变焦</ToggleGroupItem>
-                              <ToggleGroupItem value="ir">红外</ToggleGroupItem>
+                              {+form.getValues("device.sub_drone_type") === 1 &&
+                                <ToggleGroupItem value="ir">红外</ToggleGroupItem>}
                               <ToggleGroupItem value="visable">可见光</ToggleGroupItem>
                             </ToggleGroup>
                           </div>;
@@ -2445,7 +2462,8 @@ const CreateWayLine0517 = () => {
                             >
                               <ToggleGroupItem value="wide">广角</ToggleGroupItem>
                               <ToggleGroupItem value="zoom">变焦</ToggleGroupItem>
-                              <ToggleGroupItem value="ir">红外</ToggleGroupItem>
+                              {+form.getValues("device.sub_drone_type") === 1 &&
+                                <ToggleGroupItem value="ir">红外</ToggleGroupItem>}
                               <ToggleGroupItem value="visable">可见光</ToggleGroupItem>
                             </ToggleGroup>
                           </div>;
