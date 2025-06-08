@@ -1,7 +1,6 @@
 import {
-  Sheet, SheetClose,
+  Sheet,
   SheetContent, SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet.tsx";
@@ -51,15 +50,24 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const {post} = useAjax();
   const deviceState = useSceneStore(state => state.deviceState);
-  // console.log("deviceState");
-  // console.log(deviceState);
-  console.log("device");
-  console.log(device);
+
   const deviceSn = device?.device_sn;
   const currentDock = deviceSn ? deviceState.dockInfo[deviceSn] : null;
   // console.log("currentDock");
   // console.log(currentDock);
-  const dockAccDays = currentDock ? Math.floor(currentDock?.work_osd.acc_time / 3600 / 24) : 0;
+  const dockAccDays = currentDock ? Math.floor(currentDock?.work_osd.acc_time / 3600 / 24) : "--";
+
+  const droneSn = device?.children?.device_sn;
+  const currentDrone = droneSn ? deviceState.deviceInfo[droneSn] : null;
+  console.log("currentDrone");
+  console.log(currentDrone);
+
+  const total_flight_sorties = currentDrone?.total_flight_sorties;
+  const total_flight_time = Math.floor((currentDrone?.total_flight_time || 0) / 60);
+  const total_flight_distance = Math.floor((currentDrone?.total_flight_distance || 0) / 1000);
+  const activation_time = currentDrone?.activation_time ? dayjs.unix(currentDrone.activation_time).format("YYYY-MM-DD") : "--";
+  const batterySn = currentDrone ? currentDrone.battery.batteries[0]?.sn : null;
+  const batteryLoopTime = currentDrone ? currentDrone.battery.batteries[0]?.loop_times : null;
 
   const defaultValues: MaintainanceFormValues = {
     maintenance_type: Maintainance.RoutineMaintenance,
@@ -85,15 +93,16 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
       flight_count: flightCount
     };
     try {
-      const res: any = await post(`${HTTP_PREFIX}/devices/${workspaceId}/maintenance`, body);
-      if (res.data.code === 0) {
-        toast({
-          description: "保养记录创建成功！"
-        });
-        await mutateDeviceMaintainanceList();
-      }
+      await post(`${HTTP_PREFIX}/devices/${workspaceId}/maintenance`, body);
+      toast({
+        description: "保养记录创建成功！"
+      });
+      await mutateDeviceMaintainanceList();
     } catch (err) {
-
+      toast({
+        description: "保养记录创建失败！",
+        variant: "destructive"
+      });
     }
   };
 
@@ -119,7 +128,10 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
         await mutateChildDeviceMaintainanceList();
       }
     } catch (err) {
-
+      toast({
+        description: "保养记录创建失败！",
+        variant: "destructive"
+      });
     }
   };
 
@@ -143,41 +155,51 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
     return deviceMaintainanceList.list.find(item => item.maintenance_type === Maintainance.RoutineMaintenance);
   }, [deviceMaintainanceList]);
 
+  // 机场距离下次常规保养天数
+  const nextRoutineMaintainanceDays = useMemo(() => {
+    if (!lastDeviceRoutineMaintainance) return;
+    const expiration = dayjs(lastDeviceRoutineMaintainance.maintenance_time).add(3, "month");
+    return expiration.diff(dayjs(), "day");
+  }, [lastDeviceRoutineMaintainance]);
+
+  // 机场距离下次常规保养是否过期
+  const isExpired = useMemo(() => {
+    if (!lastDeviceRoutineMaintainance) return;
+    return dayjs(lastDeviceRoutineMaintainance.maintenance_time).add(3, "month").isBefore(dayjs());
+  }, [lastDeviceRoutineMaintainance]);
+
+  // 机场距离下次常规保养过期天数
+  const routineMaintainanceExpiredDays = useMemo(() => {
+    if (!lastDeviceRoutineMaintainance || !isExpired) return;
+    return dayjs().diff(dayjs(lastDeviceRoutineMaintainance.maintenance_time).add(3, "month"), "day");
+  }, [lastDeviceRoutineMaintainance, isExpired]);
+
+
   // 机场最新一次深度保养记录
   const lastDeviceDeepMaintainance = useMemo(() => {
     if (!deviceMaintainanceList) return;
     return deviceMaintainanceList.list.find(item => item.maintenance_type === Maintainance.DeepMaintenance);
   }, [deviceMaintainanceList]);
 
-  // 机场常规保养超期天数
-  const deviceMaintainanceOverTime = useMemo(() => {
-    const currentDate = dayjs();
-    if (!lastDeviceRoutineMaintainance) {
-      if (currentDock) {
-        const activation_time = dayjs.unix(currentDock.work_osd.activation_time);
-        return currentDate.diff(activation_time, "day");
-      } else {
-        return "--";
-      }
-    }
-    const lastDate = dayjs(lastDeviceRoutineMaintainance.maintenance_time);
-    return currentDate.diff(lastDate, "day");
-  }, [lastDeviceRoutineMaintainance, currentDock]);
+  // 机场距离下次深度保养天数
+  const nextDeepMaintainanceDays = useMemo(() => {
+    if (!lastDeviceDeepMaintainance) return;
+    const expiration = dayjs(lastDeviceDeepMaintainance.maintenance_time).add(6, "month");
+    return expiration.diff(dayjs(), "day");
+  }, [lastDeviceDeepMaintainance]);
 
-  // 机场深度保养超期天数
-  const deviceDeepMaintainanceOverTime = useMemo(() => {
-    const currentDate = dayjs();
-    if (!lastDeviceDeepMaintainance) {
-      if (currentDock) {
-        const activation_time = dayjs.unix(currentDock.work_osd.activation_time);
-        return currentDate.diff(activation_time, "day");
-      } else {
-        return "--";
-      }
-    }
-    const lastDate = dayjs(lastDeviceDeepMaintainance.maintenance_time);
-    return currentDate.diff(lastDate, "day");
-  }, [lastDeviceDeepMaintainance, currentDock]);
+  // 机场距离下次常规保养是否过期
+  const isDeepExpired = useMemo(() => {
+    if (!lastDeviceDeepMaintainance) return;
+    return dayjs(lastDeviceDeepMaintainance.maintenance_time).add(6, "month").isBefore(dayjs());
+  }, [lastDeviceDeepMaintainance]);
+
+  // 机场距离下次深度保养过期天数
+  const deepMaintainanceExpiredDays = useMemo(() => {
+    if (!lastDeviceDeepMaintainance || !isDeepExpired) return;
+    return dayjs().diff(dayjs(lastDeviceDeepMaintainance.maintenance_time).add(6, "month"), "day");
+  }, [lastDeviceDeepMaintainance, isDeepExpired]);
+
 
   // 飞行器保养记录
   const {data: deviceChildrenMaintainanceList, mutate: mutateChildDeviceMaintainanceList} = useMaintainanceList({
@@ -193,19 +215,55 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
     return deviceChildrenMaintainanceList.list[0];
   }, [deviceChildrenMaintainanceList]);
 
+  // 飞行器最新一次常规保养记录
+  const lastDroneRoutineMaintainance = useMemo(() => {
+    if (!deviceChildrenMaintainanceList) return;
+    return deviceChildrenMaintainanceList.list.find(item => item.maintenance_type === Maintainance.RoutineMaintenance);
+  }, [deviceChildrenMaintainanceList]);
 
-  /*const lastDeviceDeepMaintainance = useMemo(() => {
-    if (!deviceChildrenMaintainanceList) return null;
+  // 飞行器距离下次常规保养天数
+  const droneNextRoutineMaintainanceDays = useMemo(() => {
+    if (!lastDroneRoutineMaintainance) return;
+    const expiration = dayjs(lastDroneRoutineMaintainance.maintenance_time).add(3, "month");
+    return expiration.diff(dayjs(), "day");
+  }, [lastDroneRoutineMaintainance]);
+
+  // 飞行器距离下次常规保养是否过期
+  const isDroneExpired = useMemo(() => {
+    if (!lastDroneRoutineMaintainance) return;
+    return dayjs(lastDroneRoutineMaintainance.maintenance_time).add(3, "month").isBefore(dayjs());
+  }, [lastDroneRoutineMaintainance]);
+
+  // 飞行器距离下次常规保养过期天数
+  const droneRoutineMaintainanceExpiredDays = useMemo(() => {
+    if (!lastDroneRoutineMaintainance || !isDroneExpired) return;
+    return dayjs().diff(dayjs(lastDroneRoutineMaintainance.maintenance_time).add(3, "month"), "day");
+  }, [lastDroneRoutineMaintainance, isDroneExpired]);
+
+  // 飞行器最新一次深度保养记录
+  const lastDroneDeepMaintainance = useMemo(() => {
+    if (!deviceChildrenMaintainanceList) return;
     return deviceChildrenMaintainanceList.list.find(item => item.maintenance_type === Maintainance.DeepMaintenance);
   }, [deviceChildrenMaintainanceList]);
 
-  // 深度保养超期天数
-  const deviceMaintainanceDeepOverTime = useMemo(() => {
-    if (!lastDeviceDeepMaintainance) return 0;
-    const currentDate = dayjs();
-    const lastDate = dayjs(lastDeviceDeepMaintainance.maintenance_time);
-    return currentDate.diff(lastDate, "day");
-  }, [lastDeviceDeepMaintainance]);*/
+  // 飞行器距离下次深度保养天数
+  const droneNextDeepMaintainanceDays = useMemo(() => {
+    if (!lastDroneDeepMaintainance) return;
+    const expiration = dayjs(lastDroneDeepMaintainance.maintenance_time).add(6, "month");
+    return expiration.diff(dayjs(), "day");
+  }, [lastDroneDeepMaintainance]);
+
+  // 飞行器距离下次深度保养是否过期
+  const isDroneDeepExpired = useMemo(() => {
+    if (!lastDroneDeepMaintainance) return;
+    return dayjs(lastDroneDeepMaintainance.maintenance_time).add(6, "month").isBefore(dayjs());
+  }, [lastDroneDeepMaintainance]);
+
+  // 飞行器距离下次深度保养过期天数
+  const droneDeepMaintainanceExpiredDays = useMemo(() => {
+    if (!lastDroneDeepMaintainance || !isDroneDeepExpired) return;
+    return dayjs().diff(dayjs(lastDroneDeepMaintainance.maintenance_time).add(6, "month"), "day");
+  }, [lastDroneDeepMaintainance, isDroneDeepExpired]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -221,11 +279,11 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="flex flex-col items-center justify-center text-[#D0D0D0]">
-                <span className="text-lg font-medium">{dockAccDays}天</span>
+                <span className="text-lg font-medium">{dockAccDays} 天</span>
                 <span className="text-sm">累计运行时长</span>
               </div>
               <div className="flex flex-col items-center justify-center text-[#D0D0D0]">
-                <span className="text-lg font-medium">{currentDock ? currentDock.work_osd.job_number : 0}架次</span>
+                <span className="text-lg font-medium">{currentDock ? currentDock.work_osd.job_number : "--"} 架次</span>
                 <span className="text-sm">作业架次</span>
               </div>
               <div className="flex flex-col items-center justify-center text-[#D0D0D0]">
@@ -308,17 +366,17 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
                     <span>{lastMaintainance ? dayjs(lastMaintainance.maintenance_time).format("YYYY-MM-DD") : "--"}</span>
                   </div>
                 </div>
-                {/*<div>
+                <div className={"text-[#D0D0D0] font-medium space-y-3"}>
                   <h3>距离下次保养</h3>
-                  <div>
+                  <div className={"flex text-[#D0D0D0] space-x-8"}>
                     <span>常规保养</span>
-                    <span>{deviceMaintainanceOverTime <= 180 ? deviceMaintainanceOverTime + "天" : `已超期 ${deviceMaintainanceOverTime - 180}天`}</span>
+                    <span>{routineMaintainanceExpiredDays ? `已超期 ${routineMaintainanceExpiredDays || "--"} 天` : `${nextRoutineMaintainanceDays || "--"} 天`} </span>
                   </div>
-                  <div>
+                  <div className={"flex text-[#D0D0D0] space-x-8"}>
                     <span>深度保养</span>
-                    <span>{deviceMaintainanceOverTime <= 365 ? deviceMaintainanceOverTime + "天" : `已超期 ${deviceMaintainanceOverTime - 365}天`}</span>
+                    <span>{deepMaintainanceExpiredDays ? `已超期 ${deepMaintainanceExpiredDays || "--"} 天` : `${nextDeepMaintainanceDays || "--"} 天`} </span>
                   </div>
-                </div>*/}
+                </div>
               </div>
             </div>
           </div>
@@ -331,20 +389,24 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
             </div>
             <div className="grid grid-cols-4 gap-4">
               <div className="flex flex-col items-center justify-center text-[#D0D0D0]">
-                <span className="text-lg font-medium">--</span>
+                <span className="text-lg font-medium">{total_flight_time || "--"} 分钟</span>
                 <span className="text-sm">飞行时长</span>
               </div>
               <div className="flex flex-col items-center justify-center text-[#D0D0D0]">
-                <span className="text-lg font-medium">--</span>
+                <span className="text-lg font-medium">{total_flight_sorties || "--"} 架次</span>
                 <span className="text-sm">飞行架次</span>
               </div>
               <div className="flex flex-col items-center justify-center text-[#D0D0D0]">
-                <span className="text-lg font-medium">--</span>
+                <span className="text-lg font-medium">{total_flight_distance || "--"} 千米</span>
                 <span className="text-sm">飞行里程</span>
               </div>
               <div className="flex flex-col items-center justify-center text-[#D0D0D0]">
-                <span className="text-lg font-medium">--</span>
+                <span className="text-lg font-medium whitespace-nowrap">{activation_time}</span>
                 <span className="text-sm">激活时间</span>
+              </div>
+              <div className="flex flex-col text-[#D0D0D0] col-span-2">
+                <span className="text-lg font-medium">循环次数： {batteryLoopTime || "--"}</span>
+                <span className="text-sm">电池 (SN: {batterySn || "--"}) </span>
               </div>
             </div>
             <div className="mt-4">
@@ -420,17 +482,17 @@ const MaintainanceSheet = ({open, onOpenChange, device}: Props) => {
                     <span>{lastDroneMaintainance ? dayjs(lastDroneMaintainance.maintenance_time).format("YYYY-MM-DD") : "--"}</span>
                   </div>
                 </div>
-                {/*<div>
+                <div className={"text-[#D0D0D0] font-medium space-y-3"}>
                   <h3>距离下次保养</h3>
-                  <div>
+                  <div className={"flex text-[#D0D0D0] space-x-8"}>
                     <span>常规保养</span>
-                    <span>{deviceMaintainanceDeepOverTime <= 180 ? deviceMaintainanceDeepOverTime + "天" : `已超期 ${deviceMaintainanceDeepOverTime - 180}天`}</span>
+                    <span>{droneRoutineMaintainanceExpiredDays ? `已超期 ${droneRoutineMaintainanceExpiredDays || "--"} 天` : `${droneNextRoutineMaintainanceDays || "--"} 天`} </span>
                   </div>
-                  <div>
+                  <div className={"flex text-[#D0D0D0] space-x-8"}>
                     <span>深度保养</span>
-                    <span>{deviceMaintainanceDeepOverTime <= 365 ? deviceMaintainanceDeepOverTime + "天" : `已超期 ${deviceMaintainanceDeepOverTime - 365}天`}</span>
+                    <span>{droneDeepMaintainanceExpiredDays ? `已超期 ${droneDeepMaintainanceExpiredDays || "--"} 天` : `${droneNextDeepMaintainanceDays || "--"} 天`} </span>
                   </div>
-                </div>*/}
+                </div>
               </div>
             </div>
           </div>

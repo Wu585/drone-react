@@ -81,7 +81,6 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
 
   const _onOpenChange = (visible: boolean) => {
     onOpenChange?.(visible);
-    // form.reset(defaultValues);
   };
 
   const _onSubmit = async (values: AlgorithmFormValues) => {

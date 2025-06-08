@@ -677,8 +677,6 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     }
   };
 
-  const [isLoading, setIsLoading] = useState(false);
-
   const [allItems, setAllItems] = useState<FileItem[]>([]);
 
   useEffect(() => {
@@ -710,7 +708,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   }, [data, displayType, pagination]);
 
   const loadMore = useCallback(() => {
-    if (displayType === 1 && !isLoading && data?.pagination.total > allItems.length) {
+    if (displayType === 1 && data?.pagination.total > allItems.length) {
       setPagination(prev => ({
         ...prev,
         pageIndex: prev.pageIndex + 1
@@ -720,7 +718,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
         page: pagination.pageIndex + 2 // 因为 pageIndex 是从 0 开始的
       }));
     }
-  }, [displayType, isLoading, data?.pagination.total, allItems.length, pagination.pageIndex]);
+  }, [displayType, data?.pagination.total, allItems.length, pagination.pageIndex]);
 
   useBatchFinishListener(async () => {
     await mutate();

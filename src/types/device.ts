@@ -320,12 +320,21 @@ export interface DeviceOsd {
     landing_power: string,
     remain_flight_time: number,
     return_home_power: string,
+    batteries: {
+      capacity_percent: number
+      loop_times: number
+      sn: string,
+    }[]
   },
   night_lights_state?: NightLightsStateEnum;// 夜航灯开关
   height_limit?: number;// 限高设置
   distance_limit_status?: DistanceLimitStatus;// 限远开关
   obstacle_avoidance?: ObstacleAvoidance;// 飞行器避障开关设置
   cameras?: DeviceOsdCamera[]
+  total_flight_sorties?: number
+  total_flight_time?: number
+  total_flight_distance?: number
+  activation_time?: number
 }
 
 export enum NetworkStateTypeEnum {
