@@ -1,43 +1,50 @@
 import TopBar from "@/components/drone/public/TopBar.tsx";
 import {Outlet, useLocation, useNavigate} from "react-router-dom";
 import {cn} from "@/lib/utils.ts";
-import {BookText, Cog, Film, Image, LayoutList, MapPin, Proportions, Send, Waypoints} from "lucide-react";
+import {BookText, Cog, Film, Image, LayoutList, MapPin, Proportions, Send, Share, Waypoints} from "lucide-react";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
+import {useState} from "react";
+import {Button} from "@/components/ui/button.tsx";
 
 const menuList = [
   {
     name: "tsa",
     icon: <Send size={24}/>,
     href: "/tsa",
-    permission: "Collection_DeviceDetail"
+    permission: "Collection_DeviceDetail",
+    menuName: "机场"
   },
   {
     name: "elements",
     icon: <MapPin size={24}/>,
     href: "/elements",
     activeHref: "elements",
-    permission: "Collection_AnnotationView"
+    permission: "Collection_AnnotationView",
+    menuName: "地图标注"
   },
   {
     name: "map-photo",
     icon: <Image size={24}/>,
     href: "/map-photo",
     activeHref: "map-photo",
-    permission: "Collection_MediaVisual"
+    permission: "Collection_MediaVisual",
+    menuName: "媒体/工单照片"
   },
   {
     name: "wayline",
     icon: <Waypoints size={24}/>,
     href: "/wayline",
     activeHref: "wayline",
-    permission: "Collection_WaylineView"
+    permission: "Collection_WaylineView",
+    menuName: "航线管理"
   },
   {
     name: "task",
     icon: <LayoutList size={24}/>,
     href: "/task-list",
     activeHref: "task",
-    permission: "Collection_PlanView"
+    permission: "Collection_PlanView",
+    menuName: "任务管理"
   },
   /*{
     name: "flight-area",
@@ -50,14 +57,16 @@ const menuList = [
     icon: <Film size={24}/>,
     href: "/media",
     activeHref: "media",
-    permission: "Collection_MediaView"
+    permission: "Collection_MediaView",
+    menuName: "媒体库"
   },
   {
     name: "work-order",
     icon: <BookText size={24}/>,
     href: "/work-order",
     activeHref: "work-order",
-    permission: "Collection_TicketView"
+    permission: "Collection_TicketView",
+    menuName: "工单管理"
   },
   // {
   //   name: "members",
@@ -69,13 +78,15 @@ const menuList = [
     name: "device-manage",
     icon: <Proportions size={24}/>,
     href: "/device-manage",
-    permission: "Collection_DeviceDetail"
+    permission: "Collection_DeviceDetail",
+    menuName: "设备管理"
   },
   {
     name: "algorithm-config",
     icon: <Cog size={24}/>,
     href: "/algorithm-config",
-    permission: "Collection_DeviceDetail"
+    permission: "Collection_DeviceDetail",
+    menuName: "算法管理"
   }
 ];
 
@@ -85,6 +96,8 @@ const Layout = () => {
   console.log("pathname");
   console.log(pathname);
 
+  const [expanded, setExpanded] = useState(true);
+
   return (
     <div className="h-full w-full bg-drone-system flex flex-col bg-full-size overflow-hidden">
       <header>
@@ -92,21 +105,53 @@ const Layout = () => {
       </header>
       <div className="flex-1 p-[22px] flex overflow-hidden">
         {!pathname.includes("organ") && !pathname.includes("depart") && !pathname.includes("create-wayline") &&
-          <aside className="w-[50px] border-[1px] border-[#43ABFF] border-r-0 rounded-l-lg">
-            <div className="w-[50px] bg-[#375f9f]/[.68] h-full rounded-l-lg">
+          <aside className={cn(
+            "border-[1px] border-[#43ABFF] border-r-0 rounded-l-lg relative transition-all duration-300 ease-in-out",
+            expanded ? "w-[180px]" : "w-[72px]" // Adjust these widths as needed
+          )}>
+            <div className="bg-[#375f9f]/[.68] h-full rounded-l-lg overflow-hidden">
               {menuList.map((item, index) =>
-                <PermissionButton key={item.name} permissionKey={item.permission} variant={"link"}
-                                  className={cn("content-center py-[32px] cursor-pointer text-white w-[50px] rounded-none",
-                                    pathname.includes(item.name) ? "bg-[#43ABFF]" : "",
-                                    index === 0 ? "rounded-tl-lg" : "rounded-none")}
-                                  onClick={() => navigate(item.href)}
-                >
-                  {item.icon}
-                </PermissionButton>
+                <div key={item.name} className={cn("flex items-center pl-2",
+                  pathname.includes(item.name) ? "bg-[#43ABFF]" : "",
+                  index === 0 ? "rounded-tl-lg" : "rounded-none")}>
+                  <PermissionButton permissionKey={item.permission} variant={"link"}
+                                    className={cn(
+                                      "py-[32px] cursor-pointer text-white rounded-none space-x-2 " +
+                                      "hover:no-underline w-full text-left flex justify-start text-base",
+                                      "transition-all duration-200 ease-in-out",
+                                      "whitespace-nowrap" // Prevent text wrapping
+                                    )}
+                                    onClick={() => navigate(item.href)}
+                  >
+                    <span>{item.icon}</span>
+                    <span className={cn(
+                      "transition-all duration-300 ease-in-out inline-block",
+                      expanded ? "opacity-100 w-auto ml-2" : "opacity-0 w-0"
+                    )}>
+                      {item.menuName}
+                    </span>
+                  </PermissionButton>
+                </div>
               )}
             </div>
+            <Button
+              className={cn(
+                "absolute left-6 bottom-6 cursor-pointer p-2 rounded-full bg-[#375f9f] hover:bg-[#43ABFF]",
+                "transition-all duration-300 ease-in-out",
+              )}
+              onClick={() => setExpanded(!expanded)}
+            >
+              <Share
+                className={cn(
+                  "transition-transform duration-300 ease-in-out",
+                  expanded ? "-rotate-90" : "rotate-90"
+                )}
+                size={20}
+              />
+            </Button>
           </aside>}
-        <div className="flex-1 bg-gradient-to-r from-[#074578]/[.4] to-[#0B142E]/[.7]">
+        <div
+          className="flex-1 bg-gradient-to-r from-[#074578]/[.4] to-[#0B142E]/[.7] transition-all duration-300 ease-in-out">
           <Outlet/>
         </div>
       </div>
