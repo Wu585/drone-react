@@ -5,7 +5,7 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {useState} from "react";
+import {Fragment, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {useMembers, UserItem, useRoleList, useWorkspaceList} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
@@ -126,6 +126,19 @@ const MembersDataTable = () => {
   });
 
   const {data: workSpaceList} = useWorkspaceList();
+
+  // 递归渲染组织树选项
+  const renderTreeOptions = (parentId: number = 0, level: number = 0): JSX.Element[] | undefined => {
+    const indent = "\u00A0\u00A0\u00A0\u00A0".repeat(level);
+    return workSpaceList?.filter(item => item.parent === parentId).map(item => (
+      <Fragment key={item.id}>
+        <SelectItem value={item.workspace_id}>
+          {indent + item.workspace_name}
+        </SelectItem>
+        {renderTreeOptions(item.id, level + 1)}
+      </Fragment>
+    ));
+  };
 
   const defaultValues = {
     name: "",
@@ -276,11 +289,7 @@ const MembersDataTable = () => {
                           {/*<FormMessage/>*/}
                           <SelectContent>
                             <SelectItem value="0">无</SelectItem>
-                            {workSpaceList?.map(item => (
-                              <SelectItem key={item.workspace_id} value={item.workspace_id}>
-                                {item.workspace_name}
-                              </SelectItem>
-                            ))}
+                            {renderTreeOptions()}
                           </SelectContent>
                         </Select>
                       </FormItem>
