@@ -94,7 +94,7 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
   useEntityCustomSource("waylines-preview");
 
   useEffect(() => {
-    if (!viewer) return;
+    if (!viewer || !deviceTopo) return;
     Object.keys(deviceState.dockInfo).forEach(dockSn => {
       const dockInfo = deviceState.dockInfo[dockSn];
       if (dockInfo.basic_osd && dockInfo.basic_osd.longitude && dockInfo.basic_osd.latitude) {

@@ -41,7 +41,7 @@ import yjqfPng from "@/assets/images/drone/cockpit/yjqf.png";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
-import {EDockModeCode, EModeCode, EModeCodeMap, RainfallEnum} from "@/types/device.ts";
+import {EDockModeCode, EModeCode, EModeCodeMap, RainfallEnum, RainfallMap} from "@/types/device.ts";
 import {cn} from "@/lib/utils.ts";
 import PayloadControl from "@/components/drone/PayloadControl.tsx";
 import compassWrapperPng from "@/assets/images/drone/cockpit/compass-wrapper.png";
@@ -100,7 +100,8 @@ const Cockpit = () => {
   // const instanceId = searchParams.get("instance_id") || "";
   const [instanceId, setInstanceId] = useState("");
   const deviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
-
+  console.log("deviceInfo");
+  console.log(deviceInfo);
   const deviceStatus2 = useMemo(() => {
     if (!deviceInfo?.dock) return "离线";
     if (deviceInfo.dock?.basic_osd?.drone_in_dock && !deviceInfo.device) {
@@ -1086,8 +1087,7 @@ const Cockpit = () => {
                       "h-[200px] mr-[60px] z-50 my-2 relative",
                       isFpvFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black object-fill aspect-video"
                     )}
-                  >
-                  </video>
+                  />
                   : (instanceId ? <iframe
                       className={""}
                       src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}
@@ -1146,7 +1146,8 @@ const Cockpit = () => {
                 <div className={"flex flex-col"}>
                   <span>降雨</span>
                   <span className={"text-[18px] text-[#32A3FF]"}>
-                    {RainfallEnum[deviceInfo.dock?.basic_osd?.rainfall]}
+                    {/*{RainfallEnum[deviceInfo.dock?.basic_osd?.rainfall]}*/}
+                    {RainfallMap[deviceInfo.dock?.basic_osd?.rainfall]}
                   </span>
                 </div>
               </div>

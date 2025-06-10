@@ -23,7 +23,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog.tsx";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
-import {ChevronRight, ChevronDown} from "lucide-react";
+import {ChevronRight, ChevronDown, Edit} from "lucide-react";
 import {generateRandomString} from "@/lib/utils.ts";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {useAjax} from "@/lib/http.ts";
@@ -55,6 +55,8 @@ const OrganizationDataTable = () => {
   const [expandedRows, setExpandedRows] = useState<number[]>([]);
   const [open, setOpen] = useState(false);
   const {post} = useAjax();
+  const [currentOrg, setCurrentOrg] = useState<WorkSpace | null>(null);
+
   const toggleRow = (id: number) => {
     setExpandedRows(prev =>
       prev.includes(id)
@@ -144,6 +146,20 @@ const OrganizationDataTable = () => {
         <div className="text-center">{row.getValue("bind_code")}</div>
       ),
       size: 120,
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-center">操作</div>,
+      cell: ({row}) => (
+        <div className="text-center">
+          <Edit
+            size={16}
+            className="cursor-pointer hover:text-[#43ABFF] transition-colors inline-block"
+            onClick={() => handleEdit(row.original)}
+          />
+        </div>
+      ),
+      size: 80,
     }
   ];
 
@@ -185,17 +201,40 @@ const OrganizationDataTable = () => {
     defaultValues
   });
 
+  const handleOpenChange = (open: boolean) => {
+    setOpen(open);
+    if (!open) {
+      setCurrentOrg(null);
+      form.reset(defaultValues);
+    }
+  };
+
+  const handleEdit = (org: WorkSpace) => {
+    setCurrentOrg(org);
+    form.reset({
+      workspace_id: org.workspace_id,
+      workspace_name: org.workspace_name,
+      workspace_desc: org.workspace_desc,
+      platform_name: org.platform_name,
+      bind_code: org.bind_code,
+      workspace_code: org.workspace_code,
+      parent: org.parent,
+      lead_user: org.lead_user
+    });
+    setOpen(true);
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("onSubmit values:", values);
     const formData = {
       ...values,
-      workspace_id: uuidv4(),
+      workspace_id: currentOrg ? currentOrg.workspace_id : uuidv4(),
     };
     console.log("formData", formData);
     const res: any = await post(`${MANAGE_HTTP_PREFIX}/workspaces/save`, formData);
     if (res.data.code === 0) {
       toast({
-        description: "组织创建成功！"
+        description: `${currentOrg ? "更新" : "创建"}组织成功！`
       });
       setOpen(false);
       form.reset(defaultValues);
@@ -274,13 +313,13 @@ const OrganizationDataTable = () => {
           {/*<Button className={"bg-[#43ABFF]"}>重置</Button>*/}
         </div>
         <div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger>
               <Button className={"bg-[#43ABFF] w-24"}>创建</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>新增组织</DialogTitle>
+                <DialogTitle>{currentOrg ? "编辑" : "新增"}组织</DialogTitle>
               </DialogHeader>
               <Form {...form} >
                 <form className="grid gap-4 py-4" onSubmit={form.handleSubmit(onSubmit, onError)}>
@@ -354,7 +393,7 @@ const OrganizationDataTable = () => {
                     name={"lead_user"}
                   />
                   <DialogFooter>
-                    <Button type="submit">创建</Button>
+                    <Button type="submit">确认</Button>
                   </DialogFooter>
                 </form>
               </Form>

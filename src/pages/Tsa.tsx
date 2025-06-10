@@ -55,6 +55,19 @@ const Tsa = () => {
         is_dock: true
       });
     }
+    if (!osdVisible.visible) {
+      const selectedDock = deviceState.dockInfo[dock.gateway.sn];
+      if (selectedDock.basic_osd?.longitude && selectedDock.basic_osd?.latitude) {
+        viewer.camera.setView({
+          destination: Cesium.Cartesian3.fromDegrees(selectedDock.basic_osd.longitude, selectedDock.basic_osd.latitude, 500),
+          orientation: {
+            heading: 0,
+            pitch: Cesium.Math.toRadians(-90),
+            roll: 0.0
+          }
+        });
+      }
+    }
   };
 
   const {RightClickPanel, MenuItem, contextMenu} = useRightClickPanel({

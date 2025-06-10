@@ -358,6 +358,13 @@ export enum RainfallEnum {
   HEAVY_RAIN = 3,
 }
 
+export const RainfallMap = {
+  [RainfallEnum.NONE]: "无",
+  [RainfallEnum.LIGHT_RAIN]: "小雨",
+  [RainfallEnum.MODERATE_RAIN]: "中雨",
+  [RainfallEnum.HEAVY_RAIN]: "大雨"
+};
+
 export enum DroneInDockEnum {
   OUTSIDE, INSIDE
 }
@@ -478,6 +485,9 @@ export interface DockWorkOsd {
   drone_battery_maintenance_info?: { // 飞行器电池保养信息
     maintenance_state: DroneBatteryStateEnum, // 保养状态
     maintenance_time_left: number, // 电池保养剩余时间(小时)
+    batteries: {
+      capacity_percent: number
+    }[]
   }
 }
 

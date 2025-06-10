@@ -1,16 +1,15 @@
 import {useAjax} from "@/lib/http.ts";
 import {
   Airplay,
-  Earth, Eclipse, HardDriveDownload,
-  HardDriveUpload, LandPlot,
+  Earth,
+  LandPlot,
   Rocket,
   Satellite,
   Settings,
   Thermometer,
   ThermometerSun,
   X,
-  Zap,
-  Forward, CircleStop
+  Forward, CircleStop, BatteryFull
 } from "lucide-react";
 import yjqfPng from "@/assets/images/drone/yjqf.png";
 import {useSceneStore} from "@/store/useSceneStore.ts";
@@ -51,8 +50,6 @@ const DronePanel = () => {
   const {visible: debugPanelvisible, hide: hideDebugPanel, show: showDebugPanel} = useVisible();
   const navigate = useNavigate();
   const deviceInfo = useRealTimeDeviceInfo(osdVisible.gateway_sn, osdVisible.sn);
-  // console.log("deviceInfo");
-  // console.log(deviceInfo);
   const [takeOffType, setTakeOffType] = useState<"take-off" | "fly-to">("take-off");
   const {sendDockControlCmd} = useDockControl();
   const {visible: dockVideoVisible, show: showDockVideo, hide: hideDockVideo} = useVisible();
@@ -191,6 +188,9 @@ const DronePanel = () => {
 
   const {hasPermission} = usePermission();
   const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
+
+  const capacity_percent = deviceInfo && deviceInfo.device &&
+    deviceInfo.device.battery.capacity_percent || deviceInfo.dock.work_osd.drone_battery_maintenance_info?.batteries[0]?.capacity_percent;
 
   return (
     <div className={"flex relative"}>
@@ -417,8 +417,8 @@ const DronePanel = () => {
             <Tooltip>
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
-                  <Zap size={18}/>
-                  <span>{deviceInfo.device && deviceInfo.device?.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}</span>
+                  <BatteryFull size={18}/>
+                  <span>{capacity_percent ? capacity_percent + "%" : "--"}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>

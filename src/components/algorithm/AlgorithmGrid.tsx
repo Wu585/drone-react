@@ -1,6 +1,5 @@
 import {ALGORITHM_CONFIG_API_PREFIX, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
 import {Button} from "@/components/ui/button.tsx";
-import jjgjPng from "@/assets/images/drone/algorithm/jjgj.png";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -9,7 +8,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog.tsx";
-import {Trash} from "lucide-react";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import AlgorithmDialog from "@/components/algorithm/AlgorithmDialog.tsx";
@@ -49,8 +47,6 @@ const eventMap = {
   13: "重点保障",
   14: "其他事件",
 } as const;
-
-type EventMap = keyof typeof eventMap
 
 const AlgorithmGrid = () => {
   const {data: algorithmConfigList, mutate: mutateAlgorithmConfigList} = useAlgorithmConfigList({

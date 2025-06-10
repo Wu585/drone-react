@@ -13,7 +13,7 @@ import {useMemo, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {HTTP_PREFIX_Wayline, Task, useBindingDevice, useWaylinJobs} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {TaskStatus, TaskStatusMap, TaskType, TaskTypeMap} from "@/types/task.ts";
+import {MediaStatus, TaskStatus, TaskStatusMap, TaskType, TaskTypeMap} from "@/types/task.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
 import {cn} from "@/lib/utils.ts";
@@ -49,7 +49,7 @@ const TaskDataTable = () => {
     return [
       {
         header: "计划时间 | 实际时间",
-        size: 230,
+        size: 250,
         cell: ({row}) => {
           // 格式化时间函数
           const formatTime = (timeStr: string) => {
@@ -61,6 +61,7 @@ const TaskDataTable = () => {
           return (
             <div className="flex gap-0.5 space-x-2 whitespace-nowrap">
               <div className="text-gray-400 text-[13px]">
+                {/*[{formatTime(row.original.begin_time)}-{formatTime(row.original.end_time)}]*/}
                 [{formatTime(row.original.begin_time)}-{formatTime(row.original.end_time)}]
               </div>
               <div className="text-[#43ABFF] text-[13px]">
@@ -74,7 +75,7 @@ const TaskDataTable = () => {
       },
       {
         header: "执行状态",
-        size: 80,
+        size: 100,
         cell: ({row}) =>
           <span style={{
             color: formatTaskStatus(row.original).color
@@ -83,7 +84,7 @@ const TaskDataTable = () => {
       {
         accessorKey: "job_name",
         header: "计划名称",
-        size: 160,
+        size: 120,
         cell: ({row}) => (
           <div className="max-w-[160px] truncate" title={row.original.job_name}>
             {row.original.job_name}
@@ -109,7 +110,7 @@ const TaskDataTable = () => {
       {
         accessorKey: "dock_name",
         header: "机场",
-        size: 140,
+        size: 120,
         cell: ({row}) => (
           <div className="max-w-[140px] truncate" title={row.original.dock_name}>
             {row.original.dock_name}
@@ -151,7 +152,7 @@ const TaskDataTable = () => {
       },
       {
         header: "操作",
-        size: 120,
+        size: 140,
         cell: ({row}) =>
           <div className={"flex whitespace-nowrap space-x-2"}>
             {row.original.status === TaskStatus.Wait && <AlertDialog>
@@ -217,6 +218,28 @@ const TaskDataTable = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>}
+            {/*{formatMediaTaskStatus(row.original).status === MediaStatus.ToUpload && <AlertDialog>*/}
+            {formatMediaTaskStatus(row.original).status === MediaStatus.ToUpload && <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type={"submit"}
+                  className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
+                  媒体续传
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>媒体续传</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    确认媒体续传吗？
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onUploadMediaFile(row.original.job_id)}>确认</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>}
           </div>
       }
     ];
@@ -224,6 +247,21 @@ const TaskDataTable = () => {
 
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const HTTP_PREFIX = "/wayline/api/v1";
+
+  // 媒体续传
+  const onUploadMediaFile = async (jobId: string) => {
+    try {
+      await post(`${HTTP_PREFIX}/workspaces/${workspaceId}/jobs/${jobId}/media-highest`);
+      toast({
+        description: "媒体续传成功！"
+      });
+    } catch (err) {
+      toast({
+        description: "媒体续传失败！",
+        variant: "destructive"
+      });
+    }
+  };
 
   // 删除任务
   const onDeleteTask = async (jobId: string) => {

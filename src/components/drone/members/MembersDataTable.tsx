@@ -185,6 +185,8 @@ const MembersDataTable = () => {
       id: currentUser.id,
       ...(values.password ? {} : { password: undefined })
     } : values;
+    console.log('body');
+    console.log(body);
     const res: any = await post(`${MANAGE_HTTP_PREFIX}/users/save`, body);
     if (res.data.code === 0) {
       toast({
