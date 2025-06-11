@@ -110,6 +110,24 @@ const deviceData: DeviceOption[] = [
     ]
   },
   {
+    label: "经纬M3系列",
+    value: 91,
+    children: [
+      {
+        label: "Matrice 3D",
+        value: 0,
+        payloadEnumValue: 80,
+        payloadPositionIndex: 0
+      },
+      {
+        label: "Matrice 3TD",
+        value: 1,
+        payloadEnumValue: 81,
+        payloadPositionIndex: 0
+      },
+    ]
+  },
+  {
     label: "经纬M4系列",
     value: 100,
     children: [

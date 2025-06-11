@@ -112,7 +112,7 @@ const Tsa = () => {
         variant: "destructive"
       });
     }
-  };
+  }
 
   return (
     <div className={"w-full h-full flex space-x-[20px]"}>

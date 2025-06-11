@@ -17,7 +17,7 @@ export enum WaylineLostControlActionInCommandFlight {
 
 export const WaylineLostControlActionInCommandFlightOptions = [
   {label: "继续", value: WaylineLostControlActionInCommandFlight.CONTINUE},
-  {label: "执行失控动作", value: WaylineLostControlActionInCommandFlight.EXEC_LOST_ACTION}
+  {label: "执行失联动作", value: WaylineLostControlActionInCommandFlight.EXEC_LOST_ACTION}
 ];
 
 export enum ERthMode {

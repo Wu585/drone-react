@@ -17,7 +17,7 @@ import {Input} from "@/components/ui/input.tsx";
 import {clarityList} from "@/hooks/drone/useDeviceVideo.ts";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
-import {useOnlineDocks, usePermission, useWaylinJobs} from "@/hooks/drone";
+import {useDeviceTopo, useOnlineDocks, usePermission, useWaylinJobs} from "@/hooks/drone";
 import {z} from "zod";
 import {
   CommanderFlightModeInCommandFlightOptions,
@@ -66,6 +66,10 @@ import JSWebrtc from "@/vendor/jswebrtc.min.js";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 import {useWeatherInfo} from "@/hooks/flood-prevention/api.ts";
 import {ELocalStorageKey} from "@/types/enum.ts";
+import wenduPng from "@/assets/images/drone/cockpit/wendu.png";
+import fengliPng from "@/assets/images/drone/cockpit/fengli.png";
+import fengxiangPng from "@/assets/images/drone/cockpit/fengxiang.png";
+import jiangyuPng from "@/assets/images/drone/cockpit/jiangyu.png";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -515,664 +519,173 @@ const Cockpit = () => {
   const {hasPermission} = usePermission();
   const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
 
+
+  const {data: deviceTopo} = useDeviceTopo();
+  const currentTopo = deviceTopo?.find(item => item.device_sn === dockSn);
+  console.log("currentTopo");
+  console.log(currentTopo);
+
+  const capacity_percent = deviceInfo && deviceInfo.device &&
+    deviceInfo.device?.battery?.capacity_percent || deviceInfo.dock?.work_osd?.drone_battery_maintenance_info?.batteries[0]?.capacity_percent;
+
   return (
-    <FitScreen width={1920} height={1080} mode="full">
-      <Form {...form}>
-        <form className={"h-full bg-cockpit bg-full-size relative grid grid-cols-5"}
-              onSubmit={form.handleSubmit(onSubmit)}>
-          <header
-            className={"bg-cockpit-header h-[164px] bg-full-size absolute top-0 w-full left-0 flex justify-center py-4 z-[5] text-lg"}>
-            远程控制 - <span
-            className={deviceInfo.dock?.basic_osd?.drone_in_dock && !deviceInfo.device ? "text-yellow-500 px-2 font-bold" : !deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected ? "text-red-500 px-2 font-bold" : "text-[#00ee8b] px-2 font-bold"}>{deviceStatus2}</span>
-          </header>
-          <div className={"col-span-1 z-50"}>
+    <div
+      style={{backgroundSize: "100% 100%"}}
+      className={"h-full bg-cockpit relative grid grid-cols-5"}>
+      <header
+        className={"bg-cockpit-header h-40 bg-full-size absolute top-0 w-full left-0 flex justify-center text-lg px-4"}>
+        {/* 左边部分（靠左） */}
+        <div className={"flex-1 flex justify-start py-2"}>
+          <Undo2
+            className="cursor-pointer text-white w-12"
+            size={24}
+            onClick={() => {
+              navigate("/tsa");
+            }}/>
+          <span>{currentTopo?.nickname + " - " + currentTopo?.children.nickname}</span>
+        </div>
+        {/* 中间部分（绝对居中） */}
+        <div className={"py-4 text-xl"}>
+          虚拟座舱 -
+          <span className={
+            deviceInfo.dock?.basic_osd?.drone_in_dock && !deviceInfo.device
+              ? "text-yellow-500 px-2 font-bold"
+              : !deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected
+                ? "text-red-500 px-2 font-bold"
+                : "text-[#00ee8b] px-2 font-bold"
+          }>
+        {deviceStatus2}
+          </span>
+        </div>
+        {/* 右边部分（靠右） */}
+        <div className="flex-1 flex justify-end space-x-6 py-2">
+          <div className={"flex space-x-2"}>
+            <img className={"h-6"} src={wenduPng} alt=""/>
+            <span>{deviceInfo.dock?.basic_osd?.environment_temperature}°C</span>
+          </div>
+          <div className={"flex  space-x-2"}>
+            <img className={"h-6"} src={fengliPng} alt=""/>
+            <span>{weatherInfo?.[0]?.realtime.wS}</span>
+          </div>
+          <div className={"flex  space-x-2"}>
+            <img className={"h-6"} src={fengxiangPng} alt=""/>
+            <span>{weatherInfo?.[0]?.realtime.wD}</span>
+          </div>
+          <div className={"flex space-x-2"}>
+            <img className={"h-6"} src={jiangyuPng} alt=""/>
+            <span>{RainfallMap[deviceInfo.dock?.basic_osd?.rainfall]}</span>
+          </div>
+        </div>
+      </header>
+      <div className={"border-2"}>
+        111
+      </div>
+      <div className={"border-2 col-span-3 pt-20 grid grid-rows-10"}>
+        <div style={{
+          backgroundSize: "100% 100%"
+        }} className={"bg-center-video row-span-7 content-center"}>
+          {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
             <div
-              className={"absolute top-4 left-6 flex items-center justify-center space-x-2 z-[20] cursor-pointer bg-[#072E62]/[.7] px-2 py-1 rounded"}>
-              <Undo2 className="cursor-pointer text-white" size={24} onClick={() => {
-                navigate("/tsa");
-              }}/>
-              {/*<span>返回</span>*/}
+              className={"w-[90%] h-[88%] overflow-hidden cursor-crosshair [clip-path:polygon(50px_0,calc(100%-50px)_0,100%_60px,100%_calc(100%-70px),calc(100%-60px)_100%,60px_100%,0_calc(100%-70px),0_60px)]"}>
+              <video
+                ref={droneCloudVideoRef}
+                autoPlay
+                className={"w-full h-full aspect-video object-fill"}
+                id={"player2"}
+                onDoubleClick={handleVideoDoubleClick}
+                onWheel={handleWheel}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#000",
+                  position: "relative",
+                  userSelect: "none"
+                }}
+              />
             </div>
-            <div className={"mt-[123px] ml-[53px] mb-[12px] flex items-center justify-between pr-4 z-50"}>
-              <div
-                className="flex items-center space-x-2 cursor-pointer"
-                onClick={handleDockLiveToggle}
-              >
-                <CockpitTitle title={"机场直播"}/>
-                <X size={18} className={cn("transition-transform", !showDockLive && "rotate-45")}/>
+          ) : (
+            <div className={"text-[#d0d0d0]"}>
+              当前设备已关机，无法进行直播
+            </div>
+          )}
+        </div>
+        <div className={"row-span-3 grid grid-cols-5"}>
+          <div className={"col-span-1 border-2 grid grid-rows-3 px-2 py-2 place-items-center"}>
+            <div className={"flex items-center gap-4 p-2 h-full"}>
+              <div className={"h-full aspect-square"}>
+                <img className={"w-full h-full object-contain"} src={batteryPng} alt=""/>
               </div>
-              {showDockLive && (
-                <div className={"ml-2 flex space-x-2"}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <Settings size={16}/>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-16">
-                      <DropdownMenuLabel>清晰度</DropdownMenuLabel>
-                      <DropdownMenuRadioGroup
-                        onValueChange={(value) => updateDockClarity(+value)}>
-                        {clarityList.map(item =>
-                          <DropdownMenuRadioItem key={item.value}
-                                                 value={item.value.toString()}>{item.label}</DropdownMenuRadioItem>)}
-                      </DropdownMenuRadioGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <RefreshCcw
-                    className={"cursor-pointer"}
-                    onClick={() => startDockLive()}
-                    size={16}
-                  />
-                  {/*<ArrowRightLeft
-                    className={"cursor-pointer"}
-                    // onClick={() => startDockLive()}
-                    onClick={switchVideos}
-                    size={16}
-                  />*/}
-                </div>
-              )}
-            </div>
-            {showDockLive && (
-              <div className={"w-[360px] h-[186px] ml-[30px]"}>
-                {videoLayout === "default" ? (
-                  <video
-                    ref={dockVideoRef}
-                    controls
-                    autoPlay
-                    className={"h-[180px] w-full object-fill rounded-lg"}
-                  />
-                ) : (
-                  <video
-                    ref={droneCloudVideoRef}
-                    autoPlay
-                    className={"h-[180px] w-full object-fill rounded-lg"}
-                    onDoubleClick={handleVideoDoubleClick}
-                    onWheel={handleWheel}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                    style={{
-                      background: "#000",
-                      userSelect: "none"
-                    }}
-                  />
-                )}
+              <div className={"flex flex-col justify-center space-y-1 text-lg"}>
+                <span className={"text-[#D0D0D0]"}>电池电量</span>
+                <span
+                  className={"whitespace-nowrap"}>{capacity_percent ? capacity_percent + " %" : "--"}</span>
               </div>
-            )}
-            <div className={cn(
-              "w-[360px] ml-[30px] rounded-lg",
-              showDockLive ? "h-[244px] mt-[10px]" : "h-[430px]"
-            )}>
-              <CockpitScene/>
-              <RightClickPanel>
-                {/*<MenuItem onClick={onLookAt}>看向这里</MenuItem>*/}
-                <MenuItem onClick={onFlyTo}>飞向这里</MenuItem>
-              </RightClickPanel>
             </div>
-            <div className={"ml-[53px] py-[30px]"}>
-              <CockpitTitle title={"一键起飞基本参数"}/>
+            <div className={"flex items-center gap-4 p-2 h-full"}>
+              <div className={"h-full aspect-square"}>
+                <img className={"w-full h-full object-contain"} src={qsdjl} alt=""/>
+              </div>
+              <div className={"flex flex-col justify-center space-y-1 text-lg"}>
+                <span className={"text-[#D0D0D0]"}>起始点距离</span>
+                <span
+                  className={"whitespace-nowrap"}> {!deviceInfo.device || deviceInfo.device.home_distance.toString() === str ? str : (+deviceInfo.device?.home_distance).toFixed(2) + " m"}</span>
+              </div>
             </div>
-            <div className={"ml-[53px] mr-[32px] space-y-2 h-[360px] overflow-auto"}>
-              <FormField
-                control={form.control}
-                render={({field}) => (
-                  <FormItem style={{
-                    backgroundSize: "100% 100%"
-                  }} className={"w-[290px] bg-fly-params grid grid-cols-6 items-center py-[10px] px-[16px]"}>
-                    <FormLabel className={"col-span-4"}>目标经度</FormLabel>
-                    <FormControl className={"col-span-3"}>
-                      <Input type={"number"}
-                             className={"col-span-2 h-[24px] bg-[#072E62]/[.7] border-[1px] border-[#0076C9]/[.85] rounded-[1px]"} {...field}/>
-                    </FormControl>
-                  </FormItem>
-                )}
-                name={"target_longitude"}
-              />
-              <FormField
-                control={form.control}
-                render={({field}) => (
-                  <FormItem style={{
-                    backgroundSize: "100% 100%"
-                  }} className={"w-[290px] bg-fly-params grid grid-cols-6 items-center py-[10px] px-[16px]"}>
-                    <FormLabel className={"col-span-4"}>目标纬度</FormLabel>
-                    <FormControl className={"col-span-3"}>
-                      <Input type={"number"}
-                             className={"col-span-2 h-[22px] bg-[#072E62]/[.7] border-[1px] border-[#0076C9]/[.85] rounded-[1px]"} {...field}/>
-                    </FormControl>
-                  </FormItem>
-                )}
-                name={"target_latitude"}
-              />
-              <FormField
-                control={form.control}
-                render={({field}) => (
-                  <FormItem style={{
-                    backgroundSize: "100% 100%"
-                  }} className={"w-[290px] bg-fly-params grid grid-cols-6 items-center py-[10px] px-[16px]"}>
-                    <FormLabel className={"col-span-4"}>目标高度</FormLabel>
-                    <FormControl className={"col-span-3"}>
-                      <Input type={"number"}
-                             className={"col-span-2 h-[22px] bg-[#072E62]/[.7] border-[1px] border-[#0076C9]/[.85] rounded-[1px]"} {...field}/>
-                    </FormControl>
-                  </FormItem>
-                )}
-                name={"target_height"}
-              />
-              <FormField
-                control={form.control}
-                render={({field}) => (
-                  <FormItem style={{
-                    backgroundSize: "100% 100%"
-                  }} className={"w-[290px] bg-fly-params grid grid-cols-6 items-center py-[10px] px-[16px]"}>
-                    <FormLabel className={"col-span-4"}>安全起飞高度</FormLabel>
-                    <FormControl className={"col-span-3"}>
-                      <Input type={"number"}
-                             className={"col-span-2 h-[22px] bg-[#072E62]/[.7] border-[1px] border-[#0076C9]/[.85] rounded-[1px]"} {...field}/>
-                    </FormControl>
-                  </FormItem>
-                )}
-                name={"security_takeoff_height"}
-              />
-              <FormField
-                control={form.control}
-                render={({field}) => (
-                  <FormItem style={{
-                    backgroundSize: "100% 100%"
-                  }} className={"w-[290px] bg-fly-params grid grid-cols-6 items-center py-[10px] px-[16px]"}>
-                    <FormLabel className={"col-span-4"}>返航高度</FormLabel>
-                    <FormControl className={"col-span-3"}>
-                      <Input type={"number"}
-                             className={"col-span-2 h-[22px] bg-[#072E62]/[.7] border-[1px] border-[#0076C9]/[.85] rounded-[1px]"} {...field}/>
-                    </FormControl>
-                  </FormItem>
-                )}
-                name={"rth_altitude"}
-              />
-              <FormField
-                control={form.control}
-                render={({field}) => (
-                  <FormItem style={{
-                    backgroundSize: "100% 100%"
-                  }} className={"w-[290px] bg-fly-params grid grid-cols-6 items-center py-[10px] px-[16px]"}>
-                    <FormLabel className={"col-span-4"}>失联动作</FormLabel>
-                    <Select value={field.value.toString()} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="col-span-2 bg-[#0C66BF]/[.85] rounded-none border-none h-[24px]">
-                          <SelectValue placeholder=""/>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className={""}>
-                        <SelectGroup>
-                          {LostControlActionInCommandFLightOptions.map(item =>
-                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-                name={"rc_lost_action"}
-              />
-              <FormField
-                control={form.control}
-                render={({field}) => (
-                  <FormItem style={{
-                    backgroundSize: "100% 100%"
-                  }} className={"w-[290px] bg-fly-params grid grid-cols-6 items-center py-[10px] px-[16px]"}>
-                    <FormLabel className={"col-span-4"}>失控动作</FormLabel>
-                    <Select value={field.value.toString()} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="col-span-2 bg-[#0C66BF]/[.85] rounded-none border-none h-[24px]">
-                          <SelectValue placeholder=""/>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className={""}>
-                        <SelectGroup>
-                          {WaylineLostControlActionInCommandFlightOptions.map(item =>
-                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-                name={"exit_wayline_when_rc_lost"}
-              />
-              <FormField
-                control={form.control}
-                render={({field}) => (
-                  <FormItem style={{
-                    backgroundSize: "100% 100%"
-                  }} className={"w-[290px] bg-fly-params grid grid-cols-6 items-center py-[10px] px-[16px]"}>
-                    <FormLabel className={"col-span-4"}>返航模式</FormLabel>
-                    <Select value={field.value.toString()} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="col-span-2 bg-[#0C66BF]/[.85] rounded-none border-none h-[24px]">
-                          <SelectValue placeholder=""/>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className={""}>
-                        <SelectGroup>
-                          {RthModeInCommandFlightOptions.map(item =>
-                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-                name={"rth_mode"}
-              />
-              <FormField
-                control={form.control}
-                render={({field}) => (
-                  <FormItem style={{
-                    backgroundSize: "100% 100%"
-                  }} className={"w-[290px] bg-fly-params grid grid-cols-6 items-center py-[10px] px-[16px]"}>
-                    <FormLabel className={"col-span-4"}>指令失联动作</FormLabel>
-                    <Select value={field.value.toString()} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="col-span-2 bg-[#0C66BF]/[.85] rounded-none border-none h-[24px]">
-                          <SelectValue placeholder=""/>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className={""}>
-                        <SelectGroup>
-                          {CommanderModeLostActionInCommandFlightOptions.map(item =>
-                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-                name={"commander_mode_lost_action"}
-              />
-              <FormField
-                control={form.control}
-                render={({field}) => (
-                  <FormItem style={{
-                    backgroundSize: "100% 100%"
-                  }} className={"w-[290px] bg-fly-params grid grid-cols-6 items-center py-[10px] px-[16px]"}>
-                    <FormLabel className={"col-span-4"}>指令飞行模式</FormLabel>
-                    <Select value={field.value.toString()} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="col-span-2 bg-[#0C66BF]/[.85] rounded-none border-none h-[24px]">
-                          <SelectValue placeholder=""/>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className={""}>
-                        <SelectGroup>
-                          {CommanderFlightModeInCommandFlightOptions.map(item =>
-                            <SelectItem value={item.value.toString()} key={item.value}>{item.label}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-                name={"commander_flight_mode"}
-              />
-              <FormField
-                control={form.control}
-                render={({field}) => (
-                  <FormItem style={{
-                    backgroundSize: "100% 100%"
-                  }} className={"w-[290px] bg-fly-params grid grid-cols-6 items-center py-[10px] px-[16px]"}>
-                    <FormLabel className={"col-span-4"}>指令飞行高度</FormLabel>
-                    <FormControl className={"col-span-3"}>
-                      <Input type={"number"}
-                             className={"col-span-2 h-[22px] bg-[#072E62]/[.7] border-[1px] border-[#0076C9]/[.85] rounded-[1px]"} {...field}/>
-                    </FormControl>
-                  </FormItem>
-                )}
-                name={"commander_flight_height"}
-              />
+            <div className={"flex items-center gap-4 p-2 h-full"}>
+              <div className={"h-full aspect-square"}>
+                <img className={"w-full h-full object-contain"} src={asl} alt=""/>
+              </div>
+              <div className={"flex flex-col justify-center space-y-1 text-lg"}>
+                <span className={"text-[#D0D0D0]"}>海拔高度</span>
+                <span
+                  className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height as string).toFixed(2) + " m"}</span>
+              </div>
             </div>
           </div>
-          <div className={"col-span-3 z-50"}>
-            <div className={"h-[596px] bg-center-video mt-[52px] bg-full-size content-center relative"}>
-              {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
-                videoLayout === "default" ? (
-                  <video
-                    ref={droneCloudVideoRef}
-                    autoPlay
-                    className={"w-[830px] rounded-[40px] overflow-hidden cursor-crosshair aspect-video object-fill"}
-                    id={"player2"}
-                    onDoubleClick={handleVideoDoubleClick}
-                    onWheel={handleWheel}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "#000",
-                      position: "relative",
-                      userSelect: "none"
-                    }}
-                  />
-                ) : (
-                  <video
-                    ref={dockVideoRef}
-                    controls
-                    autoPlay
-                    className={"w-[830px] rounded-[40px] overflow-hidden aspect-video object-fill"}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "#000",
-                      position: "relative"
-                    }}
-                  />
-                )) : (
-                <div className={"text-[#d0d0d0]"}>
-                  当前设备已关机，无法进行直播
-                </div>
-              )}
-              <div className={"absolute right-40 top-16 z-50"}>
-                <PayloadControl
-                  currentMode={droneCloudMode}
-                  clarity={droneCloudClarity}
-                  dockSn={dockSn}
-                  onRefreshVideo={() => startDroneLive(false)}
-                  updateVideo={onUpdateDroneCloudClarity}
-                  deviceSn={deviceSn}
-                  onChangeMode={onChangeDroneCloudMode}
-                  playerId="player2"
-                />
-              </div>
+          <div className={"col-span-3 border-2 grid grid-cols-7"}>
+            <div className={"col-span-2"}>11</div>
+            <div className={"col-span-3 border-2"}>
+
             </div>
-            <div className={"grid grid-cols-3 h-[380px]"}>
-              <div className={"col-span-1 py-6 space-y-8 pl-16"}>
-                <div className={"grid grid-cols-2 gap-8"}>
-                  <div className={"flex space-x-4"}>
-                    <img src={batteryPng} alt=""/>
-                    <div className={"flex flex-col justify-center space-y-2"}>
-                      <span className={"text-[12px] text-[#D0D0D0]"}>电池电量</span>
-                      <span className={"whitespace-nowrap"}>
-                        {deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={"flex space-x-4"}>
-                    <img src={rtkPng} alt=""/>
-                    <div className={"flex flex-col justify-center space-y-2"}>
-                      <span className={"text-[12px] text-[#D0D0D0]"}>搜星质量</span>
-                      <span className={"whitespace-nowrap"}>
-                        {deviceInfo.device ? deviceInfo.device.position_state.rtk_number : str}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={"flex space-x-4"}>
-                    <img src={czsd} alt=""/>
-                    <div className={"flex flex-col justify-center space-y-2"}>
-                      <span className={"text-[12px] text-[#D0D0D0]"}>垂直速度</span>
-                      <span
-                        className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.vertical_speed === str ? str : parseFloat(deviceInfo.device?.vertical_speed).toFixed(2) + " m/s"}</span>
-                    </div>
-                  </div>
-                  <div className={"flex space-x-4"}>
-                    <img src={spsd} alt=""/>
-                    <div className={"flex flex-col justify-center space-y-2"}>
-                      <span
-                        className={"text-[12px] text-[#D0D0D0]"}>水平速度</span>
-                      <span
-                        className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device?.horizontal_speed === str ? str : parseFloat(deviceInfo.device?.horizontal_speed).toFixed(2) + " m/s"}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className={"grid grid-cols-2 gap-8"}>
-                  <div className={"flex space-x-4"}>
-                    <img src={asl} alt=""/>
-                    <div className={"flex flex-col justify-center space-y-2"}>
-                      <span className={"text-[12px] text-[#D0D0D0]"}>ASL</span>
-                      <span
-                        className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height).toFixed(2) + " m"}</span>
-                    </div>
-                  </div>
-                  <div className={"flex space-x-4"}>
-                    <img src={alt} alt=""/>
-                    <div className={"flex flex-col justify-center space-y-2"}>
-                      <span className={"text-[12px] text-[#D0D0D0] whitespace-nowrap"}>ALT</span>
-                      <span
-                        className={"whitespace-nowrap"}>{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " m" : str}</span>
-                    </div>
-                  </div>
-                  <div className={"flex space-x-4"}>
-                    <img src={windSpeed} alt=""/>
-                    <div className={"flex flex-col justify-center space-y-2"}>
-                      <span className={"text-[12px] text-[#D0D0D0]"}>风速</span>
-                      <span
-                        className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.wind_speed === str ? str : (parseFloat(deviceInfo.device?.wind_speed) / 10).toFixed(2) + " m/s"}</span>
-                    </div>
-                  </div>
-                  <div className={"flex space-x-4"}>
-                    <img src={qsdjl} alt=""/>
-                    <div className={"flex flex-col justify-center space-y-2"}>
-                      <span className={"text-[12px] text-[#D0D0D0]"}>距起始点距离</span>
-                      <span className={"whitespace-nowrap"}>
-                        {!deviceInfo.device || deviceInfo.device.home_distance.toString() === str ? str : (+deviceInfo.device?.home_distance).toFixed(2) + " m"}
-                        {/*{deviceInfo.device && deviceInfo.device.battery.capacity_percent !== str ? deviceInfo.device?.battery.capacity_percent + " %" : str}*/}
-                      </span>
-                    </div>
-                  </div>
+            <div className={"col-span-2"}>33</div>
+          </div>
+          <div className={"col-span-1 border-2 py-4 px-2"}>
+            <div
+              style={{
+                backgroundSize: "100% 100%"
+              }}
+              className={"h-full bg-degrees-group grid grid-rows-3"}>
+              <div className={"grid relative border-2"}>
+                <div className={"absolute left-[20%] top-[30%] flex flex-col items-center border-2 "}>
+                  <span className={"text-sm text-[#D0D0D0]"}>偏航角</span>
+                  <span className={"text-sm"}>90°</span>
                 </div>
               </div>
-              <div className={"col-span-1h-full relative content-center"}>
-                <img src={compassWrapperPng} className={"absolute right-14 scale-150 bottom-28 border-2"} alt=""/>
-                <img src={compassPng}
-                     style={{
-                       transform: `rotate(${-(headingDegrees || 0)}deg)`,
-                       transition: "transform 0.3s ease-out"
-                     }}
-                     className={"absolute left-18 top-[70px]"} alt=""
-                />
-                <img src={pointerPng} alt=""
-                     className={"absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[50px]"}/>
-                <Button disabled={!hasFlyControlPermission} type={"submit"}
-                        className={"bg-transparent absolute bottom-0"}>
-                  <img src={yjqfPng} alt=""/>
-                </Button>
+              <div className={"grid grid-cols-2 relative"}>
+                <div className={"absolute right-[10%] top-[35%] flex flex-col items-center"}>
+                  <span className={"text-sm text-[#D0D0D0]"}>俯仰角</span>
+                  <span className={"text-sm"}>90°</span>
+                </div>
               </div>
-              <div className={"col-span-1"}>
-                <CockpitTitle title={"飞行器当前状态"}/>
-                <div className={"space-y-[10px] mt-[16px]"}>
-                  <div className={"grid grid-cols-2 px-[26px]"}>
-                    <span>当前状态：</span>
-                    <span
-                      className={cn("font-bold", !deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected ? "text-red-500" : "text-[#00ee8b]")}>{deviceStatus}</span>
-                  </div>
-                  <div>
-                    <div
-                      className={cn("grid grid-cols-2 px-[26px]")}>
-                      <span>当前任务：</span>
-                      <span
-                        className={cn("font-bold", currentJobList?.list?.length && currentJobList?.list?.length > 0 ? "text-green-500" : "text-yellow-500")}>
-                        {currentJobList?.list?.[0]?.job_name || "暂无任务"}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      className={cn("grid grid-cols-2 px-[26px]")}>
-                      <span>当前航线：</span>
-                      <span
-                        className={cn("font-bold", currentJobList?.list?.length && currentJobList?.list?.length > 0 ? "text-green-500" : "text-yellow-500")}>
-                        {currentJobList?.list?.[0]?.file_name || "暂无航线"}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className={"grid grid-cols-2 px-[26px]"}>
-                      <span>机场：</span>
-                      <span>{deviceType?.gateway.model || str}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className={"grid grid-cols-2 px-[26px]"}>
-                      <span>机场SN：</span>
-                      <span>{deviceType?.gateway.sn || str}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className={"grid grid-cols-2 px-[26px]"}>
-                      <span>设备型号：</span>
-                      <span>{deviceType?.model || str}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className={"grid grid-cols-2 px-[26px]"}>
-                      <span>设备SN：</span>
-                      <span>{deviceType?.sn || str}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className={"grid grid-cols-2 px-[26px]"}>
-                      <span>当前经度：</span>
-                      <span>{deviceInfo?.device?.longitude || str} °</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className={"grid grid-cols-2 px-[26px]"}>
-                      <span>当前纬度：</span>
-                      <span>{deviceInfo?.device?.latitude || str} °</span>
-                    </div>
-                  </div>
+              <div className={"grid grid-cols-2 relative"}>
+                <div className={"absolute left-[12%] top-[15%] flex flex-col items-center"}>
+                  <span className={"text-sm text-[#D0D0D0]"}>横滚角</span>
+                  <span className={"text-sm"}>90°</span>
                 </div>
               </div>
             </div>
           </div>
-          <div className={"col-span-1 pt-[100px]"}>
-            <div className="flex items-center  mr-[60px] z-50 relative">
-              <CockpitTitle
-                sn={deviceSn}
-                title={!fpvDroneVideoId ? "AI识别" : undefined}
-                groupValue={fpvOrAi}
-                groupList={fpvDroneVideoId ? [
-                  {
-                    name: "FPV直播",
-                    value: "fpv"
-                  },
-                  {
-                    name: "AI识别",
-                    value: "ai"
-                  }
-                ] : undefined}
-                onGroupChange={onGroupChange}
-                onClickPopoverItem={onChangeAiVideo}
-              />
-              {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] && (
-                <div className="flex items-center space-x-2">
-                  {fpvDroneVideoId && fpvOrAi === "fpv" && <RefreshCcw
-                    size={17}
-                    className="cursor-pointer"
-                    onClick={() => startFpvLive(false)}
-                  />}
-                  {(fpvOrAi !== "fpv" || !fpvDroneVideoId) && currentPlatform === AlgorithmPlatform.CloudPlatForm &&
-                    <Maximize2
-                      size={17}
-                      className="cursor-pointer"
-                      onClick={toggleFpvFullscreen}
-                    />}
-                </div>
-              )}
-            </div>
-            {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
-              fpvDroneVideoId ?
-                fpvOrAi === "fpv" ?
-                  <video
-                    ref={droneFpvVideoRef}
-                    controls
-                    autoPlay
-                    className={cn(
-                      "h-[200px] mr-[60px] z-50 my-2 relative",
-                      isFpvFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black object-fill aspect-video"
-                    )}
-                  />
-                  : (instanceId ? <iframe
-                      className={""}
-                      src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}
-                      id={"player3"}/> :
-                    <div className={"h-[200px] flex items-center pl-24 text-[#d0d0d0]"}>请选择算法</div>)
-                : currentPlatform === AlgorithmPlatform.CloudPlatForm ? (instanceId ? <iframe
-                    className={"w-80 h-60 rounded-[16px]"}
-                    id={"player3"}
-                    src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
-                    {isFpvFullscreen && (
-                      <X
-                        className="absolute top-4 right-4 cursor-pointer text-white z-10"
-                        size={24}
-                        onClick={exitFpvFullscreen}
-                      />
-                    )}
-                  </iframe> : <div className={"h-[200px] flex items-center pl-24 text-[#d0d0d0]"}>请选择算法</div>) :
-                  <video ref={otherPlatFormAiRef}
-                         controls
-                         autoPlay
-                         className={"aspect-video w-80 rounded-lg mt-4"}
-                  >
-                  </video>
-            ) : (
-              <div className={"text-[#d0d0d0] h-[200px] flex items-center pl-6"}>
-                当前设备已关机，无法进行直播
-              </div>
-            )}
-            <div className={"py-4"}>
-              <CockpitTitle title={"实时气象"}/>
-            </div>
-            <div className={"flex"}>
-              {/*<div className={"flex flex-col content-center"}>
-                <img className={"translate-y-12"} src={cloudyPng} alt=""/>
-                <img src={weatherBasePng} alt=""/>
-              </div>*/}
-              <div className={"pl-[32px] flex justify-center items-center space-x-2"}>
-                <span>环境温度：</span>
-                <div className={"text-[34px]"}>
-                  {deviceInfo.dock?.basic_osd?.environment_temperature}°C
-                </div>
-              </div>
-            </div>
-            <div className={"grid grid-cols-2 mt-[16px]"}>
-              <div className={"flex"}>
-                <img src={humidityPng} alt=""/>
-                <div className={"flex flex-col"}>
-                  <span>湿度</span>
-                  <span className={"text-[18px] text-[#32A3FF]"}>
-                    {deviceInfo.dock?.basic_osd?.humidity}
-                  </span>
-                </div>
-              </div>
-              <div className={"flex"}>
-                <img src={rainyPng} alt=""/>
-                <div className={"flex flex-col"}>
-                  <span>降雨</span>
-                  <span className={"text-[18px] text-[#32A3FF]"}>
-                    {/*{RainfallEnum[deviceInfo.dock?.basic_osd?.rainfall]}*/}
-                    {RainfallMap[deviceInfo.dock?.basic_osd?.rainfall]}
-                  </span>
-                </div>
-              </div>
-              <div className={"flex"}>
-                <img src={windyPng} alt=""/>
-                <div className={"flex flex-col"}>
-                  <span>风向</span>
-                  <span className={"text-[18px] text-[#32A3FF]"}>{weatherInfo?.[0]?.realtime.wD}</span>
-                </div>
-              </div>
-              <div className={"flex"}>
-                <img src={windPowerPng} alt=""/>
-                <div className={"flex flex-col"}>
-                  <span>风力</span>
-                  <span className={"text-[18px] text-[#32A3FF]"}>{weatherInfo?.[0]?.realtime.wS}</span>
-                </div>
-              </div>
-            </div>
-            <div>
-              <CockpitFlyControl sn={dockSn}/>
-            </div>
-          </div>
-        </form>
-      </Form>
-    </FitScreen>
+        </div>
+      </div>
+      <div className={"border-2"}>
+        111
+      </div>
+    </div>
   );
 };
 

@@ -15,12 +15,13 @@ import {
   WaylineLostControlActionInCommandFlight, WaylineLostControlActionInCommandFlightOptions
 } from "@/types/drone.ts";
 import {Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
-import {FC} from "react";
+import {FC, useEffect} from "react";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import {pickPosition} from "@/components/toolbar/tools";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
+import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
 
 export const formSchema = z.object({
   target_latitude: z.coerce.number(),
@@ -65,7 +66,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
       rc_lost_action: LostControlActionInCommandFLight.RETURN_HOME,
       exit_wayline_when_rc_lost: WaylineLostControlActionInCommandFlight.EXEC_LOST_ACTION,
       rth_mode: ERthMode.SETTING,
-      commander_mode_lost_action: ECommanderModeLostAction.CONTINUE,
+      commander_mode_lost_action: ECommanderModeLostAction.EXEC_LOST_ACTION,
       commander_flight_mode: ECommanderFlightMode.SETTING,
     },
   });
@@ -88,7 +89,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
         rth_mode: +values.rth_mode,
         commander_mode_lost_action: +values.commander_mode_lost_action,
         commander_flight_mode: +values.commander_flight_mode,
-        max_speed: 14,
+        max_speed: 12,
       };
       console.log("body");
       console.log(body);
@@ -98,12 +99,14 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
           description: <span>起飞成功</span>
         });
         getCustomSource("drone-wayline")?.entities.removeAll();
-        const longitude = realtimeDeviceInfo.device?.longitude;
-        const latitude = realtimeDeviceInfo.device?.latitude;
-        if (realtimeDeviceInfo.device && longitude && latitude) {
+        const longitude = realtimeDeviceInfo.dock?.basic_osd?.longitude;
+        const latitude = realtimeDeviceInfo.dock?.basic_osd?.latitude;
+        const height = form.getValues("target_height")
+        if (realtimeDeviceInfo.dock && longitude && latitude) {
           getCustomSource("drone-wayline")?.entities.add({
             polyline: {
-              positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realtimeDeviceInfo.device.height, values.target_longitude, values.target_latitude, realtimeDeviceInfo.device.height]),
+              // positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realtimeDeviceInfo.device.height, values.target_longitude, values.target_latitude, realtimeDeviceInfo.device.height]),
+              positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, height, values.target_longitude, values.target_latitude, height]),
               width: 3,  // 设置折线的宽度
               material: Cesium.Color.BLUE,  // 折线的颜色
             }
@@ -145,8 +148,27 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
     pickPosition(({longitude, latitude}) => {
       form.setValue("target_longitude", longitude);
       form.setValue("target_latitude", latitude);
+      viewer.entities.removeById("fly-point");
+      // 添加蓝色圆形entity
+      viewer.entities.add({
+        id: "fly-point",
+        position: Cesium.Cartesian3.fromDegrees(longitude, latitude),
+        point: {
+          pixelSize: 10,                   // 点的大小（像素）
+          color: Cesium.Color.BLUE,        // 蓝色
+          outlineColor: Cesium.Color.WHITE, // 白色边框
+          outlineWidth: 2,                // 边框宽度
+        }
+      });
     });
   };
+
+  useEffect(() => {
+    return () => {
+      // viewer.entities.removeById("fly-point");
+      clearPickPosition();
+    };
+  }, []);
 
   return (
     <>
@@ -262,7 +284,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
                       </Select>
                     </FormItem>)}
                 />
-                <FormField
+                {/*<FormField
                   control={form.control}
                   name={"rth_mode"}
                   render={({field}) => (
@@ -336,7 +358,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
                     </FormItem>
                   )}
                   name={"commander_flight_height"}
-                />
+                />*/}
               </>}
               <div className={"flex justify-between mt-2 pl-2 pr-4"}>
                 <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]"} type={"button"}
