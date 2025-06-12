@@ -70,6 +70,7 @@ import wenduPng from "@/assets/images/drone/cockpit/wendu.png";
 import fengliPng from "@/assets/images/drone/cockpit/fengli.png";
 import fengxiangPng from "@/assets/images/drone/cockpit/fengxiang.png";
 import jiangyuPng from "@/assets/images/drone/cockpit/jiangyu.png";
+import compassAroundPng from "@/assets/images/drone/cockpit/bg-compass-around.png";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -529,163 +530,176 @@ const Cockpit = () => {
     deviceInfo.device?.battery?.capacity_percent || deviceInfo.dock?.work_osd?.drone_battery_maintenance_info?.batteries[0]?.capacity_percent;
 
   return (
-    <div
-      style={{backgroundSize: "100% 100%"}}
-      className={"h-full bg-cockpit relative grid grid-cols-5"}>
-      <header
-        className={"bg-cockpit-header h-40 bg-full-size absolute top-0 w-full left-0 flex justify-center text-lg px-4"}>
-        {/* 左边部分（靠左） */}
-        <div className={"flex-1 flex justify-start py-2"}>
-          <Undo2
-            className="cursor-pointer text-white w-12"
-            size={24}
-            onClick={() => {
-              navigate("/tsa");
-            }}/>
-          <span>{currentTopo?.nickname + " - " + currentTopo?.children.nickname}</span>
-        </div>
-        {/* 中间部分（绝对居中） */}
-        <div className={"py-4 text-xl"}>
-          虚拟座舱 -
-          <span className={
-            deviceInfo.dock?.basic_osd?.drone_in_dock && !deviceInfo.device
-              ? "text-yellow-500 px-2 font-bold"
-              : !deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected
-                ? "text-red-500 px-2 font-bold"
-                : "text-[#00ee8b] px-2 font-bold"
-          }>
+    <FitScreen mode={"full"}>
+      <div
+        style={{backgroundSize: "100% 100%"}}
+        className={"h-full bg-cockpit relative grid grid-cols-5"}>
+        <header
+          className={"bg-cockpit-header h-40 bg-full-size absolute top-0 w-full left-0 flex justify-center text-lg px-4"}>
+          {/* 左边部分（靠左） */}
+          <div className={"flex-1 flex justify-start py-2"}>
+            <Undo2
+              className="cursor-pointer text-white w-12"
+              size={24}
+              onClick={() => {
+                navigate("/tsa");
+              }}/>
+            <span>{currentTopo?.nickname + " - " + currentTopo?.children.nickname}</span>
+          </div>
+          {/* 中间部分（绝对居中） */}
+          <div className={"py-4 text-xl"}>
+            虚拟座舱 -
+            <span className={
+              deviceInfo.dock?.basic_osd?.drone_in_dock && !deviceInfo.device
+                ? "text-yellow-500 px-2 font-bold"
+                : !deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected
+                  ? "text-red-500 px-2 font-bold"
+                  : "text-[#00ee8b] px-2 font-bold"
+            }>
         {deviceStatus2}
           </span>
+          </div>
+          {/* 右边部分（靠右） */}
+          <div className="flex-1 flex justify-end space-x-6 py-2">
+            <div className={"flex space-x-2"}>
+              <img className={"h-6"} src={wenduPng} alt=""/>
+              <span>{deviceInfo.dock?.basic_osd?.environment_temperature}°C</span>
+            </div>
+            <div className={"flex  space-x-2"}>
+              <img className={"h-6"} src={fengliPng} alt=""/>
+              <span>{weatherInfo?.[0]?.realtime.wS}</span>
+            </div>
+            <div className={"flex  space-x-2"}>
+              <img className={"h-6"} src={fengxiangPng} alt=""/>
+              <span>{weatherInfo?.[0]?.realtime.wD}</span>
+            </div>
+            <div className={"flex space-x-2"}>
+              <img className={"h-6"} src={jiangyuPng} alt=""/>
+              <span>{RainfallMap[deviceInfo.dock?.basic_osd?.rainfall]}</span>
+            </div>
+          </div>
+        </header>
+        <div className={"border-2"}>
+          111
         </div>
-        {/* 右边部分（靠右） */}
-        <div className="flex-1 flex justify-end space-x-6 py-2">
-          <div className={"flex space-x-2"}>
-            <img className={"h-6"} src={wenduPng} alt=""/>
-            <span>{deviceInfo.dock?.basic_osd?.environment_temperature}°C</span>
+        <div className={"border-2 col-span-3 pt-20 grid grid-rows-10"}>
+          <div style={{
+            backgroundSize: "100% 100%"
+          }} className={"bg-center-video row-span-7 content-center z-100"}>
+            {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
+              <div
+                className={"w-[90%] h-[88%] overflow-hidden cursor-crosshair [clip-path:polygon(50px_0,calc(100%-50px)_0,100%_60px,100%_calc(100%-70px),calc(100%-60px)_100%,60px_100%,0_calc(100%-70px),0_60px)]"}>
+                <video
+                  ref={droneCloudVideoRef}
+                  autoPlay
+                  className={"w-full h-full aspect-video object-fill"}
+                  id={"player2"}
+                  onDoubleClick={handleVideoDoubleClick}
+                  onWheel={handleWheel}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#000",
+                    position: "relative",
+                    userSelect: "none"
+                  }}
+                />
+              </div>
+            ) : (
+              <div className={"text-[#d0d0d0]"}>
+                当前设备已关机，无法进行直播
+              </div>
+            )}
           </div>
-          <div className={"flex  space-x-2"}>
-            <img className={"h-6"} src={fengliPng} alt=""/>
-            <span>{weatherInfo?.[0]?.realtime.wS}</span>
-          </div>
-          <div className={"flex  space-x-2"}>
-            <img className={"h-6"} src={fengxiangPng} alt=""/>
-            <span>{weatherInfo?.[0]?.realtime.wD}</span>
-          </div>
-          <div className={"flex space-x-2"}>
-            <img className={"h-6"} src={jiangyuPng} alt=""/>
-            <span>{RainfallMap[deviceInfo.dock?.basic_osd?.rainfall]}</span>
-          </div>
-        </div>
-      </header>
-      <div className={"border-2"}>
-        111
-      </div>
-      <div className={"border-2 col-span-3 pt-20 grid grid-rows-10"}>
-        <div style={{
-          backgroundSize: "100% 100%"
-        }} className={"bg-center-video row-span-7 content-center"}>
-          {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
-            <div
-              className={"w-[90%] h-[88%] overflow-hidden cursor-crosshair [clip-path:polygon(50px_0,calc(100%-50px)_0,100%_60px,100%_calc(100%-70px),calc(100%-60px)_100%,60px_100%,0_calc(100%-70px),0_60px)]"}>
-              <video
-                ref={droneCloudVideoRef}
-                autoPlay
-                className={"w-full h-full aspect-video object-fill"}
-                id={"player2"}
-                onDoubleClick={handleVideoDoubleClick}
-                onWheel={handleWheel}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
+          <div className={"row-span-3 grid grid-cols-5"}>
+            <div className={"col-span-1 grid grid-rows-3"}>
+              <div className={"content-center space-x-6"}>
+                <img className={"h-1/2"} src={batteryPng} alt=""/>
+                <div className={"flex flex-col"}>
+                  <span className={"text-[#D0D0D0]"}>电池电量</span>
+                  <span
+                    className={"whitespace-nowrap"}>{capacity_percent ? capacity_percent + " %" : "--"}</span>
+                </div>
+              </div>
+              <div className={"content-center space-x-6"}>
+                <img className={"h-1/2"} src={asl} alt=""/>
+                <div className={"flex flex-col"}>
+                  <span className={"text-[#D0D0D0]"}>海拔高度</span>
+                  <span
+                    className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height as string).toFixed(2) + " m"}</span>
+                </div>
+              </div>
+              <div className={"content-center space-x-6"}>
+                <img className={"h-1/2"} src={batteryPng} alt=""/>
+                <div className={"flex flex-col"}>
+                  <span className={"text-[#D0D0D0]"}>起始点距离</span>
+                  <span
+                    className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.home_distance.toString() === str ? str : (+deviceInfo.device?.home_distance).toFixed(2) + " m"}</span>
+                </div>
+              </div>
+            </div>
+            <div className={"col-span-3 border-2 grid grid-cols-7"}>
+              <div className={"col-span-2"}>11</div>
+              <div className={"col-span-3 border-2"}>
+                <div className={"relative border-2 h-full content-center aspect-square"}>
+                  <img src={compassAroundPng} alt="" className={"absolute w-full aspect-square"}
+                       style={{
+                         scale: "1.8"
+                       }}/>
+                  <img src={compassPng}
+                       style={{
+                         transform: `rotate(${-(headingDegrees || 0)}deg)`,
+                         transition: "transform 0.3s ease-out",
+                         scale: "0.6"
+                       }}
+                       className={"aspect-square w-full"} alt=""
+                  />
+                  <img src={pointerPng} alt="" className={"absolute"}/>
+                </div>
+              </div>
+              <div className={"col-span-2"}>33</div>
+            </div>
+            <div className={"col-span-1 border-2 py-4 px-2"}>
+              <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#000",
-                  position: "relative",
-                  userSelect: "none"
+                  backgroundSize: "100% 100%"
                 }}
-              />
-            </div>
-          ) : (
-            <div className={"text-[#d0d0d0]"}>
-              当前设备已关机，无法进行直播
-            </div>
-          )}
-        </div>
-        <div className={"row-span-3 grid grid-cols-5"}>
-          <div className={"col-span-1 border-2 grid grid-rows-3 px-2 py-2 place-items-center"}>
-            <div className={"flex items-center gap-4 p-2 h-full"}>
-              <div className={"h-full aspect-square"}>
-                <img className={"w-full h-full object-contain"} src={batteryPng} alt=""/>
-              </div>
-              <div className={"flex flex-col justify-center space-y-1 text-lg"}>
-                <span className={"text-[#D0D0D0]"}>电池电量</span>
-                <span
-                  className={"whitespace-nowrap"}>{capacity_percent ? capacity_percent + " %" : "--"}</span>
-              </div>
-            </div>
-            <div className={"flex items-center gap-4 p-2 h-full"}>
-              <div className={"h-full aspect-square"}>
-                <img className={"w-full h-full object-contain"} src={qsdjl} alt=""/>
-              </div>
-              <div className={"flex flex-col justify-center space-y-1 text-lg"}>
-                <span className={"text-[#D0D0D0]"}>起始点距离</span>
-                <span
-                  className={"whitespace-nowrap"}> {!deviceInfo.device || deviceInfo.device.home_distance.toString() === str ? str : (+deviceInfo.device?.home_distance).toFixed(2) + " m"}</span>
-              </div>
-            </div>
-            <div className={"flex items-center gap-4 p-2 h-full"}>
-              <div className={"h-full aspect-square"}>
-                <img className={"w-full h-full object-contain"} src={asl} alt=""/>
-              </div>
-              <div className={"flex flex-col justify-center space-y-1 text-lg"}>
-                <span className={"text-[#D0D0D0]"}>海拔高度</span>
-                <span
-                  className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height as string).toFixed(2) + " m"}</span>
-              </div>
-            </div>
-          </div>
-          <div className={"col-span-3 border-2 grid grid-cols-7"}>
-            <div className={"col-span-2"}>11</div>
-            <div className={"col-span-3 border-2"}>
-
-            </div>
-            <div className={"col-span-2"}>33</div>
-          </div>
-          <div className={"col-span-1 border-2 py-4 px-2"}>
-            <div
-              style={{
-                backgroundSize: "100% 100%"
-              }}
-              className={"h-full bg-degrees-group grid grid-rows-3"}>
-              <div className={"grid relative border-2"}>
-                <div className={"absolute left-[20%] top-[30%] flex flex-col items-center border-2 "}>
-                  <span className={"text-sm text-[#D0D0D0]"}>偏航角</span>
-                  <span className={"text-sm"}>90°</span>
+                className={"h-full bg-degrees-group grid grid-rows-3"}>
+                <div className={"relative px-4"}>
+                  <div className={"absolute left-[21%] top-[38%]"}>
+                    <div className={"flex justify-center flex-col items-center"}>
+                      <span className={"text-sm text-[#D0D0D0]"}>偏航角</span>
+                      <span className={"text-sm"}>90°</span>
+                    </div>
+                    <div></div>
+                  </div>
                 </div>
-              </div>
-              <div className={"grid grid-cols-2 relative"}>
-                <div className={"absolute right-[10%] top-[35%] flex flex-col items-center"}>
-                  <span className={"text-sm text-[#D0D0D0]"}>俯仰角</span>
-                  <span className={"text-sm"}>90°</span>
+                <div className={"grid grid-cols-2 relative"}>
+                  <div className={"absolute right-[13%] top-[40%] flex flex-col items-center"}>
+                    <span className={"text-sm text-[#D0D0D0]"}>俯仰角</span>
+                    <span className={"text-sm"}>90°</span>
+                  </div>
                 </div>
-              </div>
-              <div className={"grid grid-cols-2 relative"}>
-                <div className={"absolute left-[12%] top-[15%] flex flex-col items-center"}>
-                  <span className={"text-sm text-[#D0D0D0]"}>横滚角</span>
-                  <span className={"text-sm"}>90°</span>
+                <div className={"grid grid-cols-2 relative"}>
+                  <div className={"absolute left-[14%] top-[16%] flex flex-col items-center"}>
+                    <span className={"text-sm text-[#D0D0D0]"}>横滚角</span>
+                    <span className={"text-sm"}>90°</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        <div className={"border-2"}>
+          111
+        </div>
       </div>
-      <div className={"border-2"}>
-        111
-      </div>
-    </div>
+    </FitScreen>
   );
 };
 
