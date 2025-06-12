@@ -9,7 +9,8 @@ import {useAjax} from "@/lib/http.ts";
 import {HTTP_PREFIX} from "@/api/manage.ts";
 import {ELocalStorageKey, EUserType} from "@/types/enum.ts";
 import {useNavigate} from "react-router-dom";
-import companyTitle from "@/assets/images/drone/company-title.png";
+// import companyTitle from "@/assets/images/drone/company-title.png";
+import companyTitle from "@/assets/images/drone/zdhxc-bg.png";
 import {toast} from "@/components/ui/use-toast.ts";
 
 const formSchema = z.object({

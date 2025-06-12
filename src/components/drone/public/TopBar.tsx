@@ -38,7 +38,7 @@ const TopBar = () => {
     <div className={"h-[70px] bg-gradient-to-b from-[#1f2849]/[.82] to-[#325088]/[.82] " +
       "flex justify-between items-center px-[66px] py-[18px]"}>
       {/*<div className={"text-[24px] font-semibold"}>{currentWorkSpace}无人机管理平台</div>*/}
-      <div className={"text-[24px] font-semibold"}>绣花针低空管控平台</div>
+      <div className={"text-[24px] font-semibold"}>无人机机库自动化巡查系统</div>
       <div className={"flex space-x-4"}>
         <CircleUser/>
         <span>{currentUser?.username || "未登录"} |</span>

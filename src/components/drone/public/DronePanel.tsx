@@ -190,7 +190,7 @@ const DronePanel = () => {
   const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
 
   const capacity_percent = deviceInfo && deviceInfo.device &&
-    deviceInfo.device.battery.capacity_percent || deviceInfo.dock.work_osd.drone_battery_maintenance_info?.batteries[0]?.capacity_percent;
+    deviceInfo.device.battery.capacity_percent || deviceInfo.dock.work_osd?.drone_battery_maintenance_info?.batteries[0]?.capacity_percent;
 
   return (
     <div className={"flex relative"}>
