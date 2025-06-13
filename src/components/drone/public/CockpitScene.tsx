@@ -187,7 +187,7 @@ const CockpitScene = () => {
     }, [deviceState]);*/
 
   return (
-    <div id="cesiumContainer" className={"h-full"}></div>
+    <div id="cesiumContainer" className={"h-full w-full"}></div>
   );
 };
 

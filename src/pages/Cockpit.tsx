@@ -44,10 +44,9 @@ import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {EDockModeCode, EModeCode, EModeCodeMap, RainfallEnum, RainfallMap} from "@/types/device.ts";
 import {cn} from "@/lib/utils.ts";
 import PayloadControl from "@/components/drone/PayloadControl.tsx";
-import compassWrapperPng from "@/assets/images/drone/cockpit/compass-wrapper.png";
 import compassPng from "@/assets/images/drone/cockpit/compass.png";
 import pointerPng from "@/assets/images/drone/cockpit/pointer.png";
-import {ChevronsUpDown, Maximize2, RefreshCcw, Settings, Undo2, X} from "lucide-react";
+import {ArrowRightLeft, ChevronsUpDown, Maximize2, RefreshCcw, Settings, Undo2, X} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,7 +70,6 @@ import fengliPng from "@/assets/images/drone/cockpit/fengli.png";
 import fengxiangPng from "@/assets/images/drone/cockpit/fengxiang.png";
 import jiangyuPng from "@/assets/images/drone/cockpit/jiangyu.png";
 import compassAroundPng from "@/assets/images/drone/cockpit/bg-compass-around.png";
-import {GaugeComponent} from "react-gauge-component";
 import GaugeBar from "@/components/public/GaugeBar.tsx";
 import titleIcon from "@/assets/images/drone/cockpit/title-icon.png";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
@@ -85,23 +83,6 @@ const str = "--";
 
 const Cockpit = () => {
   useInitialConnectWebSocket();
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      target_latitude: 30.891961,
-      target_longitude: 121.44556,
-      target_height: 120,
-      security_takeoff_height: "120",
-      rth_altitude: "120",
-      commander_flight_height: "120",
-      rc_lost_action: LostControlActionInCommandFLight.RETURN_HOME,
-      exit_wayline_when_rc_lost: WaylineLostControlActionInCommandFlight.EXEC_LOST_ACTION,
-      rth_mode: ERthMode.SETTING,
-      commander_mode_lost_action: ECommanderModeLostAction.CONTINUE,
-      commander_flight_mode: ECommanderFlightMode.SETTING,
-    },
-  });
 
   const {post} = useAjax();
   const {onlineDocks} = useOnlineDocks();
@@ -123,31 +104,6 @@ const Cockpit = () => {
   }, [deviceInfo]);
 
   const deviceStatus = !deviceInfo.device ? EModeCodeMap[EModeCode.Disconnected] : EModeCodeMap[deviceInfo.device?.mode_code];
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!dockSn) return;
-    const body = {
-      ...values,
-      target_latitude: parseFloat(values.target_latitude),
-      target_longitude: parseFloat(values.target_longitude),
-      target_height: parseFloat(values.target_height),
-      security_takeoff_height: parseFloat(values.security_takeoff_height),
-      rth_altitude: parseFloat(values.rth_altitude),
-      commanderFlightHeight: parseFloat(values.commander_flight_height),
-      rc_lost_action: +values.rc_lost_action,
-      exit_wayline_when_rc_lost: +values.exit_wayline_when_rc_lost,
-      rth_mode: +values.rth_mode,
-      commander_mode_lost_action: +values.commander_mode_lost_action,
-      commander_flight_mode: +values.commander_flight_mode,
-      max_speed: 14,
-    };
-    const resp: any = await post(`${DRC_API_PREFIX}/devices/${dockSn}/jobs/takeoff-to-point`, body);
-    if (resp.data.code === 0) {
-      toast({
-        description: <span>起飞成功</span>
-      });
-    }
-  };
 
   const dockVideoRef = useRef<HTMLVideoElement>(null);
   const droneCloudVideoRef = useRef<HTMLVideoElement>(null);
@@ -419,9 +375,6 @@ const Cockpit = () => {
   }, [dragTimer]);
 
   const [fpvOrAi, setFpvOrAi] = useState("fpv");
-  const onGroupChange = (value: string) => {
-    setFpvOrAi(value);
-  };
 
   const onUpdateDroneCloudClarity = async (value?: number) => {
     setDroneCloudClarity(value);
@@ -482,8 +435,6 @@ const Cockpit = () => {
   const otherPlatFormAiRef = useRef<HTMLVideoElement>(null);
 
   const onChangeAiVideo = (platform: AlgorithmPlatform, video_id: string) => {
-    console.log("video_id");
-    console.log(video_id);
     setInstanceId(video_id);
     setCurrentPlatform(platform);
   };
@@ -515,24 +466,112 @@ const Cockpit = () => {
   const result = groupByDevicePlatformAndName(algorithmConfigList?.records || []);
   const navigate = useNavigate();
 
-  // 切换中屏显示
-  const [videoLayout, setVideoLayout] = useState<"default" | "switched">("default");
-
-  const switchVideos = () => {
-    setVideoLayout(prev => prev === "default" ? "switched" : "default");
-  };
-
   const {hasPermission} = usePermission();
   const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
 
-
   const {data: deviceTopo} = useDeviceTopo();
   const currentTopo = deviceTopo?.find(item => item.device_sn === dockSn);
-  console.log("currentTopo");
-  console.log(currentTopo);
 
   const capacity_percent = deviceInfo && deviceInfo.device &&
     deviceInfo.device?.battery?.capacity_percent || deviceInfo.dock?.work_osd?.drone_battery_maintenance_info?.batteries[0]?.capacity_percent;
+
+  const [mainView, setMainView] = useState<"drone" | "dock" | "map">("drone");
+  const [dockView, setDockView] = useState<"drone" | "dock" | "map">("dock");
+  const [mapView, setMapView] = useState<"drone" | "dock" | "map">("map");
+
+  // 渲染主视频区内容
+  const renderMainVideo = () => {
+    if (deviceStatus === EModeCodeMap[EModeCode.Disconnected]) {
+      return <div className="text-[#d0d0d0]">当前设备已关机，无法进行直播</div>;
+    }
+    if (mainView === "drone") {
+      return (
+        <video
+          ref={droneCloudVideoRef}
+          autoPlay
+          className={"w-full h-full aspect-video object-fill"}
+          id={"player2"}
+          onDoubleClick={handleVideoDoubleClick}
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "#000",
+            position: "relative",
+            userSelect: "none"
+          }}
+        />
+      );
+    } else if (mainView === "dock") {
+      return (
+        <video
+          ref={dockVideoRef}
+          controls
+          autoPlay
+          className="w-full h-full aspect-video object-fill"
+        />
+      );
+    } else if (mainView === "map") {
+      return <CockpitScene/>;
+    }
+  };
+
+  // 渲染左侧机场直播区内容
+  const renderDockArea = () => {
+    if (dockView === "dock") {
+      // 主区已显示dock，左侧显示drone
+      return (
+        <video
+          ref={dockVideoRef}
+          controls
+          autoPlay
+          className={"h-[268px] w-full object-fill"}
+        />
+      );
+    } else if (dockView === "drone") {
+      // 左侧显示dock
+      return (
+        <video
+          ref={droneCloudVideoRef}
+          controls
+          autoPlay
+          className="h-[268px] w-full object-fill"
+        />
+      );
+    } else if (dockView === "map") {
+      return <div className={"h-[268px] w-full"}>
+        <CockpitScene/>
+      </div>;
+    }
+  };
+
+  // 渲染左侧地图区内容
+  const renderMapArea = () => {
+    if (mapView === "map") {
+      // 主区已显示地图，左侧显示drone视频
+      return <CockpitScene/>;
+    } else if (mapView === "drone") {
+      return <video
+        ref={droneCloudVideoRef}
+        controls
+        autoPlay
+        className="h-full w-full object-fill"
+      />;
+    } else if (mapView === "dock") {
+      return <video
+        ref={dockVideoRef}
+        controls
+        autoPlay
+        className="h-full w-full object-fill"
+      />;
+    }
+  };
+
 
   return (
     <FitScreen mode={"full"}>
@@ -617,22 +656,15 @@ const Cockpit = () => {
                     onClick={() => startDockLive()}
                     size={16}
                   />
-                  {/*<ArrowRightLeft
-                    className={"cursor-pointer"}
-                    // onClick={() => startDockLive()}
-                    onClick={switchVideos}
-                    size={16}
-                  />*/}
+                  <ArrowRightLeft size={16} className={"cursor-pointer"} onClick={() => {
+                    setMainView(dockView);
+                    setDockView(mainView);
+                  }}/>
                 </div>
               )}
             </div>
             {showDockLive && <div className={"flex-1 relative"}>
-              <video
-                ref={dockVideoRef}
-                controls
-                autoPlay
-                className={"h-[268px] w-full object-fill"}
-              />
+              {renderDockArea()}
               {/* 左上角 */}
               <div className="absolute left-0 top-0" style={{
                 width: "2px",
@@ -702,9 +734,13 @@ const Cockpit = () => {
             <div className={"flex space-x-[16px] items-center whitespace-nowrap text-lg my-2"}>
               <img src={titleIcon} alt="" className={"w-4"}/>
               <span>地图展示</span>
+              <ArrowRightLeft size={16} className={"cursor-pointer"} onClick={() => {
+                setMainView(mapView);
+                setMapView(mainView);
+              }}/>
             </div>
             <div className={cn("relative", showDockLive ? "h-[268px]" : "h-[550px]")}>
-              <CockpitScene/>
+              {renderMapArea()}
               <div className="absolute left-0 top-0" style={{
                 width: "2px",
                 height: "20px",
@@ -843,26 +879,7 @@ const Cockpit = () => {
             {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
               <div
                 className={"w-[90%] h-[88%] overflow-hidden cursor-crosshair [clip-path:polygon(50px_0,calc(100%-50px)_0,100%_60px,100%_calc(100%-70px),calc(100%-60px)_100%,60px_100%,0_calc(100%-70px),0_60px)]"}>
-                <video
-                  ref={droneCloudVideoRef}
-                  autoPlay
-                  className={"w-full h-full aspect-video object-fill"}
-                  id={"player2"}
-                  onDoubleClick={handleVideoDoubleClick}
-                  onWheel={handleWheel}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "#000",
-                    position: "relative",
-                    userSelect: "none"
-                  }}
-                />
+                {renderMainVideo()}
                 <div className={"absolute right-36 top-16 z-50"}>
                   <PayloadControl
                     currentMode={droneCloudMode}
@@ -978,6 +995,7 @@ const Cockpit = () => {
             <div className={"flex space-x-[16px] items-center whitespace-nowrap text-lg z-50"}>
               <img src={titleIcon} alt="" className={"w-4"}/>
               <span>AI识别</span>
+              <ArrowRightLeft size={16} className={"cursor-pointer ml-2"}/>
               <Popover>
                 <PopoverTrigger>
                   <span className={"text-[18px] flex items-center"}>
