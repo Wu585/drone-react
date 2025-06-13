@@ -6,7 +6,6 @@ const VideoShareRtc = () => {
   const [searchParams] = useSearchParams();
   const videoRef = useRef<HTMLVideoElement>(null);
   const sn = searchParams.get("sn");
-
   const {startLive} = useDeviceLive(videoRef.current, sn || "");
 
   startLive();

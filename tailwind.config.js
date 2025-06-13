@@ -129,6 +129,8 @@ module.exports = {
         'center-video': "url('@/assets/images/drone/cockpit/bg-center-video.png')",
         'cockpit-keyboard': "url('@/assets/images/drone/cockpit/bg-keyboard.png')",
         'cockpit-button': "url('@/assets/images/drone/cockpit/bg-button.png')",
+        'dock-video': "url('@/assets/images/drone/cockpit/bg-dock-video.png')",
+        'cockpit-workorder': "url('@/assets/images/drone/cockpit/bg-workorder.png')",
         'compass-around': "url('@/assets/images/drone/cockpit/bg-compass-around.png')",
         'fly-params': "url('@/assets/images/drone/cockpit/bg-fly-params.png')",
         'device': "url('@/assets/images/drone/bg-device.png')",

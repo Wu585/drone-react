@@ -58,7 +58,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {useFullscreen} from "@/hooks/useFullscreen";
 import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
-import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
+// import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
 import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
 import CockpitScene from "@/components/drone/public/CockpitScene.tsx";
 import {AlgorithmConfig, AlgorithmPlatform, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
@@ -285,11 +285,11 @@ const Cockpit = () => {
     });
   }, [zoomValue, dockSn, droneCloudMode]);
 
-  const {RightClickPanel, MenuItem, contextMenu} = useRightClickPanel({
-    containerId: "cesiumContainer",
-  });
+  // const {RightClickPanel, MenuItem, contextMenu} = useRightClickPanel({
+  //   containerId: "cesiumContainer",
+  // });
 
-  const onLookAt = async () => {
+  /*const onLookAt = async () => {
     const payloadIndex = deviceInfo?.device?.cameras?.[0]?.payload_index;
     try {
       await post(`${DRC_API_PREFIX}/devices/${dockSn}/payload/commands`, {
@@ -308,9 +308,9 @@ const Cockpit = () => {
         variant: "destructive"
       });
     }
-  };
+  };*/
 
-  const onFlyTo = async () => {
+  /*const onFlyTo = async () => {
     try {
       await post(`${DRC_API_PREFIX}/devices/${dockSn}/jobs/fly-to-point`, {
         max_speed: 14,
@@ -331,7 +331,7 @@ const Cockpit = () => {
         variant: "destructive"
       });
     }
-  };
+  };*/
 
   // 添加状态记录鼠标按下的位置和是否正在拖动
   const [isDragging, setIsDragging] = useState(false);
@@ -604,10 +604,10 @@ const Cockpit = () => {
               showDockLive ? "h-[244px] mt-[10px]" : "h-[430px]"
             )}>
               <CockpitScene/>
-              <RightClickPanel>
-                {/*<MenuItem onClick={onLookAt}>看向这里</MenuItem>*/}
-                <MenuItem onClick={onFlyTo}>飞向这里</MenuItem>
-              </RightClickPanel>
+              {/*<RightClickPanel>*/}
+              {/*  /!*<MenuItem onClick={onLookAt}>看向这里</MenuItem>*!/*/}
+              {/*  <MenuItem onClick={onFlyTo}>飞向这里</MenuItem>*/}
+              {/*</RightClickPanel>*/}
             </div>
             <div className={"ml-[53px] py-[30px]"}>
               <CockpitTitle title={"一键起飞基本参数"}/>

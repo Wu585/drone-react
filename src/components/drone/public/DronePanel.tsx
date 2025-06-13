@@ -96,7 +96,7 @@ const DronePanel = () => {
   };
 
   const onClickCockpit = () => {
-    navigate(`/cockpit?sn=${osdVisible.sn}&gateway_sn=${osdVisible.gateway_sn}`);
+    navigate(`/cockpit-new?sn=${osdVisible.sn}&gateway_sn=${osdVisible.gateway_sn}`);
   };
 
   const onStopFlyToPoint = async () => {

@@ -47,7 +47,7 @@ import PayloadControl from "@/components/drone/PayloadControl.tsx";
 import compassWrapperPng from "@/assets/images/drone/cockpit/compass-wrapper.png";
 import compassPng from "@/assets/images/drone/cockpit/compass.png";
 import pointerPng from "@/assets/images/drone/cockpit/pointer.png";
-import {Maximize2, RefreshCcw, Settings, Undo2, X} from "lucide-react";
+import {ChevronsUpDown, Maximize2, RefreshCcw, Settings, Undo2, X} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,6 +71,12 @@ import fengliPng from "@/assets/images/drone/cockpit/fengli.png";
 import fengxiangPng from "@/assets/images/drone/cockpit/fengxiang.png";
 import jiangyuPng from "@/assets/images/drone/cockpit/jiangyu.png";
 import compassAroundPng from "@/assets/images/drone/cockpit/bg-compass-around.png";
+import {GaugeComponent} from "react-gauge-component";
+import GaugeBar from "@/components/public/GaugeBar.tsx";
+import titleIcon from "@/assets/images/drone/cockpit/title-icon.png";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
+import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group.tsx";
+import {WorkOrderCarousel} from "@/components/drone/WorkOrderCarousel.tsx";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -255,9 +261,9 @@ const Cockpit = () => {
           y: normalizedY,
         },
       });
-      toast({
+      /*toast({
         description: "获取云台控制权成功"
-      });
+      });*/
     } catch (error) {
       toast({
         description: "云台控制失败",
@@ -507,7 +513,6 @@ const Cockpit = () => {
   });
 
   const result = groupByDevicePlatformAndName(algorithmConfigList?.records || []);
-
   const navigate = useNavigate();
 
   // 切换中屏显示
@@ -535,19 +540,24 @@ const Cockpit = () => {
         style={{backgroundSize: "100% 100%"}}
         className={"h-full bg-cockpit relative grid grid-cols-5"}>
         <header
-          className={"bg-cockpit-header h-40 bg-full-size absolute top-0 w-full left-0 flex justify-center text-lg px-4"}>
+          className={"bg-cockpit-header h-40 bg-full-size absolute top-0 w-full left-0 flex justify-center text-lg px-4 z-30"}>
           {/* 左边部分（靠左） */}
-          <div className={"flex-1 flex justify-start py-2"}>
-            <Undo2
-              className="cursor-pointer text-white w-12"
-              size={24}
-              onClick={() => {
-                navigate("/tsa");
-              }}/>
+        </header>
+        <div className={"absolute top-0 w-full z-50"}>
+          <div className={"flex-1 content-center py-[12px] space-x-6 absolute left-0 top-0 px-4 text-lg"}>
+            <div className={"bg-[#072E62]/[.7] h-8 content-center cursor-pointer rounded-lg"}
+                 onClick={() => {
+                   navigate("/tsa");
+                 }}>
+              <Undo2
+                className=" text-white w-12"
+                size={24}
+              />
+            </div>
             <span>{currentTopo?.nickname + " - " + currentTopo?.children.nickname}</span>
           </div>
           {/* 中间部分（绝对居中） */}
-          <div className={"py-4 text-xl"}>
+          <div className={"py-4 text-xl font-bold text-[#63E5FF] z-50 absolute left-1/2 top-0 -translate-x-1/2"}>
             虚拟座舱 -
             <span className={
               deviceInfo.dock?.basic_osd?.drone_in_dock && !deviceInfo.device
@@ -556,36 +566,280 @@ const Cockpit = () => {
                   ? "text-red-500 px-2 font-bold"
                   : "text-[#00ee8b] px-2 font-bold"
             }>
-        {deviceStatus2}
-          </span>
+              {deviceStatus2}
+            </span>
           </div>
           {/* 右边部分（靠右） */}
-          <div className="flex-1 flex justify-end space-x-6 py-2">
-            <div className={"flex space-x-2"}>
+          <div className="absolute right-0 flex py-4 space-x-6 pr-4 text-lg">
+            <div className={"space-x-2 content-center"}>
               <img className={"h-6"} src={wenduPng} alt=""/>
               <span>{deviceInfo.dock?.basic_osd?.environment_temperature}°C</span>
             </div>
-            <div className={"flex  space-x-2"}>
+            <div className={"space-x-2 content-center"}>
               <img className={"h-6"} src={fengliPng} alt=""/>
               <span>{weatherInfo?.[0]?.realtime.wS}</span>
             </div>
-            <div className={"flex  space-x-2"}>
+            <div className={"space-x-2 content-center"}>
               <img className={"h-6"} src={fengxiangPng} alt=""/>
               <span>{weatherInfo?.[0]?.realtime.wD}</span>
             </div>
-            <div className={"flex space-x-2"}>
+            <div className={"space-x-2 content-center"}>
               <img className={"h-6"} src={jiangyuPng} alt=""/>
               <span>{RainfallMap[deviceInfo.dock?.basic_osd?.rainfall]}</span>
             </div>
           </div>
-        </header>
-        <div className={"border-2"}>
-          111
         </div>
-        <div className={"border-2 col-span-3 pt-20 grid grid-rows-10"}>
+        <div className={"pt-32 pl-10 z-40"}>
+          <div className={"row-span-2 flex flex-col space-y-2"}>
+            <div className={"flex space-x-[16px] items-center whitespace-nowrap text-lg"}>
+              <img src={titleIcon} alt="" className={"w-4"}/>
+              <span>机场直播</span>
+              <X size={18} className={cn("transition-transform cursor-pointer", !showDockLive && "rotate-45")}
+                 onClick={handleDockLiveToggle}/>
+              {showDockLive && (
+                <div className={"flex space-x-[16px]"}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <Settings size={16}/>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-16">
+                      <DropdownMenuLabel>清晰度</DropdownMenuLabel>
+                      <DropdownMenuRadioGroup
+                        onValueChange={(value) => updateDockClarity(+value)}>
+                        {clarityList.map(item =>
+                          <DropdownMenuRadioItem key={item.value}
+                                                 value={item.value.toString()}>{item.label}</DropdownMenuRadioItem>)}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <RefreshCcw
+                    className={"cursor-pointer"}
+                    onClick={() => startDockLive()}
+                    size={16}
+                  />
+                  {/*<ArrowRightLeft
+                    className={"cursor-pointer"}
+                    // onClick={() => startDockLive()}
+                    onClick={switchVideos}
+                    size={16}
+                  />*/}
+                </div>
+              )}
+            </div>
+            {showDockLive && <div className={"flex-1 relative"}>
+              <video
+                ref={dockVideoRef}
+                controls
+                autoPlay
+                className={"h-[268px] w-full object-fill"}
+              />
+              {/* 左上角 */}
+              <div className="absolute left-0 top-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute left-0 top-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+
+              {/* 右上角 */}
+              <div className="absolute right-0 top-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute right-0 top-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+
+              {/* 左下角 */}
+              <div className="absolute left-0 bottom-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute left-0 bottom-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+
+              {/* 右下角 */}
+              <div className="absolute right-0 bottom-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute right-0 bottom-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+            </div>}
+          </div>
+          <div className={cn("flex flex-col space-y-[4px]")}>
+            <div className={"flex space-x-[16px] items-center whitespace-nowrap text-lg my-2"}>
+              <img src={titleIcon} alt="" className={"w-4"}/>
+              <span>地图展示</span>
+            </div>
+            <div className={cn("relative", showDockLive ? "h-[268px]" : "h-[550px]")}>
+              <CockpitScene/>
+              <div className="absolute left-0 top-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute left-0 top-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+
+              {/* 右上角 */}
+              <div className="absolute right-0 top-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute right-0 top-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+
+              {/* 左下角 */}
+              <div className="absolute left-0 bottom-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute left-0 bottom-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+
+              {/* 右下角 */}
+              <div className="absolute right-0 bottom-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute right-0 bottom-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+            </div>
+            {/* 左上角 */}
+          </div>
+          <div className={"pt-4"}>
+            <div className={"space-y-[16px] mt-[16px]"}>
+              <div className={"grid grid-cols-2 px-[16px]"}>
+                <span>当前状态：</span>
+                <span
+                  className={cn("font-bold", !deviceInfo.device || deviceInfo.device?.mode_code === EModeCode.Disconnected ? "text-red-500" : "text-[#00ee8b]")}>{deviceStatus}</span>
+              </div>
+              <div>
+                <div
+                  className={cn("grid grid-cols-2 px-[16px]")}>
+                  <span>当前任务：</span>
+                  <span
+                    className={cn("font-bold", currentJobList?.list?.length && currentJobList?.list?.length > 0 ? "text-green-500" : "text-yellow-500")}>
+                        {currentJobList?.list?.[0]?.job_name || "暂无任务"}
+                      </span>
+                </div>
+              </div>
+              <div>
+                <div
+                  className={cn("grid grid-cols-2 px-[16px]")}>
+                  <span>当前航线：</span>
+                  <span
+                    className={cn("font-bold", currentJobList?.list?.length && currentJobList?.list?.length > 0 ? "text-green-500" : "text-yellow-500")}>
+                        {currentJobList?.list?.[0]?.file_name || "暂无航线"}
+                      </span>
+                </div>
+              </div>
+              {/*<div>
+                <div className={"grid grid-cols-2 px-[26px]"}>
+                  <span>机场：</span>
+                  <span>{deviceType?.gateway.model || str}</span>
+                </div>
+              </div>*/}
+              <div>
+                <div className={"grid grid-cols-2 px-[16px]"}>
+                  <span>机场SN：</span>
+                  <span>{deviceType?.gateway.sn || str}</span>
+                </div>
+              </div>
+              {/*<div>
+                <div className={"grid grid-cols-2 px-[26px]"}>
+                  <span>设备型号：</span>
+                  <span>{deviceType?.model || str}</span>
+                </div>
+              </div>*/}
+              <div>
+                <div className={"grid grid-cols-2 px-[16px]"}>
+                  <span>设备SN：</span>
+                  <span>{deviceType?.sn || str}</span>
+                </div>
+              </div>
+              <div>
+                <div className={"grid grid-cols-2 px-[16px]"}>
+                  <span>当前经度：</span>
+                  <span>{deviceInfo?.device?.longitude || str} °</span>
+                </div>
+              </div>
+              <div>
+                <div className={"grid grid-cols-2 px-[16px]"}>
+                  <span>当前纬度：</span>
+                  <span>{deviceInfo?.device?.latitude || str} °</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className={"col-span-3 pt-20 grid grid-rows-10"}>
           <div style={{
             backgroundSize: "100% 100%"
-          }} className={"bg-center-video row-span-7 content-center z-100"}>
+          }} className={"bg-center-video row-span-7 content-center z-100 relative"}>
             {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
               <div
                 className={"w-[90%] h-[88%] overflow-hidden cursor-crosshair [clip-path:polygon(50px_0,calc(100%-50px)_0,100%_60px,100%_calc(100%-70px),calc(100%-60px)_100%,60px_100%,0_calc(100%-70px),0_60px)]"}>
@@ -609,6 +863,18 @@ const Cockpit = () => {
                     userSelect: "none"
                   }}
                 />
+                <div className={"absolute right-36 top-16 z-50"}>
+                  <PayloadControl
+                    currentMode={droneCloudMode}
+                    clarity={droneCloudClarity}
+                    dockSn={dockSn}
+                    onRefreshVideo={() => startDroneLive(false)}
+                    updateVideo={onUpdateDroneCloudClarity}
+                    deviceSn={deviceSn}
+                    onChangeMode={onChangeDroneCloudMode}
+                    playerId="player2"
+                  />
+                </div>
               </div>
             ) : (
               <div className={"text-[#d0d0d0]"}>
@@ -635,7 +901,7 @@ const Cockpit = () => {
                 </div>
               </div>
               <div className={"content-center space-x-6"}>
-                <img className={"h-1/2"} src={batteryPng} alt=""/>
+                <img className={"h-1/2"} src={qsdjl} alt=""/>
                 <div className={"flex flex-col"}>
                   <span className={"text-[#D0D0D0]"}>起始点距离</span>
                   <span
@@ -643,10 +909,15 @@ const Cockpit = () => {
                 </div>
               </div>
             </div>
-            <div className={"col-span-3 border-2 grid grid-cols-7"}>
-              <div className={"col-span-2"}>11</div>
-              <div className={"col-span-3 border-2"}>
-                <div className={"relative border-2 h-full content-center aspect-square"}>
+            <div className={"col-span-3 grid grid-cols-7 overflow-hidden"}>
+              <div className={"col-span-2 content-center z-50 "}>
+                <GaugeBar min={0} max={15}
+                          value={deviceInfo?.device?.horizontal_speed ? +(+deviceInfo?.device?.horizontal_speed).toFixed(1) : 0}
+                          name={"水平速度"}
+                />
+              </div>
+              <div className={"col-span-3"}>
+                <div className={"relative h-full content-center aspect-square"}>
                   <img src={compassAroundPng} alt="" className={"absolute w-full aspect-square"}
                        style={{
                          scale: "1.8"
@@ -662,9 +933,13 @@ const Cockpit = () => {
                   <img src={pointerPng} alt="" className={"absolute"}/>
                 </div>
               </div>
-              <div className={"col-span-2"}>33</div>
+              <div className={"col-span-2 content-center z-50 "}>
+                <GaugeBar min={-15} max={15}
+                          value={deviceInfo?.device?.vertical_speed ? +(+deviceInfo?.device?.vertical_speed).toFixed(1) : 0}
+                          name={"垂直速度"}/>
+              </div>
             </div>
-            <div className={"col-span-1 border-2 py-4 px-2"}>
+            <div className={"col-span-1 py-4 px-2"}>
               <div
                 style={{
                   backgroundSize: "100% 100%"
@@ -674,7 +949,8 @@ const Cockpit = () => {
                   <div className={"absolute left-[21%] top-[38%]"}>
                     <div className={"flex justify-center flex-col items-center"}>
                       <span className={"text-sm text-[#D0D0D0]"}>偏航角</span>
-                      <span className={"text-sm"}>90°</span>
+                      <span
+                        className={"text-sm"}>{deviceInfo?.device?.attitude_head ? deviceInfo?.device?.attitude_head + "°" : "--"}</span>
                     </div>
                     <div></div>
                   </div>
@@ -682,21 +958,180 @@ const Cockpit = () => {
                 <div className={"grid grid-cols-2 relative"}>
                   <div className={"absolute right-[13%] top-[40%] flex flex-col items-center"}>
                     <span className={"text-sm text-[#D0D0D0]"}>俯仰角</span>
-                    <span className={"text-sm"}>90°</span>
+                    <span
+                      className={"text-sm"}>{deviceInfo?.device?.attitude_pitch ? deviceInfo?.device?.attitude_pitch + "°" : "--"}</span>
                   </div>
                 </div>
                 <div className={"grid grid-cols-2 relative"}>
                   <div className={"absolute left-[14%] top-[16%] flex flex-col items-center"}>
                     <span className={"text-sm text-[#D0D0D0]"}>横滚角</span>
-                    <span className={"text-sm"}>90°</span>
+                    <span
+                      className={"text-sm"}>{deviceInfo?.device?.attitude_roll ? deviceInfo?.device?.attitude_roll + "°" : "--"}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div className={"border-2"}>
-          111
+        <div className={"pt-32 pr-8"}>
+          <div className={"row-span-2 flex flex-col space-y-2"}>
+            <div className={"flex space-x-[16px] items-center whitespace-nowrap text-lg z-50"}>
+              <img src={titleIcon} alt="" className={"w-4"}/>
+              <span>AI识别</span>
+              <Popover>
+                <PopoverTrigger>
+                  <span className={"text-[18px] flex items-center"}>
+                    <ChevronsUpDown size={18}/>
+                  </span>
+                </PopoverTrigger>
+                <PopoverContent className={"w-48"}>
+                  <ToggleGroup type="single" className={"flex flex-col"}>
+                    {deviceSn && result[deviceSn]?.["0"]?.map(item =>
+                      <ToggleGroupItem
+                        onClick={() => onChangeAiVideo?.(AlgorithmPlatform.CloudPlatForm, item.instance_id)}
+                        value={item.instance_id}
+                        key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
+                    {deviceSn && result[deviceSn]?.["1"]?.map(item =>
+                      <ToggleGroupItem
+                        value={item.instance_id}
+                        key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
+                  </ToggleGroup>
+                </PopoverContent>
+              </Popover>
+              {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] && (
+                <div className="flex items-center space-x-2">
+                  {fpvDroneVideoId && fpvOrAi === "fpv" && <RefreshCcw
+                    size={17}
+                    className="cursor-pointer"
+                    onClick={() => startFpvLive(false)}
+                  />}
+                  {(fpvOrAi !== "fpv" || !fpvDroneVideoId) && currentPlatform === AlgorithmPlatform.CloudPlatForm && instanceId &&
+                    <Maximize2
+                      size={17}
+                      className="cursor-pointer"
+                      onClick={toggleFpvFullscreen}
+                    />}
+                </div>
+              )}
+            </div>
+            <div className={"flex-1 relative"}>
+              {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
+                fpvDroneVideoId ?
+                  fpvOrAi === "fpv" ?
+                    <video
+                      ref={droneFpvVideoRef}
+                      controls
+                      autoPlay
+                      className={cn(
+                        "h-[268px] mr-[60px] z-50 my-2 relative",
+                        isFpvFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black object-fill aspect-video"
+                      )}
+                    />
+                    : (instanceId ? <iframe
+                        className={"h-[268px] rounded-[16px] w-full "}
+                        src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}
+                        id={"player3"}/> :
+                      <div className={"h-[268px] content-center text-[#d0d0d0]"}>请选择算法</div>)
+                  : currentPlatform === AlgorithmPlatform.CloudPlatForm ? (instanceId ? <iframe
+                      className={"h-[268px] w-full rounded-[16px]  object-fill"}
+                      id={"player3"}
+                      src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
+                      {isFpvFullscreen && (
+                        <X
+                          className="absolute top-4 right-4 cursor-pointer text-white z-10"
+                          size={24}
+                          onClick={exitFpvFullscreen}
+                        />
+                      )}
+                    </iframe> : <div className={"h-[268px] content-center text-[#d0d0d0]"}>请选择算法</div>) :
+                    <video ref={otherPlatFormAiRef}
+                           controls
+                           autoPlay
+                           className={"rounded-lg mt-4 object-fill"}
+                    >
+                    </video>
+              ) : (
+                <div className={"text-[#d0d0d0] h-[268px] content-center"}>
+                  当前设备已关机，无法进行直播
+                </div>
+              )}
+              {/* 左上角 */}
+              <div className="absolute left-0 top-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute left-0 top-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+
+              {/* 右上角 */}
+              <div className="absolute right-0 top-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute right-0 top-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+
+              {/* 左下角 */}
+              <div className="absolute left-0 bottom-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute left-0 bottom-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+
+              {/* 右下角 */}
+              <div className="absolute right-0 bottom-0" style={{
+                width: "2px",
+                height: "20px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+              <div className="absolute right-0 bottom-0" style={{
+                width: "20px",
+                height: "2px",
+                background: "#63E5FF",
+                boxShadow: "0 0 8px rgba(99, 229, 255, 0.8)",
+                zIndex: 10
+              }}/>
+            </div>
+          </div>
+          <div className={"row-span-2 flex flex-col space-y-2 my-2"}>
+            <div className={"flex space-x-[16px] items-center whitespace-nowrap text-lg"}>
+              <img src={titleIcon} alt="" className={"w-4"}/>
+              <span>工单照片</span>
+            </div>
+            <div className={"flex-1 relative"}>
+              <div className={"h-[268px] w-full"}>
+                <WorkOrderCarousel/>
+              </div>
+            </div>
+          </div>
+          <CockpitFlyControl sn={dockSn}/>
         </div>
       </div>
     </FitScreen>

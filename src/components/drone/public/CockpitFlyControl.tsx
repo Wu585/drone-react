@@ -13,6 +13,7 @@ import {toast} from "@/components/ui/use-toast.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {usePermission} from "@/hooks/drone";
 import {Button} from "@/components/ui/button.tsx";
+import titleIcon from "@/assets/images/drone/cockpit/title-icon.png";
 
 const CockpitFlyControl = ({sn}: { sn?: string }) => {
   const {
@@ -52,7 +53,7 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
       outRemoteControl();
     } catch (err) {
       toast({
-        description: `${err}`,
+        description: "指令下发失败！",
         variant: "destructive"
       });
     }
@@ -62,18 +63,21 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
   const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
 
   return (
-    <>
-      <div className={"flex justify-between pr-14"}>
-        <CockpitTitle title={"飞行控制"}/>
+    <div className={""}>
+      <div className={"flex justify-between pr-6 pt-2"}>
+        <div className={"flex space-x-[16px] items-center whitespace-nowrap text-lg"}>
+          <img src={titleIcon} alt="" className={"w-4"}/>
+          <span>飞行控制</span>
+        </div>
         {hasFlyControlPermission && <span
           onClick={onClickFightControl}
-          className={cn("w-[32px] h-[32px] content-center border-[1px] border-[#43ABFF] cursor-pointer",
+          className={cn("w-[32px] content-center border-[1px] border-[#43ABFF] cursor-pointer",
             isRemoteControl ? "bg-[#43ABFF]" : "")}>
                         <img src={remoteControlPng} className={"w-[24px]"} alt=""/>
         </span>}
       </div>
 
-      <div className={"grid grid-cols-4 px-[48px] pt-[24px] gap-[32px]"}>
+      <div className={"grid grid-cols-4 px-[12px] pt-[12px] gap-[32px]"}>
         <div className={"col-span-3 grid grid-cols-3 gap-y-4"}>
           <div className={"content-center flex flex-col space-y-2"}>
             <RedoDot className={"transform scale-x-[-1]"}/>
@@ -111,24 +115,28 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
           </div>
         </div>
       </div>
-      <div className={"px-[48px] pt-[24px] grid grid-cols-2 gap-x-[32px] gap-y-2"}>
-        {noDebugCmdList.map(cmdItem =>
-          <CockpitButton disabled={!hasFlyControlPermission} type={"button"} onClick={() => sendControlCmd(cmdItem)}
-                         key={cmdItem.cmdKey}>
-            {cmdItem.operateText}
-          </CockpitButton>)}
+      <div className={"flex h-[100px] space-x-4 py-2 px-6"}>
+        <div className={"w-1/2 flex flex-col space-y-[4px]"}>
+          {noDebugCmdList.map(cmdItem =>
+            <Button style={{
+              backgroundSize: "100% 100%"
+            }} className={"bg-cockpit-button text-lg"} disabled={!hasFlyControlPermission} type={"button"}
+                    onClick={() => sendControlCmd(cmdItem)}
+                    key={cmdItem.cmdKey}>
+              {cmdItem.operateText}
+            </Button>)}
+        </div>
         <Button
           style={{
             backgroundSize: "100% 100%"
           }}
           disabled={!hasFlyControlPermission}
-          className={"bg-break w-[117px] h-[36px] content-center cursor-pointer"}
+          className={"bg-break w-1/2 h-full text-lg"}
           onClick={handleEmergencyStop}>
           急停 Space
         </Button>
       </div>
-
-    </>
+    </div>
   );
 };
 
