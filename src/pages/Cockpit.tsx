@@ -1,47 +1,16 @@
 import FitScreen from "@fit-screen/react";
 import batteryPng from "@/assets/images/drone/cockpit/battery.png";
-import rtkPng from "@/assets/images/drone/cockpit/rtk.png";
-import czsd from "@/assets/images/drone/cockpit/czsd.png";
-import spsd from "@/assets/images/drone/cockpit/spsd.png";
 import asl from "@/assets/images/drone/cockpit/asl.png";
-import alt from "@/assets/images/drone/cockpit/alt.png";
-import windSpeed from "@/assets/images/drone/cockpit/wind-speed.png";
 import qsdjl from "@/assets/images/drone/cockpit/qsdjl.png";
-import CockpitTitle from "@/components/drone/public/CockpitTitle.tsx";
-import humidityPng from "@/assets/images/drone/cockpit/humidity.png";
-import rainyPng from "@/assets/images/drone/cockpit/rainy.png";
-import windyPng from "@/assets/images/drone/cockpit/windy.png";
-import windPowerPng from "@/assets/images/drone/cockpit/wind-power.png";
 import CockpitFlyControl from "@/components/drone/public/CockpitFlyControl.tsx";
-import {Input} from "@/components/ui/input.tsx";
 import {clarityList} from "@/hooks/drone/useDeviceVideo.ts";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
-import {useDeviceTopo, useOnlineDocks, usePermission, useWaylinJobs} from "@/hooks/drone";
-import {z} from "zod";
-import {
-  CommanderFlightModeInCommandFlightOptions,
-  CommanderModeLostActionInCommandFlightOptions,
-  ECommanderFlightMode,
-  ECommanderModeLostAction,
-  ERthMode,
-  LostControlActionInCommandFLight,
-  LostControlActionInCommandFLightOptions,
-  RthModeInCommandFlightOptions,
-  WaylineLostControlActionInCommandFlight,
-  WaylineLostControlActionInCommandFlightOptions
-} from "@/types/drone.ts";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {formSchema} from "@/components/drone/public/TakeOffFormPanel.tsx";
-import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
-import {Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
-import {Button} from "@/components/ui/button.tsx";
-import yjqfPng from "@/assets/images/drone/cockpit/yjqf.png";
+import {useDeviceTopo, useOnlineDocks, useWaylinJobs} from "@/hooks/drone";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
-import {EDockModeCode, EModeCode, EModeCodeMap, RainfallEnum, RainfallMap} from "@/types/device.ts";
+import {EModeCode, EModeCodeMap, RainfallMap} from "@/types/device.ts";
 import {cn} from "@/lib/utils.ts";
 import PayloadControl from "@/components/drone/PayloadControl.tsx";
 import compassPng from "@/assets/images/drone/cockpit/compass.png";
@@ -81,6 +50,8 @@ const DRC_API_PREFIX = "/control/api/v1";
 
 const str = "--";
 
+type ModuleType = "drone" | "dock" | "map" | "ai";
+
 const Cockpit = () => {
   useInitialConnectWebSocket();
 
@@ -92,8 +63,7 @@ const Cockpit = () => {
   // const instanceId = searchParams.get("instance_id") || "";
   const [instanceId, setInstanceId] = useState("");
   const deviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
-  console.log("deviceInfo");
-  console.log(deviceInfo);
+
   const deviceStatus2 = useMemo(() => {
     if (!deviceInfo?.dock) return "离线";
     if (deviceInfo.dock?.basic_osd?.drone_in_dock && !deviceInfo.device) {
@@ -374,7 +344,7 @@ const Cockpit = () => {
     };
   }, [dragTimer]);
 
-  const [fpvOrAi, setFpvOrAi] = useState("fpv");
+  const [fpvOrAi, setFpvOrAi] = useState("ai");
 
   const onUpdateDroneCloudClarity = async (value?: number) => {
     setDroneCloudClarity(value);
@@ -442,8 +412,6 @@ const Cockpit = () => {
   useEffect(() => {
     if (currentPlatform === AlgorithmPlatform.Other && instanceId && otherPlatFormAiRef.current) {
       const webrtcUrl = instanceId.replace("rtmp", "webrtc");
-      console.log("webrtcUrl");
-      console.log(webrtcUrl);
       new JSWebrtc.Player(webrtcUrl, {
         video: otherPlatFormAiRef.current,
         autoplay: true,
@@ -466,46 +434,56 @@ const Cockpit = () => {
   const result = groupByDevicePlatformAndName(algorithmConfigList?.records || []);
   const navigate = useNavigate();
 
-  const {hasPermission} = usePermission();
-  const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
-
   const {data: deviceTopo} = useDeviceTopo();
   const currentTopo = deviceTopo?.find(item => item.device_sn === dockSn);
 
   const capacity_percent = deviceInfo && deviceInfo.device &&
     deviceInfo.device?.battery?.capacity_percent || deviceInfo.dock?.work_osd?.drone_battery_maintenance_info?.batteries[0]?.capacity_percent;
 
-  const [mainView, setMainView] = useState<"drone" | "dock" | "map">("drone");
-  const [dockView, setDockView] = useState<"drone" | "dock" | "map">("dock");
-  const [mapView, setMapView] = useState<"drone" | "dock" | "map">("map");
+  const [mainView, setMainView] = useState<ModuleType>("drone");
+  const [dockView, setDockView] = useState<ModuleType>("dock");
+  const [mapView, setMapView] = useState<ModuleType>("map");
+  const [aiView, setAiView] = useState<ModuleType>("ai");
+
+  const getTitleName = (type: ModuleType) => {
+    switch (type) {
+      case "dock":
+        return "机场直播";
+      case "drone":
+        return "飞行器直播";
+      case "map":
+        return "地图展示";
+      case "ai":
+        return "AI识别";
+    }
+  };
 
   // 渲染主视频区内容
   const renderMainVideo = () => {
-    if (deviceStatus === EModeCodeMap[EModeCode.Disconnected]) {
-      return <div className="text-[#d0d0d0]">当前设备已关机，无法进行直播</div>;
-    }
     if (mainView === "drone") {
       return (
-        <video
-          ref={droneCloudVideoRef}
-          autoPlay
-          className={"w-full h-full aspect-video object-fill"}
-          id={"player2"}
-          onDoubleClick={handleVideoDoubleClick}
-          onWheel={handleWheel}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "#000",
-            position: "relative",
-            userSelect: "none"
-          }}
-        />
+        deviceStatus === EModeCodeMap[EModeCode.Disconnected] ?
+          <div className="text-[#d0d0d0]">当前设备已关机，无法进行直播</div>
+          : <video
+            ref={droneCloudVideoRef}
+            autoPlay
+            className={"w-full h-full aspect-video object-fill"}
+            id={"player2"}
+            onDoubleClick={handleVideoDoubleClick}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#000",
+              position: "relative",
+              userSelect: "none"
+            }}
+          />
       );
     } else if (mainView === "dock") {
       return (
@@ -518,60 +496,270 @@ const Cockpit = () => {
       );
     } else if (mainView === "map") {
       return <CockpitScene/>;
-    }
-  };
-
-  // 渲染左侧机场直播区内容
-  const renderDockArea = () => {
-    if (dockView === "dock") {
-      // 主区已显示dock，左侧显示drone
-      return (
-        <video
-          ref={dockVideoRef}
-          controls
-          autoPlay
-          className={"h-[268px] w-full object-fill"}
-        />
+    } else if (mainView === "ai") {
+      return deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
+        fpvDroneVideoId ?
+          fpvOrAi === "fpv" ?
+            <video
+              ref={droneFpvVideoRef}
+              controls
+              autoPlay
+              className={cn(
+                "w-full h-full aspect-video object-fill",
+                isFpvFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black object-fill aspect-video"
+              )}
+            />
+            : (instanceId ? <iframe
+                className={"w-full h-full aspect-video object-fill"}
+                src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}
+                id={"player3"}/> :
+              <div className={"text-[#d0d0d0]"}>请选择算法</div>)
+          : currentPlatform === AlgorithmPlatform.CloudPlatForm ? (instanceId ? <iframe
+              className={"w-full h-full aspect-video object-fill"}
+              id={"player3"}
+              src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
+              {isFpvFullscreen && (
+                <X
+                  className="absolute top-4 right-4 cursor-pointer text-white z-10"
+                  size={24}
+                  onClick={exitFpvFullscreen}
+                />
+              )}
+            </iframe> : <div className={"text-[#d0d0d0]"}>请选择算法</div>) :
+            <video ref={otherPlatFormAiRef}
+                   controls
+                   autoPlay
+                   className={"w-full h-full aspect-video object-fill"}
+            >
+            </video>
+      ) : (
+        <div className={"text-[#d0d0d0]"}>
+          当前设备已关机，无法进行直播
+        </div>
       );
-    } else if (dockView === "drone") {
-      // 左侧显示dock
-      return (
-        <video
-          ref={droneCloudVideoRef}
-          controls
-          autoPlay
-          className="h-[268px] w-full object-fill"
-        />
-      );
-    } else if (dockView === "map") {
-      return <div className={"h-[268px] w-full"}>
-        <CockpitScene/>
-      </div>;
+    }
+  };
+  const renderMainViewActionGroup = (type: ModuleType) => {
+    switch (type) {
+      case "dock":
+        return (<>
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Settings size={16}/>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-16">
+              <DropdownMenuLabel>清晰度</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                onValueChange={(value) => updateDockClarity(+value)}>
+                {clarityList.map(item =>
+                  <DropdownMenuRadioItem key={item.value}
+                                         value={item.value.toString()}>{item.label}</DropdownMenuRadioItem>)}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <RefreshCcw
+            className={"cursor-pointer"}
+            onClick={() => startDockLive()}
+            size={16}
+          />
+        </>);
+
+      case "drone":
+        return deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? <PayloadControl
+          currentMode={droneCloudMode}
+          clarity={droneCloudClarity}
+          dockSn={dockSn}
+          onRefreshVideo={() => startDroneLive(false)}
+          updateVideo={onUpdateDroneCloudClarity}
+          deviceSn={deviceSn}
+          onChangeMode={onChangeDroneCloudMode}
+          playerId="player2"
+        /> : null;
+      case "map":
+        return null;
+      case "ai":
+        return (
+          <>
+            <Popover>
+              <PopoverTrigger>
+                  <span className={"text-[18px] flex items-center"}>
+                    <ChevronsUpDown size={18}/>
+                  </span>
+              </PopoverTrigger>
+              <PopoverContent className={"w-48"}>
+                <ToggleGroup type="single" className={"flex flex-col"}>
+                  {deviceSn && result[deviceSn]?.["0"]?.map(item =>
+                    <ToggleGroupItem
+                      onClick={() => onChangeAiVideo?.(AlgorithmPlatform.CloudPlatForm, item.instance_id)}
+                      value={item.instance_id}
+                      key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
+                  {deviceSn && result[deviceSn]?.["1"]?.map(item =>
+                    <ToggleGroupItem
+                      value={item.instance_id}
+                      key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
+                </ToggleGroup>
+              </PopoverContent>
+            </Popover>
+            {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] && (
+              <div className="flex items-center space-x-2">
+                {fpvDroneVideoId && fpvOrAi === "fpv" && <RefreshCcw
+                  size={17}
+                  className="cursor-pointer"
+                  onClick={() => startFpvLive(false)}
+                />}
+                {(fpvOrAi !== "fpv" || !fpvDroneVideoId) && currentPlatform === AlgorithmPlatform.CloudPlatForm && instanceId &&
+                  <Maximize2
+                    size={17}
+                    className="cursor-pointer"
+                    onClick={toggleFpvFullscreen}
+                  />}
+              </div>
+            )}
+          </>
+        );
     }
   };
 
-  // 渲染左侧地图区内容
-  const renderMapArea = () => {
-    if (mapView === "map") {
-      // 主区已显示地图，左侧显示drone视频
-      return <CockpitScene/>;
-    } else if (mapView === "drone") {
-      return <video
-        ref={droneCloudVideoRef}
-        controls
-        autoPlay
-        className="h-full w-full object-fill"
-      />;
-    } else if (mapView === "dock") {
-      return <video
-        ref={dockVideoRef}
-        controls
-        autoPlay
-        className="h-full w-full object-fill"
-      />;
+  // 渲染其他区域内容
+  const renderOtherView = (type: ModuleType) => {
+    switch (type) {
+      case "dock":
+        return (
+          <video
+            ref={dockVideoRef}
+            controls
+            autoPlay
+            className={"h-[268px] w-full object-fill"}
+          />
+        );
+      case "drone":
+        return (
+          deviceStatus === EModeCodeMap[EModeCode.Disconnected] ?
+            <div className="text-[#d0d0d0] h-[268px] content-center">当前设备已关机，无法进行直播</div> :
+            <video
+              ref={droneCloudVideoRef}
+              controls
+              autoPlay
+              className="h-[268px] w-full object-fill"
+            />
+        );
+      case "map":
+        return <div className={"h-[268px] w-full"}>
+          <CockpitScene/>
+        </div>;
+      case "ai":
+        return deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
+          fpvDroneVideoId ?
+            fpvOrAi === "fpv" ?
+              <video
+                ref={droneFpvVideoRef}
+                controls
+                autoPlay
+                className={cn(
+                  "h-[268px] mr-[60px] z-50 my-2 relative",
+                  isFpvFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black object-fill aspect-video"
+                )}
+              />
+              : (instanceId ? <iframe
+                  className={"h-[268px] w-full "}
+                  src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}
+                  id={"player3"}/> :
+                <div className={"h-[268px] content-center text-[#d0d0d0]"}>请选择算法</div>)
+            : currentPlatform === AlgorithmPlatform.CloudPlatForm ? (instanceId ? <iframe
+                className={"h-[268px] w-full object-fill"}
+                id={"player3"}
+                src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
+                {isFpvFullscreen && (
+                  <X
+                    className="absolute top-4 right-4 cursor-pointer text-white z-10"
+                    size={24}
+                    onClick={exitFpvFullscreen}
+                  />
+                )}
+              </iframe> : <div className={"h-[268px] content-center text-[#d0d0d0]"}>请选择算法</div>) :
+              <video ref={otherPlatFormAiRef}
+                     controls
+                     autoPlay
+                     className={"h-[268px] w-full object-fill"}
+              >
+              </video>
+        ) : (
+          <div className={"text-[#d0d0d0] h-[268px] content-center"}>
+            当前设备已关机，无法进行直播
+          </div>
+        );
     }
   };
-
+  const renderOtherViewActionGroup = (type: ModuleType) => {
+    switch (type) {
+      case "dock":
+        return (<>
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Settings size={16}/>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-16">
+              <DropdownMenuLabel>清晰度</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                onValueChange={(value) => updateDockClarity(+value)}>
+                {clarityList.map(item =>
+                  <DropdownMenuRadioItem key={item.value}
+                                         value={item.value.toString()}>{item.label}</DropdownMenuRadioItem>)}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <RefreshCcw
+            className={"cursor-pointer"}
+            onClick={() => startDockLive()}
+            size={16}
+          />
+        </>);
+      case "drone":
+        return null;
+      case "map":
+        return null;
+      case "ai":
+        return (
+          <>
+            <Popover>
+              <PopoverTrigger>
+                  <span className={"text-[18px] flex items-center"}>
+                    <ChevronsUpDown size={18}/>
+                  </span>
+              </PopoverTrigger>
+              <PopoverContent className={"w-48"}>
+                <ToggleGroup type="single" className={"flex flex-col"}>
+                  {deviceSn && result[deviceSn]?.["0"]?.map(item =>
+                    <ToggleGroupItem
+                      onClick={() => onChangeAiVideo?.(AlgorithmPlatform.CloudPlatForm, item.instance_id)}
+                      value={item.instance_id}
+                      key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
+                  {deviceSn && result[deviceSn]?.["1"]?.map(item =>
+                    <ToggleGroupItem
+                      value={item.instance_id}
+                      key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
+                </ToggleGroup>
+              </PopoverContent>
+            </Popover>
+            {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] && (
+              <div className="flex items-center space-x-2">
+                {fpvDroneVideoId && fpvOrAi === "fpv" && <RefreshCcw
+                  size={17}
+                  className="cursor-pointer"
+                  onClick={() => startFpvLive(false)}
+                />}
+                {(fpvOrAi !== "fpv" || !fpvDroneVideoId) && currentPlatform === AlgorithmPlatform.CloudPlatForm && instanceId &&
+                  <Maximize2
+                    size={17}
+                    className="cursor-pointer"
+                    onClick={toggleFpvFullscreen}
+                  />}
+              </div>
+            )}
+          </>
+        );
+    }
+  };
 
   return (
     <FitScreen mode={"full"}>
@@ -632,30 +820,13 @@ const Cockpit = () => {
           <div className={"row-span-2 flex flex-col space-y-2"}>
             <div className={"flex space-x-[16px] items-center whitespace-nowrap text-lg"}>
               <img src={titleIcon} alt="" className={"w-4"}/>
-              <span>机场直播</span>
-              <X size={18} className={cn("transition-transform cursor-pointer", !showDockLive && "rotate-45")}
-                 onClick={handleDockLiveToggle}/>
+              <span>{getTitleName(dockView)}</span>
+              {/*{mapView === "map" &&
+                <X size={18} className={cn("transition-transform cursor-pointer", !showDockLive && "rotate-45")}
+                   onClick={handleDockLiveToggle}/>}*/}
               {showDockLive && (
                 <div className={"flex space-x-[16px]"}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <Settings size={16}/>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-16">
-                      <DropdownMenuLabel>清晰度</DropdownMenuLabel>
-                      <DropdownMenuRadioGroup
-                        onValueChange={(value) => updateDockClarity(+value)}>
-                        {clarityList.map(item =>
-                          <DropdownMenuRadioItem key={item.value}
-                                                 value={item.value.toString()}>{item.label}</DropdownMenuRadioItem>)}
-                      </DropdownMenuRadioGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <RefreshCcw
-                    className={"cursor-pointer"}
-                    onClick={() => startDockLive()}
-                    size={16}
-                  />
+                  {renderOtherViewActionGroup(dockView)}
                   <ArrowRightLeft size={16} className={"cursor-pointer"} onClick={() => {
                     setMainView(dockView);
                     setDockView(mainView);
@@ -664,7 +835,7 @@ const Cockpit = () => {
               )}
             </div>
             {showDockLive && <div className={"flex-1 relative"}>
-              {renderDockArea()}
+              {renderOtherView(dockView)}
               {/* 左上角 */}
               <div className="absolute left-0 top-0" style={{
                 width: "2px",
@@ -733,14 +904,15 @@ const Cockpit = () => {
           <div className={cn("flex flex-col space-y-[4px]")}>
             <div className={"flex space-x-[16px] items-center whitespace-nowrap text-lg my-2"}>
               <img src={titleIcon} alt="" className={"w-4"}/>
-              <span>地图展示</span>
+              <span>{getTitleName(mapView)}</span>
               <ArrowRightLeft size={16} className={"cursor-pointer"} onClick={() => {
                 setMainView(mapView);
                 setMapView(mainView);
               }}/>
+              {renderOtherViewActionGroup(mapView)}
             </div>
             <div className={cn("relative", showDockLive ? "h-[268px]" : "h-[550px]")}>
-              {renderMapArea()}
+              {renderOtherView(mapView)}
               <div className="absolute left-0 top-0" style={{
                 width: "2px",
                 height: "20px",
@@ -875,29 +1047,14 @@ const Cockpit = () => {
         <div className={"col-span-3 pt-20 grid grid-rows-10"}>
           <div style={{
             backgroundSize: "100% 100%"
-          }} className={"bg-center-video row-span-7 content-center z-100 relative"}>
-            {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
-              <div
-                className={"w-[90%] h-[88%] overflow-hidden cursor-crosshair [clip-path:polygon(50px_0,calc(100%-50px)_0,100%_60px,100%_calc(100%-70px),calc(100%-60px)_100%,60px_100%,0_calc(100%-70px),0_60px)]"}>
-                {renderMainVideo()}
-                <div className={"absolute right-36 top-16 z-50"}>
-                  <PayloadControl
-                    currentMode={droneCloudMode}
-                    clarity={droneCloudClarity}
-                    dockSn={dockSn}
-                    onRefreshVideo={() => startDroneLive(false)}
-                    updateVideo={onUpdateDroneCloudClarity}
-                    deviceSn={deviceSn}
-                    onChangeMode={onChangeDroneCloudMode}
-                    playerId="player2"
-                  />
-                </div>
+          }} className={"bg-center-video row-span-7 content-center z-50 relative"}>
+            <div
+              className={"w-[90%] h-[88%] content-center overflow-hidden cursor-crosshair [clip-path:polygon(50px_0,calc(100%-50px)_0,100%_60px,100%_calc(100%-70px),calc(100%-60px)_100%,60px_100%,0_calc(100%-70px),0_60px)]"}>
+              {renderMainVideo()}
+              <div className={"absolute right-36 top-16 z-50 content-center space-x-4"}>
+                {renderMainViewActionGroup(mainView)}
               </div>
-            ) : (
-              <div className={"text-[#d0d0d0]"}>
-                当前设备已关机，无法进行直播
-              </div>
-            )}
+            </div>
           </div>
           <div className={"row-span-3 grid grid-cols-5"}>
             <div className={"col-span-1 grid grid-rows-3"}>
@@ -994,85 +1151,18 @@ const Cockpit = () => {
           <div className={"row-span-2 flex flex-col space-y-2"}>
             <div className={"flex space-x-[16px] items-center whitespace-nowrap text-lg z-50"}>
               <img src={titleIcon} alt="" className={"w-4"}/>
-              <span>AI识别</span>
-              <ArrowRightLeft size={16} className={"cursor-pointer ml-2"}/>
-              <Popover>
-                <PopoverTrigger>
-                  <span className={"text-[18px] flex items-center"}>
-                    <ChevronsUpDown size={18}/>
-                  </span>
-                </PopoverTrigger>
-                <PopoverContent className={"w-48"}>
-                  <ToggleGroup type="single" className={"flex flex-col"}>
-                    {deviceSn && result[deviceSn]?.["0"]?.map(item =>
-                      <ToggleGroupItem
-                        onClick={() => onChangeAiVideo?.(AlgorithmPlatform.CloudPlatForm, item.instance_id)}
-                        value={item.instance_id}
-                        key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
-                    {deviceSn && result[deviceSn]?.["1"]?.map(item =>
-                      <ToggleGroupItem
-                        value={item.instance_id}
-                        key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
-                  </ToggleGroup>
-                </PopoverContent>
-              </Popover>
-              {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] && (
-                <div className="flex items-center space-x-2">
-                  {fpvDroneVideoId && fpvOrAi === "fpv" && <RefreshCcw
-                    size={17}
-                    className="cursor-pointer"
-                    onClick={() => startFpvLive(false)}
-                  />}
-                  {(fpvOrAi !== "fpv" || !fpvDroneVideoId) && currentPlatform === AlgorithmPlatform.CloudPlatForm && instanceId &&
-                    <Maximize2
-                      size={17}
-                      className="cursor-pointer"
-                      onClick={toggleFpvFullscreen}
-                    />}
-                </div>
-              )}
+              <span>{getTitleName(aiView)}</span>
+              <ArrowRightLeft
+                size={16}
+                className={"cursor-pointer ml-2"}
+                onClick={() => {
+                  setAiView(mainView);
+                  setMainView(aiView);
+                }}/>
+              {renderOtherViewActionGroup(aiView)}
             </div>
             <div className={"flex-1 relative"}>
-              {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
-                fpvDroneVideoId ?
-                  fpvOrAi === "fpv" ?
-                    <video
-                      ref={droneFpvVideoRef}
-                      controls
-                      autoPlay
-                      className={cn(
-                        "h-[268px] mr-[60px] z-50 my-2 relative",
-                        isFpvFullscreen && "!h-screen !w-screen fixed top-0 left-0 z-50 bg-black object-fill aspect-video"
-                      )}
-                    />
-                    : (instanceId ? <iframe
-                        className={"h-[268px] rounded-[16px] w-full "}
-                        src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}
-                        id={"player3"}/> :
-                      <div className={"h-[268px] content-center text-[#d0d0d0]"}>请选择算法</div>)
-                  : currentPlatform === AlgorithmPlatform.CloudPlatForm ? (instanceId ? <iframe
-                      className={"h-[268px] w-full rounded-[16px]  object-fill"}
-                      id={"player3"}
-                      src={`http://218.78.133.200:9090/tm?instanceId=${instanceId}&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsImV4cCI6NDg2OTEwMjE4M30._ZpDlaUdHMz4gyPije6fhOANi8OgEAGl23eRv6JWprA`}>
-                      {isFpvFullscreen && (
-                        <X
-                          className="absolute top-4 right-4 cursor-pointer text-white z-10"
-                          size={24}
-                          onClick={exitFpvFullscreen}
-                        />
-                      )}
-                    </iframe> : <div className={"h-[268px] content-center text-[#d0d0d0]"}>请选择算法</div>) :
-                    <video ref={otherPlatFormAiRef}
-                           controls
-                           autoPlay
-                           className={"rounded-lg mt-4 object-fill"}
-                    >
-                    </video>
-              ) : (
-                <div className={"text-[#d0d0d0] h-[268px] content-center"}>
-                  当前设备已关机，无法进行直播
-                </div>
-              )}
+              {renderOtherView(aiView)}
               {/* 左上角 */}
               <div className="absolute left-0 top-0" style={{
                 width: "2px",
