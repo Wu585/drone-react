@@ -57,8 +57,8 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      target_latitude: 30.891961,
-      target_longitude: 121.44556,
+      target_latitude: "",
+      target_longitude: "",
       target_height: 120,
       security_takeoff_height: "120",
       rth_altitude: "120",
@@ -185,25 +185,25 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
                 control={form.control}
                 render={({field}) => (
                   <FormItem className={"grid grid-cols-6 px-4"}>
-                    <FormLabel className={"col-span-3 flex items-center"}>目标纬度</FormLabel>
+                    <FormLabel className={"col-span-3 flex items-center"}>目标经度</FormLabel>
                     <FormControl className={"col-span-3"}>
-                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
+                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field} placeholder={"填入目标经度信息"}/>
                     </FormControl>
                   </FormItem>
                 )}
-                name={"target_latitude"}
+                name={"target_longitude"}
               />
               <FormField
                 control={form.control}
                 render={({field}) => (
                   <FormItem className={"grid grid-cols-6 px-4"}>
-                    <FormLabel className={"col-span-3 flex items-center"}>目标经度</FormLabel>
+                    <FormLabel className={"col-span-3 flex items-center"}>目标纬度</FormLabel>
                     <FormControl className={"col-span-3"}>
-                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
+                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field} placeholder={"填入目标纬度信息"}/>
                     </FormControl>
                   </FormItem>
                 )}
-                name={"target_longitude"}
+                name={"target_latitude"}
               />
               <FormField
                 control={form.control}

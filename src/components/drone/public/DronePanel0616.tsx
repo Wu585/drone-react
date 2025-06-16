@@ -12,8 +12,6 @@ import {
   Forward, CircleStop, BatteryFull, Wind, CloudHail, Send
 } from "lucide-react";
 import yjqfPng from "@/assets/images/drone/yjqf.png";
-import yjfhPng from "@/assets/images/drone/yjfh.png";
-import xnzcPng from "@/assets/images/drone/xnzcPng.png";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import TakeOffFormPanel from "@/components/drone/public/TakeOffFormPanel.tsx";
 import {useVisible} from "@/hooks/public/utils.ts";
@@ -209,7 +207,7 @@ const DronePanel = () => {
       <div className={"w-[422px] bg-control-panel bg-full-size relative"}>
         <X onClick={() => setOsdVisible({...osdVisible, visible: !osdVisible.visible})}
            className={"absolute right-2 top-2 cursor-pointer"}/>
-        <div className={"h-[39px] flex items-center pl-6 text-lg"}>
+        <div className={"h-[46px] flex items-center pl-6 text-lg"}>
           {osdVisible.gateway_callsign} - {osdVisible.callsign ?? "暂无机器"}
         </div>
         <div className={"flex text-[12px] border-b-[1px] border-[#104992]/[.85] mr-[4px]"}>
@@ -570,9 +568,9 @@ const DronePanel = () => {
             </Tooltip>
           </TooltipProvider>*/}
         </div>
-        <div className={"bg-[#001E37]/[.9] mr-[4px] grid grid-cols-7 py-2"}>
+        <div className={"bg-[#001E37]/[.9] mr-[4px] grid grid-cols-3"}>
           {hasFlyControlPermission ?
-            <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center col-span-2"}>
+            <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center"}>
               {isRemoteControl ? <KeyboardControl onMouseUp={onMouseUp} onMouseDown={onMouseDown}/> :
                 <img src={yjqfPng} alt="" className={"cursor-pointer"} onClick={() => {
                   show();
@@ -581,15 +579,37 @@ const DronePanel = () => {
                 }}/>}
             </div> : <div
               className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center text-sm text-[#d0d0d0]"}>无飞控权限</div>}
-          <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center relative col-span-3"}>
-            <Button className={"w-[163px] px-0 h-[96px] bg-transparent"} onClick={onClickCockpit}>
-              <img src={xnzcPng} alt=""/>
-            </Button>
+          <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center relative"}>
+            <img src={compassPng} alt=""
+                 style={{
+                   transform: `rotate(${-(headingDegrees || 0)}deg)`,
+                   transition: "transform 0.3s ease-out"
+                 }}
+                 className={"will-change-transform"}/>
+            <img src={pointerPng} alt="" className={"absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"}/>
           </div>
-          <div className={"flex flex-col text-[12px] text-[#D0D0D0] justify-center px-2 space-y-2 text-sm items-center col-span-2"}>
-            <Button className={"w-[87px] h-[97px] p-0 bg-transparent"}>
-              <img src={yjfhPng} alt=""/>
-            </Button>
+          <div className={"flex flex-col text-[12px] text-[#D0D0D0] justify-center px-2 space-y-2 text-sm"}>
+            {hasFlyControlPermission && <span>指点飞行</span>}
+            {hasFlyControlPermission && <div className={"flex space-x-2"}>
+              <Button className={"bg-[#104992]/[.85] h-6 w-14 text-base"} onClick={() => {
+                show();
+                setTakeOffType("fly-to");
+                hideDebugPanel();
+              }}>飞行</Button>
+              <Button className={"bg-[#104992]/[.85] h-6 w-14 text-base"} onClick={onStopFlyToPoint}>取消</Button>
+            </div>}
+            {hasFlyControlPermission && <span className={"text-base"}>返航</span>}
+            {hasFlyControlPermission && <div className={"flex space-x-2"}>
+              {noDebugCmdList.map(cmdItem =>
+                <Button key={cmdItem.cmdKey} onClick={() => sendControlCmd(cmdItem)}
+                        className={"bg-[#104992]/[.85] h-6 w-14"}>{cmdItem.operateText}</Button>)}
+            </div>}
+            <PermissionButton permissionKey={"Button_EnterVirtualCockpit"}
+                              className={"content-center space-x-4 h-[24px] bg-[#104992]/[.85] px-2 py-[2px] cursor-pointer text-base"}
+                              onClick={onClickCockpit}>
+              <Airplay size={16}/>
+              <span className={"text-base"}>虚拟座舱</span>
+            </PermissionButton>
           </div>
         </div>
       </div>

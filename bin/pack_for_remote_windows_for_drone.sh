@@ -1,7 +1,7 @@
 # 使用本脚本前需将本地ssh的pub公钥复制到服务器的authorized_keys文件下
 # 确保服务器打开sshd服务，powershell管理员身份打开：Start-Service sshd
 
-user=cjxt
+user=PC
 ip=36.152.38.220
 dist=dist.tar
 current_dir=$(dirname $0)
