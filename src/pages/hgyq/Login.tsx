@@ -9,8 +9,8 @@ import {useAjax} from "@/lib/http.ts";
 import {HTTP_PREFIX} from "@/api/manage.ts";
 import {ELocalStorageKey, EUserType} from "@/types/enum.ts";
 import {useNavigate} from "react-router-dom";
-// import companyTitle from "@/assets/images/drone/company-title.png";
-import companyTitle from "@/assets/images/drone/zdhxc-bg.png";
+import companyTitle from "@/assets/images/drone/company-title.png";
+// import companyTitle from "@/assets/images/drone/zdhxc-bg.png";
 import {toast} from "@/components/ui/use-toast.ts";
 
 const formSchema = z.object({
@@ -78,7 +78,9 @@ const Login = () => {
                   <FormControl>
                     <div className={"flex items-center relative space-x-[12px]"}>
                       <User className={""}/>
-                      <Input {...field} className={"bg-[#0B3B7D] pl-[22px]"} placeholder="请输入用户名"/>
+                      <Input {...field} style={{
+                        borderImage: "linear-gradient(178deg, rgba(88, 189, 255, 1), rgba(10, 114, 205, 1)) 1 1"
+                      }} className={"bg-[#0B3B7D] pl-[22px]"} placeholder="请输入用户名"/>
                     </div>
                   </FormControl>
                   <FormMessage/>
@@ -93,7 +95,9 @@ const Login = () => {
                   <FormControl>
                     <div className={"flex items-center relative space-x-[12px]"}>
                       <LockKeyhole className={""}/>
-                      <Input {...field} className={"bg-[#0B3B7D] pl-[22px]"} type={"password"}
+                      <Input style={{
+                        borderImage: "linear-gradient(178deg, rgba(88, 189, 255, 1), rgba(10, 114, 205, 1)) 1 1"
+                      }} {...field} className={"bg-[#0B3B7D] pl-[22px]"} type={"password"}
                              placeholder="请输入密码"/>
                     </div>
                   </FormControl>
