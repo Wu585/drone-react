@@ -32,7 +32,7 @@ import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {EDockModeCode, EDockModeCodeMap, EModeCode, EModeCodeMap, RainfallMap} from "@/types/device.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {useDockControl} from "@/hooks/drone/useDockControl.ts";
-import {DeviceCmdItem, noDebugCmdList} from "@/types/device-cmd.ts";
+import {DeviceCmd, DeviceCmdItem, noDebugCmdList} from "@/types/device-cmd.ts";
 import {useFlightControl} from "@/hooks/drone/useFlightControl.ts";
 import DebugPanel from "@/components/drone/public/DebugPanel.tsx";
 import {copyToClipboard} from "@/hooks/drone/media";
@@ -52,8 +52,8 @@ const DronePanel = () => {
   const {visible: debugPanelvisible, hide: hideDebugPanel, show: showDebugPanel} = useVisible();
   const navigate = useNavigate();
   const deviceInfo = useRealTimeDeviceInfo(osdVisible.gateway_sn, osdVisible.sn);
-  console.log("deviceInfo");
-  console.log(deviceInfo);
+  // console.log("deviceInfo");
+  // console.log(deviceInfo);
   const [takeOffType, setTakeOffType] = useState<"take-off" | "fly-to">("take-off");
   const {sendDockControlCmd} = useDockControl();
   const {visible: dockVideoVisible, show: showDockVideo, hide: hideDockVideo} = useVisible();
@@ -110,21 +110,25 @@ const DronePanel = () => {
     });
   };
 
-  const sendControlCmd = async (cmdItem: DeviceCmdItem) => {
+  const onClickReturnButton = async () => {
     try {
-      await sendDockControlCmd({
-        sn: osdVisible.gateway_sn || "",
-        cmd: cmdItem.cmdKey,
-        action: cmdItem.action
-      }, false);
+      if (deviceInfo?.device?.mode_code === EModeCode.Return_To_Home) {
+        await sendDockControlCmd({
+          sn: osdVisible.gateway_sn || "",
+          cmd: DeviceCmd.ReturnHomeCancel,
+        });
+      } else {
+        await sendDockControlCmd({
+          sn: osdVisible.gateway_sn || "",
+          cmd: DeviceCmd.ReturnHome,
+        });
+      }
       toast({
-        description: "返航成功！"
+        description: "指令下发成功！"
       });
-      isRemoteControl && await exitFlightControl();
-      outRemoteControl();
     } catch (err) {
       toast({
-        description: `${err}`,
+        description: "指令下发失败！",
         variant: "destructive"
       });
     }
@@ -574,21 +578,35 @@ const DronePanel = () => {
           {hasFlyControlPermission ?
             <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center col-span-2"}>
               {isRemoteControl ? <KeyboardControl onMouseUp={onMouseUp} onMouseDown={onMouseDown}/> :
-                <img src={yjqfPng} alt="" className={"cursor-pointer"} onClick={() => {
-                  show();
-                  setTakeOffType("take-off");
-                  hideDebugPanel();
-                }}/>}
+                <Button
+                  disabled={deviceInfo?.dock?.basic_osd?.mode_code !== EDockModeCode.Idle}
+                  onClick={() => {
+                    show();
+                    setTakeOffType("take-off");
+                    hideDebugPanel();
+                  }}
+                  className={"bg-yjqf flex justify-center items-end w-[87px] h-[97px] cursor-pointer "} style={{
+                  backgroundSize: "100% 100%"
+                }}>
+                  <span className={"mb-4 text-[12px]"}>一键起飞</span>
+                </Button>}
             </div> : <div
               className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center text-sm text-[#d0d0d0]"}>无飞控权限</div>}
-          <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center relative col-span-3"}>
-            <Button className={"w-[163px] px-0 h-[96px] bg-transparent"} onClick={onClickCockpit}>
-              <img src={xnzcPng} alt=""/>
+          <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center col-span-3"}>
+            <Button style={{
+              backgroundSize: "100% 100%"
+            }} className={"w-[163px] px-0 h-[96px] bg-xnzc flex items-end"} onClick={onClickCockpit}>
+              <span className={"mb-4 text-[12px]"}>虚拟座舱</span>
             </Button>
           </div>
-          <div className={"flex flex-col text-[12px] text-[#D0D0D0] justify-center px-2 space-y-2 text-sm items-center col-span-2"}>
-            <Button className={"w-[87px] h-[97px] p-0 bg-transparent"}>
-              <img src={yjfhPng} alt=""/>
+          <div
+            className={"text-[12px] text-[#D0D0D0] h-full content-center col-span-2"}>
+            <Button onClick={onClickReturnButton} className={"w-[87px] h-[97px] bg-yjfh flex items-end"} style={{
+              backgroundSize: "100% 100%"
+            }}>
+              <span
+                className={"mb-4 text-[12px]"}>{deviceInfo?.device?.mode_code === EModeCode.Return_To_Home ? "取消返航" : "一键返航"}
+              </span>
             </Button>
           </div>
         </div>

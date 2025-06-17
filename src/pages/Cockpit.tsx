@@ -39,6 +39,7 @@ import fengliPng from "@/assets/images/drone/cockpit/fengli.png";
 import fengxiangPng from "@/assets/images/drone/cockpit/fengxiang.png";
 import jiangyuPng from "@/assets/images/drone/cockpit/jiangyu.png";
 import compassAroundPng from "@/assets/images/drone/cockpit/bg-compass-around.png";
+import wurenjiPng from "@/assets/icons/wurenji.svg";
 import GaugeBar from "@/components/public/GaugeBar.tsx";
 import titleIcon from "@/assets/images/drone/cockpit/title-icon.png";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
@@ -129,9 +130,9 @@ const Cockpit = () => {
   // 处理机场直播显示/隐藏的切换
   const handleDockLiveToggle = async () => {
     setShowDockLive(!showDockLive);
-    if (showDockLive) {
-      await startDockLive();
-    }
+    // if (showDockLive) {
+    //   await startDockLive();
+    // }
   };
 
   // 修改为双击事件处理函数
@@ -644,7 +645,7 @@ const Cockpit = () => {
             />
         );
       case "map":
-        return <div className={"h-[268px] w-full"}>
+        return <div className={cn("h-[268px] w-full", !showDockLive && "h-[550px]")}>
           <CockpitScene/>
         </div>;
       case "ai":
@@ -781,6 +782,7 @@ const Cockpit = () => {
                 size={24}
               />
             </div>
+            <img src={wurenjiPng} alt=""/>
             <span>{currentTopo?.nickname + " - " + currentTopo?.children.nickname}</span>
           </div>
           {/* 中间部分（绝对居中） */}
@@ -824,6 +826,9 @@ const Cockpit = () => {
               {/*{mapView === "map" &&
                 <X size={18} className={cn("transition-transform cursor-pointer", !showDockLive && "rotate-45")}
                    onClick={handleDockLiveToggle}/>}*/}
+              {mapView === "map" &&
+                <X size={16} className={cn("transition-transform cursor-pointer", !showDockLive && "rotate-45")}
+                   onClick={handleDockLiveToggle}/>}
               {showDockLive && (
                 <div className={"flex space-x-[16px]"}>
                   {renderOtherViewActionGroup(dockView)}
@@ -906,6 +911,9 @@ const Cockpit = () => {
               <img src={titleIcon} alt="" className={"w-4"}/>
               <span>{getTitleName(mapView)}</span>
               <ArrowRightLeft size={16} className={"cursor-pointer"} onClick={() => {
+                if (mapView === "map") {
+                  setShowDockLive(true);
+                }
                 setMainView(mapView);
                 setMapView(mainView);
               }}/>

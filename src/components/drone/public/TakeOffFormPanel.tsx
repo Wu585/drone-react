@@ -24,8 +24,20 @@ import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
 
 export const formSchema = z.object({
-  target_latitude: z.coerce.number(),
-  target_longitude: z.coerce.number(),
+  target_latitude: z.coerce.number({
+    required_error: "Latitude is required",
+    invalid_type_error: "Latitude must be a number",
+  })
+    .finite()
+    .min(-90, "Latitude must be between -90 and 90")
+    .max(90, "Latitude must be between -90 and 90"),
+  target_longitude: z.coerce.number({
+    required_error: "Longitude is required",
+    invalid_type_error: "Longitude must be a number",
+  })
+    .finite()
+    .min(-180, "Longitude must be between -180 and 180")
+    .max(180, "Longitude must be between -180 and 180"),
   target_height: z.coerce.number(),
   security_takeoff_height: z.string().min(1, {
     message: ""
@@ -57,8 +69,8 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      target_latitude: "",
-      target_longitude: "",
+      target_latitude: undefined,
+      target_longitude: undefined,
       target_height: 120,
       security_takeoff_height: "120",
       rth_altitude: "120",

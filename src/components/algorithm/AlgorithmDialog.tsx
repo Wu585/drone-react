@@ -8,11 +8,17 @@ import {Input} from "@/components/ui/input.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {useAjax} from "@/lib/http.ts";
-import {ALGORITHM_CONFIG_API_PREFIX, AlgorithmPlatform, useAlgorithmConfigById} from "@/hooks/drone/algorithm";
+import {
+  ALGORITHM_CONFIG_API_PREFIX,
+  AlgorithmPlatform, cloudClient,
+  useAlgorithmConfigById,
+  useTaskList
+} from "@/hooks/drone/algorithm";
 import {toast} from "@/components/ui/use-toast.ts";
 import {eventMap} from "@/hooks/drone";
 import {Plus, Trash2} from "lucide-react";
 import {useEffect} from "react";
+import {Switch} from "@/components/ui/switch.tsx";
 
 interface Props {
   open: boolean;
@@ -40,7 +46,8 @@ const algorithmFormSchema = z.object({
   device_list: z.array(
     z.object({
       device_sn: z.string().min(1, "设备序列号不能为空"),
-      instance_id: z.string().min(1, "实例ID不能为空")
+      instance_id: z.string().min(1, "实例ID不能为空"),
+      task_id: z.string().optional()
     })
   ),
   algorithm_platform: z.coerce.number(z.nativeEnum(AlgorithmPlatform))
@@ -50,7 +57,7 @@ export type AlgorithmFormValues = z.infer<typeof algorithmFormSchema>;
 
 const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
   const {post, put} = useAjax();
-  const {data: currentConfig} = useAlgorithmConfigById(id);
+  const {data: currentConfig, mutate} = useAlgorithmConfigById(id);
 
   const defaultValues: AlgorithmFormValues = {
     algorithm_name: "",
@@ -72,6 +79,13 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
     } : defaultValues
   });
 
+  useEffect(() => {
+    form.reset(currentConfig ? {
+      ...currentConfig,
+      device_list: currentConfig.device_list || []
+    } : defaultValues);
+  }, [currentConfig]);
+
   const algorithm_platform = form.watch("algorithm_platform");
 
   const {fields, append, remove} = useFieldArray({
@@ -81,6 +95,11 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
 
   const _onOpenChange = (visible: boolean) => {
     onOpenChange?.(visible);
+  };
+
+  const onError = (error) => {
+    console.log("error");
+    console.log(error);
   };
 
   const _onSubmit = async (values: AlgorithmFormValues) => {
@@ -98,11 +117,30 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
         toast({
           description: "算法配置创建成功"
         });
+        await mutate();
+        // await mutateTaskList();
         await onSuccess?.();
       }
     } catch (err: any) {
       toast({
         description: err?.data?.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const {data: taskList, mutate: mutateTaskList} = useTaskList({page: 1, page_size: 100, input_type: "video"});
+
+  const onSwitchTask = async (checked: boolean, task_id?: string) => {
+    try {
+      await cloudClient.put(`/tasks/${task_id}/${checked ? "start" : "stop"}`);
+      toast({
+        description: checked ? "任务启用成功！" : "任务停用成功！",
+      });
+      await mutateTaskList();
+    } catch (err) {
+      toast({
+        description: checked ? "任务启用失败，请联系管理员！" : "任务停用失败，请联系管理员！",
         variant: "destructive"
       });
     }
@@ -117,7 +155,7 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(_onSubmit)} className="space-y-2">
+          <form onSubmit={form.handleSubmit(_onSubmit, onError)} className="space-y-2">
             <div className="space-y-4">
               <FormField
                 control={form.control}
@@ -309,7 +347,7 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
                 <h3 className="text-sm font-medium text-gray-700">实例配置</h3>
                 <Button
                   type="button"
-                  onClick={() => append({device_sn: "", instance_id: ""})}
+                  onClick={() => append({device_sn: "", instance_id: "", task_id: ""})}
                   variant="outline"
                   size="sm"
                   className="h-8 gap-1"
@@ -327,16 +365,27 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
                 <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
                   {fields.map((field, index) => (
                     <div key={field.id} className="relative rounded-md border p-4">
-                      <Button
-                        type="button"
-                        onClick={() => remove(index)}
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-4 top-6 h-6 w-6 p-0"
-                      >
-                        <Trash2 className="h-4 w-4"/>
-                      </Button>
-
+                      <div className={"flex justify-between items-center"}>
+                        {form.watch(`device_list.${index}.task_id`) ? <Switch
+                          checked={
+                            !!taskList?.items.find(
+                              (item) =>
+                                item.id === +field.task_id! &&
+                                item.status &&
+                                item.status !== "not_started"
+                            )
+                          }
+                          onCheckedChange={(checked) => onSwitchTask(checked, form.watch(`device_list.${index}.task_id`))}/> : <div></div>}
+                        <Button
+                          type="button"
+                          onClick={() => remove(index)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                        >
+                          <Trash2 className="h-4 w-4"/>
+                        </Button>
+                      </div>
                       <div className="space-y-3">
                         <FormField
                           control={form.control}
@@ -361,6 +410,30 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
                             </FormItem>
                           )}
                         />
+
+                        {algorithm_platform === 0 && <FormField
+                          control={form.control}
+                          name={`device_list.${index}.task_id`}
+                          render={({field}) => (
+                            <FormItem>
+                              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                                <FormLabel className="text-sm font-medium text-gray-700">
+                                  任务ID
+                                </FormLabel>
+                                <div className="space-y-1">
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      placeholder="请输入任务ID"
+                                      className="h-9 bg-white placeholder:text-gray-400 focus:ring-1 focus:ring-blue-500"
+                                    />
+                                  </FormControl>
+                                  <FormMessage className="text-xs text-red-500"/>
+                                </div>
+                              </div>
+                            </FormItem>
+                          )}
+                        />}
 
                         <FormField
                           control={form.control}

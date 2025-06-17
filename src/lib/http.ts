@@ -1,4 +1,4 @@
-import axios, {AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse} from "axios";
+import axios, {AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, CreateAxiosDefaults} from "axios";
 import {useNavigate} from "react-router-dom";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {CURRENT_CONFIG} from "@/lib/config.ts";
@@ -6,9 +6,10 @@ import {CURRENT_CONFIG} from "@/lib/config.ts";
 export class Http {
   instance: AxiosInstance;
 
-  constructor(baseURL: string) {
+  constructor(baseURL: string, config?: Omit<CreateAxiosDefaults, "baseURL">) {
     this.instance = axios.create({
       baseURL,
+      ...config
     });
   }
 

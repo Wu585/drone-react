@@ -1,7 +1,5 @@
-import CockpitTitle from "@/components/drone/public/CockpitTitle.tsx";
 import Keyboard from "@/components/drone/public/Keyboard.tsx";
 import {ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, RedoDot} from "lucide-react";
-import CockpitButton from "@/components/drone/public/CockpitButton.tsx";
 import {cn} from "@/lib/utils.ts";
 import remoteControlPng from "@/assets/images/drone/remote-control.png";
 import {useFlightControl} from "@/hooks/drone/useFlightControl.ts";
@@ -47,7 +45,7 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
         action: cmdItem.action
       }, false);
       toast({
-        description: "返航成功！"
+        description: "指令下发成功！"
       });
       isRemoteControl && await exitFlightControl();
       outRemoteControl();

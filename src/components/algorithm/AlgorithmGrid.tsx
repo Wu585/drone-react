@@ -75,6 +75,7 @@ const AlgorithmGrid = () => {
       });
     }
   };
+
   const onSuccess = async () => {
     setOpen(false);
     await mutateAlgorithmConfigList();
