@@ -9,7 +9,7 @@ import {
 import {useNavigate} from "react-router-dom";
 import {useCurrentUser, useWorkspaceList} from "@/hooks/drone";
 import {useCallback} from "react";
-import logo from "@/assets/images/drone/logo.png"
+import logo from "@/assets/images/drone/logo.png";
 import wenduPng from "@/assets/images/drone/cockpit/wendu.png";
 import fengliPng from "@/assets/images/drone/cockpit/fengli.png";
 import fengxiangPng from "@/assets/images/drone/cockpit/fengxiang.png";
@@ -79,13 +79,18 @@ const TopBar = () => {
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem>
-              <div className={"flex w-full"} onClick={() => navigate("/organs")}>
+              <div className={"flex w-full"} onClick={() => {
+                navigate(`/organs`);
+              }}>
                 <Users className="mr-2 h-4 w-4"/>
                 <span>我的组织</span>
               </div>
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <div className={"flex w-full"} onClick={() => navigate("/depart")}>
+              <div className={"flex w-full"} onClick={() => {
+                const tmpWorkspaceId = localStorage.getItem(ELocalStorageKey.WorkspacePrimaryKey);
+                navigate(`/depart?id=${tmpWorkspaceId}`);
+              }}>
                 <Users className="mr-2 h-4 w-4"/>
                 <span>我的部门</span>
               </div>

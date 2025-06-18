@@ -11,7 +11,7 @@ import {
   useMembers, User,
   useWorkspaceList
 } from "@/hooks/drone";
-import {useNavigate} from "react-router-dom";
+import {useNavigate, useSearchParams} from "react-router-dom";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
@@ -49,10 +49,16 @@ const formSchema = z.object({
 });
 
 const DepartPage = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const currentWorkSpaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const tmpWorkspaceId = searchParams.get("id") || undefined;
+
   const [visible, setVisible] = useState(false);
   const {post, delete: deleteClient} = useAjax();
-  const {data: departList, mutate: mutateDepartList} = useDepartList();
+  const {data: departList, mutate: mutateDepartList} = useDepartList(tmpWorkspaceId ? +tmpWorkspaceId : undefined);
+
   const {departId, setDepartId, data: currentDepart} = useEditDepart();
   const {data: workSpaceList} = useWorkspaceList();
   const {data: currentUser} = useCurrentUser();
@@ -60,7 +66,6 @@ const DepartPage = () => {
     return workSpaceList?.find(item => item.workspace_id === currentWorkSpaceId);
   }, [workSpaceList, currentWorkSpaceId]);
 
-  const navigate = useNavigate();
 
   const {data: _userList} = useMembers(currentWorkSpaceId, {
     page: 1,

@@ -9,7 +9,7 @@ const OrganDetail = () => {
 
   const menuList = [
     {
-      name: "组织详情",
+      name: "组织管理",
       table: <OrganizationDataTable/>
     },
     // {
@@ -26,7 +26,7 @@ const OrganDetail = () => {
     }
   ];
 
-  const [currentMenu, setCurrentMenu] = useState("组织详情");
+  const [currentMenu, setCurrentMenu] = useState(menuList[0].name);
 
   return (
     <div className={"w-full h-full"}>

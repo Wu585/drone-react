@@ -570,6 +570,13 @@ export const useWorkspaceList = () => {
   return useSWR(url, async (path) => (await get<Resource<WorkSpace[]>>(path)).data.data);
 };
 
+// 获取组织列表
+export const useWorkspaceAllList = () => {
+  const {get} = useAjax();
+  const url = `${MANAGE_HTTP_PREFIX}/workspaces/queryAll`;
+  return useSWR(url, async (path) => (await get<Resource<WorkSpace[]>>(path)).data.data);
+};
+
 const OPERATION_HTTP_PREFIX = "/operation/api/v1";
 
 interface CustomUser {
@@ -664,10 +671,11 @@ export interface Depart {
 }
 
 // 获取部门列表
-export const useDepartList = () => {
+export const useDepartList = (id?: number) => {
   const {get} = useAjax();
   const url = `${OPERATION_HTTP_PREFIX}/organ/list`;
-  return useSWR(url, async (path) => (await get<Resource<Depart[]>>(path)).data.data);
+  const key = id ? [url, id] as const : undefined;
+  return useSWR(key, async ([path, id]) => (await get<Resource<Depart[]>>(path, {id})).data.data);
 };
 
 // 获取当前用户信息

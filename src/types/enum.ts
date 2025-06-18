@@ -6,6 +6,7 @@ export enum EUserType {
 export enum ELocalStorageKey {
   Username = 'username',
   WorkspaceId = 'workspace_id',
+  WorkspacePrimaryKey = 'workspace_primary_key',
   Token = 'x-auth-token',
   PlatformName = 'platform_name',
   WorkspaceName = 'workspace_name',

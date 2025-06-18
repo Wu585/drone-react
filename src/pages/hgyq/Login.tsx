@@ -12,6 +12,7 @@ import {useNavigate} from "react-router-dom";
 import companyTitle from "@/assets/images/drone/company-title.png";
 // import companyTitle from "@/assets/images/drone/zdhxc-bg.png";
 import {toast} from "@/components/ui/use-toast.ts";
+import {Depart} from "@/hooks/drone";
 
 const formSchema = z.object({
   username: z.string().min(3, {
@@ -23,7 +24,9 @@ const formSchema = z.object({
 });
 
 const Login = () => {
-  const {post} = useAjax();
+  const OPERATION_HTTP_PREFIX = "/operation/api/v1";
+
+  const {post,get} = useAjax();
   const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -42,16 +45,31 @@ const Login = () => {
         workspace_id: string
         username: string
         user_id: string
+        workspace_id_primary_key: number
+        organs: Depart[]
       }>>(url, {
         ...values,
         flag: EUserType.Web,
       });
+
+      const workspace_id_primary_key = result.data.data.workspace_id_primary_key.toString();
       localStorage.setItem(ELocalStorageKey.Token, result.data.data.access_token);
       localStorage.setItem(ELocalStorageKey.WorkspaceId, result.data.data.workspace_id);
       localStorage.setItem(ELocalStorageKey.Username, result.data.data.username);
       localStorage.setItem(ELocalStorageKey.UserId, result.data.data.user_id);
+      localStorage.setItem(ELocalStorageKey.WorkspacePrimaryKey, workspace_id_primary_key);
       localStorage.setItem(ELocalStorageKey.Flag, EUserType.Web.toString());
-      navigate("/depart");
+
+      const departList = (await get<Resource<Depart>[]>(`${OPERATION_HTTP_PREFIX}/organ/list`,{
+        id: workspace_id_primary_key
+      })).data.data
+
+      if (departList?.length === 1) {
+        navigate("/tsa");
+        localStorage.setItem("departId", departList[0].id.toString());
+      } else {
+        navigate(`/depart?id=${workspace_id_primary_key}`);
+      }
     } catch (err: any) {
       toast({
         description: "用户名或密码错误，登录失败！",

@@ -128,9 +128,19 @@ const MembersDataTable = () => {
   const {data: workSpaceList} = useWorkspaceList();
 
   // 递归渲染组织树选项
-  const renderTreeOptions = (parentId: number = 0, level: number = 0): JSX.Element[] | undefined => {
+  const renderTreeOptions = (parentId: number | null = null, level: number = 0): JSX.Element[] | undefined => {
     const indent = "\u00A0\u00A0\u00A0\u00A0".repeat(level);
-    return workSpaceList?.filter(item => item.parent === parentId).map(item => (
+
+    // 找出顶级节点（parentId 为 null 时，返回没有父节点的项）
+    const items = workSpaceList?.filter(item =>
+      parentId === null
+        ? !workSpaceList.some(parent => parent.id === item.parent)  // 没有父节点
+        : item.parent === parentId                                 // 匹配 parentId
+    );
+
+    if (!items?.length) return undefined;
+
+    return items.map(item => (
       <Fragment key={item.id}>
         <SelectItem value={item.workspace_id}>
           {indent + item.workspace_name}

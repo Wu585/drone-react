@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-table";
 import {Fragment, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {useCurrentUser, useMembers, useWorkspaceList, WorkSpace} from "@/hooks/drone";
+import {useCurrentUser, useMembers, useWorkspaceAllList, useWorkspaceList, WorkSpace} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Input} from "@/components/ui/input.tsx";
@@ -29,6 +29,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {useAjax} from "@/lib/http.ts";
 import {v4 as uuidv4} from "uuid";
 import {toast} from "@/components/ui/use-toast.ts";
+import {useNavigate} from "react-router-dom";
 
 const formSchema = z.object({
   workspace_id: z.string(),
@@ -90,6 +91,13 @@ const OrganizationDataTable = () => {
     return true;
   };
 
+  const navigate = useNavigate();
+
+  const onClickWorkspaceName = (workspace: WorkSpace) => {
+    navigate(`/depart?id=${workspace.id}`);
+    localStorage.setItem(ELocalStorageKey.WorkspacePrimaryKey, workspace.id.toString());
+  };
+
   const columns: ColumnDef<WorkSpace>[] = [
     {
       accessorKey: "workspace_name",
@@ -117,7 +125,13 @@ const OrganizationDataTable = () => {
               </button>
             )}
             {!hasChildren && <span className="w-6"/>}
-            <span className="truncate">{row.original.workspace_name}</span>
+            <span
+              className="truncate cursor-pointer hover:underline"
+              style={{cursor: "pointer"}}
+              onClick={() => onClickWorkspaceName(row.original)}
+            >
+              {row.original.workspace_name}
+            </span>
           </div>
         );
       },
@@ -166,9 +180,7 @@ const OrganizationDataTable = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const {data: currentUser} = useCurrentUser();
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  );
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
 
@@ -183,8 +195,10 @@ const OrganizationDataTable = () => {
     total: 0
   });
 
-  const {data: workSpaceList, mutate: mutateWorkSpaceList} = useWorkspaceList();
-
+  const {data: workSpaceList, mutate: mutateWorkSpaceList} = useWorkspaceAllList();
+  // const {data: workSpaceList, mutate: mutateWorkSpaceList} = useWorkspaceList();
+  // console.log("workSpaceList");
+  // console.log(workSpaceList);
   const defaultValues = {
     workspace_id: "",
     workspace_name: "",
@@ -249,7 +263,10 @@ const OrganizationDataTable = () => {
   const formatTableData = (data: WorkSpace[]) => {
     const result: WorkSpace[] = [];
 
-    const topLevel = data.filter(item => item.parent === 0);
+    // Find all root items (where parent is 0 or parent doesn't exist in the data)
+    const topLevel = data.filter(item =>
+      item.parent === 0 || !data.some(parent => parent.id === item.parent)
+    );
 
     const addChildren = (parentId: number) => {
       const children = data.filter(item => item.parent === parentId);
@@ -267,16 +284,27 @@ const OrganizationDataTable = () => {
         addChildren(item.id);
       }
     });
-
+    console.log("result");
+    console.log(result);
     return result;
   };
 
   // 递归渲染组织树选项
-  const renderTreeOptions = (parentId: number = 0, level: number = 0): JSX.Element[] | undefined => {
+  const renderTreeOptions = (parentId: number | null = null, level: number = 0): JSX.Element[] | undefined => {
     const indent = "\u00A0\u00A0\u00A0\u00A0".repeat(level);
-    return workSpaceList?.filter(item => item.parent === parentId).map(item => (
+
+    // 找出顶级节点（parentId 为 null 时，返回没有父节点的项）
+    const items = workSpaceList?.filter(item =>
+      parentId === null
+        ? !workSpaceList.some(parent => parent.id === item.parent)  // 没有父节点
+        : item.parent === parentId                                 // 匹配 parentId
+    );
+
+    if (!items?.length) return undefined;
+
+    return items.map(item => (
       <Fragment key={item.id}>
-        <SelectItem value={String(item.id)}>
+        <SelectItem value={item.workspace_id}>
           {indent + item.workspace_name}
         </SelectItem>
         {renderTreeOptions(item.id, level + 1)}
@@ -285,7 +313,7 @@ const OrganizationDataTable = () => {
   };
 
   const table = useReactTable({
-    data: formatTableData(workSpaceList?.filter(shouldShowRow) || []),
+    data: formatTableData(workSpaceList || []),
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
