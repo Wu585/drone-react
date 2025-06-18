@@ -263,6 +263,7 @@ export interface CreatePlan {
 }
 
 export interface Task {
+  id: number,
   job_id: string,
   job_name: string,
   task_type: TaskType, // 任务类型
@@ -799,6 +800,7 @@ export const useWorkOrderList = (body: {
   tab: number
   page_size: number
   status?: number
+  job?: number
 }, fix: string) => {
   const {post} = useAjax();
   const url = `${OPERATION_HTTP_PREFIX}/order/${fix}`;
@@ -813,7 +815,9 @@ export const useWorkOrderList = (body: {
     }
   }>>(path, {
     ...body
-  })).data.data);
+  })).data.data, body.job ? {
+    refreshInterval: 10 * 1000
+  } : {});
 };
 
 // 根据id查询工单详情

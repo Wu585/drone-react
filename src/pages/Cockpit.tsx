@@ -1,7 +1,12 @@
 import FitScreen from "@fit-screen/react";
 import batteryPng from "@/assets/images/drone/cockpit/battery.png";
 import asl from "@/assets/images/drone/cockpit/asl.png";
+import rtk from "@/assets/images/drone/cockpit/rtk.png";
+import syfxsc from "@/assets/images/drone/cockpit/syfxsc.png";
 import qsdjl from "@/assets/images/drone/cockpit/qsdjl.png";
+import fhgd from "@/assets/images/drone/cockpit/fhgd.png";
+import xg from "@/assets/images/drone/cockpit/xg.png";
+import sldz from "@/assets/images/drone/cockpit/sldz.png";
 import CockpitFlyControl from "@/components/drone/public/CockpitFlyControl.tsx";
 import {clarityList} from "@/hooks/drone/useDeviceVideo.ts";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
@@ -29,7 +34,13 @@ import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
 import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
 import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
 import CockpitScene from "@/components/drone/public/CockpitScene.tsx";
-import {AlgorithmConfig, AlgorithmPlatform, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
+import {
+  AlgorithmConfig,
+  AlgorithmPlatform,
+  cloudClient,
+  useAlgorithmConfigList,
+  useTaskList
+} from "@/hooks/drone/algorithm";
 import JSWebrtc from "@/vendor/jswebrtc.min.js";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 import {useWeatherInfo} from "@/hooks/flood-prevention/api.ts";
@@ -45,6 +56,7 @@ import titleIcon from "@/assets/images/drone/cockpit/title-icon.png";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group.tsx";
 import {WorkOrderCarousel} from "@/components/drone/WorkOrderCarousel.tsx";
+import {Switch} from "@/components/ui/switch.tsx";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -393,7 +405,8 @@ const Cockpit = () => {
           // Add instance detail with algorithm name
           result[sn][platform].push({
             algorithm_name: algorithmName,
-            instance_id: device.instance_id
+            instance_id: device.instance_id,
+            task_id: device.task_id
           });
         });
       }
@@ -433,6 +446,7 @@ const Cockpit = () => {
   });
 
   const result = groupByDevicePlatformAndName(algorithmConfigList?.records || []);
+
   const navigate = useNavigate();
 
   const {data: deviceTopo} = useDeviceTopo();
@@ -440,6 +454,24 @@ const Cockpit = () => {
 
   const capacity_percent = deviceInfo && deviceInfo.device &&
     deviceInfo.device?.battery?.capacity_percent || deviceInfo.dock?.work_osd?.drone_battery_maintenance_info?.batteries[0]?.capacity_percent;
+
+  const {data: taskList, mutate: mutateTaskList} = useTaskList({page: 1, page_size: 100, input_type: "video"});
+
+  const onSwitchTask = async (checked: boolean, task_id?: string) => {
+    if (!task_id) return;
+    try {
+      await cloudClient.put(`/tasks/${task_id}/${checked ? "start" : "stop"}`);
+      toast({
+        description: checked ? "任务启用成功！" : "任务停用成功！",
+      });
+      await mutateTaskList();
+    } catch (err) {
+      toast({
+        description: checked ? "任务启用失败，请联系管理员！" : "任务停用失败，请联系管理员！",
+        variant: "destructive"
+      });
+    }
+  };
 
   const [mainView, setMainView] = useState<ModuleType>("drone");
   const [dockView, setDockView] = useState<ModuleType>("dock");
@@ -728,13 +760,23 @@ const Cockpit = () => {
                     <ChevronsUpDown size={18}/>
                   </span>
               </PopoverTrigger>
-              <PopoverContent className={"w-48"}>
+              <PopoverContent className={"max-w-60"}>
                 <ToggleGroup type="single" className={"flex flex-col"}>
                   {deviceSn && result[deviceSn]?.["0"]?.map(item =>
-                    <ToggleGroupItem
-                      onClick={() => onChangeAiVideo?.(AlgorithmPlatform.CloudPlatForm, item.instance_id)}
-                      value={item.instance_id}
-                      key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
+                    <div className={"content-center"}>
+                      <ToggleGroupItem
+                        onClick={() => onChangeAiVideo?.(AlgorithmPlatform.CloudPlatForm, item.instance_id)}
+                        value={item.instance_id}
+                        key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>
+                      {item.task_id && <Switch checked={
+                        !!taskList?.items.find(
+                          (x) =>
+                            x.id === +item.task_id! &&
+                            x.status &&
+                            x.status !== "not_started"
+                        )
+                      } onCheckedChange={(checked) => onSwitchTask(checked, item.task_id)}/>}
+                    </div>)}
                   {deviceSn && result[deviceSn]?.["1"]?.map(item =>
                     <ToggleGroupItem
                       value={item.instance_id}
@@ -1065,26 +1107,34 @@ const Cockpit = () => {
             </div>
           </div>
           <div className={"row-span-3 grid grid-cols-5"}>
-            <div className={"col-span-1 grid grid-rows-3"}>
-              <div className={"content-center space-x-6"}>
+            <div className={"col-span-1 grid grid-rows-4"}>
+              <div className={"space-x-6 grid grid-cols-4 pl-12 items-center"}>
                 <img className={"h-1/2"} src={batteryPng} alt=""/>
-                <div className={"flex flex-col"}>
+                <div className={"flex flex-col col-span-3"}>
                   <span className={"text-[#D0D0D0]"}>电池电量</span>
                   <span
                     className={"whitespace-nowrap"}>{capacity_percent ? capacity_percent + " %" : "--"}</span>
                 </div>
               </div>
-              <div className={"content-center space-x-6"}>
-                <img className={"h-1/2"} src={asl} alt=""/>
-                <div className={"flex flex-col"}>
-                  <span className={"text-[#D0D0D0]"}>海拔高度</span>
+              <div className={"space-x-6 grid grid-cols-4 pl-12 items-center"}>
+                <img className={"h-1/2"} src={rtk} alt=""/>
+                <div className={"flex flex-col col-span-3"}>
+                  <span className={"text-[#D0D0D0]"}>搜星质量</span>
                   <span
-                    className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height as string).toFixed(2) + " m"}</span>
+                    className={"whitespace-nowrap"}>{deviceInfo.device ? deviceInfo.device.position_state.rtk_number : str}</span>
                 </div>
               </div>
-              <div className={"content-center space-x-6"}>
+              <div className={"space-x-6 grid grid-cols-4 pl-12 items-center"}>
+                <img className={"h-1/2 col-span-1"} src={syfxsc} alt=""/>
+                <div className={"flex flex-col col-span-3"}>
+                  <span className={"text-[#D0D0D0]"}>剩余飞行时长</span>
+                  <span
+                    className={"whitespace-nowrap"}>{deviceInfo.device ? (deviceInfo.device.battery.remain_flight_time / 60) + " min" : str}</span>
+                </div>
+              </div>
+              <div className={"space-x-6 grid grid-cols-4 pl-12 items-center"}>
                 <img className={"h-1/2"} src={qsdjl} alt=""/>
-                <div className={"flex flex-col"}>
+                <div className={"flex flex-col col-span-3"}>
                   <span className={"text-[#D0D0D0]"}>起始点距离</span>
                   <span
                     className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.home_distance.toString() === str ? str : (+deviceInfo.device?.home_distance).toFixed(2) + " m"}</span>
@@ -1093,7 +1143,7 @@ const Cockpit = () => {
             </div>
             <div className={"col-span-3 grid grid-cols-7 overflow-hidden"}>
               <div className={"col-span-2 content-center z-50 "}>
-                <GaugeBar min={0} max={15}
+                <GaugeBar min={0} max={30}
                           value={deviceInfo?.device?.horizontal_speed ? +(+deviceInfo?.device?.horizontal_speed).toFixed(1) : 0}
                           name={"水平速度"}
                 />
@@ -1121,8 +1171,42 @@ const Cockpit = () => {
                           name={"垂直速度"}/>
               </div>
             </div>
-            <div className={"col-span-1 py-4 px-2"}>
-              <div
+            <div className={"col-span-1 grid grid-rows-4"}>
+              {/*<div className={"col-span-1 grid grid-rows-4"}>*/}
+              <div className={"space-x-6 grid grid-cols-4 pl-12 items-center"}>
+                <img className={"h-1/2"} src={asl} alt=""/>
+                <div className={"flex flex-col col-span-3"}>
+                  <span className={"text-[#D0D0D0]"}>海拔高度</span>
+                  <span
+                    className={"whitespace-nowrap"}>{!deviceInfo.device || deviceInfo.device.height === str ? str : parseFloat(deviceInfo.device?.height as string).toFixed(2) + " m"}</span>
+                </div>
+              </div>
+              <div className={"grid grid-cols-4 pl-12 items-center space-x-6"}>
+                <img className={"h-1/2"} src={fhgd} alt=""/>
+                <div className={"flex flex-col col-span-3"}>
+                  <span className={"text-[#D0D0D0]"}>返航高度</span>
+                  <span
+                    className={"whitespace-nowrap"}>{deviceInfo.device ? deviceInfo.device.rth_altitude + " m" : str}</span>
+                </div>
+              </div>
+              <div className={"grid grid-cols-4 pl-12 items-center space-x-6"}>
+                <img className={"h-1/2"} src={xg} alt=""/>
+                <div className={"flex flex-col col-span-3"}>
+                  <span className={"text-[#D0D0D0]"}>限高</span>
+                  <span
+                    className={"whitespace-nowrap"}>{deviceInfo.device ? deviceInfo.device.height_limit + " m" : str}</span>
+                </div>
+              </div>
+              <div className={"grid grid-cols-4 pl-12 items-center space-x-6"}>
+                <img className={"h-1/2"} src={sldz} alt=""/>
+                <div className={"flex flex-col col-span-3"}>
+                  <span className={"text-[#D0D0D0]"}>失联动作</span>
+                  <span
+                    className={"whitespace-nowrap text-red-400"}>返航</span>
+                </div>
+                {/*</div>*/}
+              </div>
+              {/*<div
                 style={{
                   backgroundSize: "100% 100%"
                 }}
@@ -1151,7 +1235,7 @@ const Cockpit = () => {
                       className={"text-sm"}>{deviceInfo?.device?.attitude_roll ? deviceInfo?.device?.attitude_roll + "°" : "--"}</span>
                   </div>
                 </div>
-              </div>
+              </div>*/}
             </div>
           </div>
         </div>
@@ -1243,7 +1327,7 @@ const Cockpit = () => {
             </div>
             <div className={"flex-1 relative"}>
               <div className={"h-[268px] w-full"}>
-                <WorkOrderCarousel/>
+                <WorkOrderCarousel dockSn={dockSn}/>
               </div>
             </div>
           </div>

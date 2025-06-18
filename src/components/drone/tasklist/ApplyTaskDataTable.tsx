@@ -49,7 +49,7 @@ const TaskDataTable = () => {
     {
       accessorKey: "name",
       header: "计划名称",
-      size: 160,
+      size: 140,
       cell: ({row}) => (
         <div className="max-w-[160px] truncate" title={row.original.name}>
           {row.original.name}
@@ -59,8 +59,11 @@ const TaskDataTable = () => {
     {
       accessorKey: "create_time",
       header: "申请时间",
-      size: 160,
-      cell: ({row}) => <span className="whitespace-nowrap">{dayjs(row.original.create_time).format("YYYY-MM-DD HH:mm:ss")}</span>
+      size: 180,
+      cell: ({row}) => <span className="whitespace-nowrap truncate"
+                             title={dayjs(row.original.create_time).format("YYYY-MM-DD HH:mm:ss")}>
+        {dayjs(row.original.create_time).format("YYYY-MM-DD HH:mm:ss")}
+      </span>
     },
     {
       accessorKey: "task_days",
@@ -143,7 +146,8 @@ const TaskDataTable = () => {
       accessorKey: "status",
       header: "审核状态",
       size: 100,
-      cell: ({row}) => <span className={cn("whitespace-nowrap", applyTaskStatusMap[row.original.status].color)}>{applyTaskStatusMap[row.original.status].name}</span>
+      cell: ({row}) => <span
+        className={cn("whitespace-nowrap", applyTaskStatusMap[row.original.status].color)}>{applyTaskStatusMap[row.original.status].name}</span>
     },
     {
       header: "操作",
@@ -323,7 +327,7 @@ const TaskDataTable = () => {
       <div className="rounded-md border border-[#0A81E1] bg-[#0A4088]/70">
         <div className="flex flex-col">
           <div className="w-full bg-[#0A81E1]/70">
-            <div className="w-full" style={{ paddingRight: '8px' }}>  {/* 补偿滚动条宽度 */}
+            <div className="w-full" style={{paddingRight: "8px"}}>  {/* 补偿滚动条宽度 */}
               <Table>
                 <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -352,7 +356,7 @@ const TaskDataTable = () => {
               </Table>
             </div>
           </div>
-          <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 430px)' }}>
+          <div className="overflow-auto" style={{maxHeight: "calc(100vh - 430px)"}}>
             <Table>
               <TableBody className="bg-[#0A4088]/70">
                 {table.getRowModel().rows?.length ? (

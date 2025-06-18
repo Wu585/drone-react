@@ -337,6 +337,7 @@ export interface DeviceOsd {
   total_flight_time?: number
   total_flight_distance?: number
   activation_time?: number
+  rth_altitude: number
 }
 
 export enum NetworkStateTypeEnum {

@@ -22,6 +22,7 @@ import {pickPosition} from "@/components/toolbar/tools";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
+import dayjs from "dayjs";
 
 export const formSchema = z.object({
   target_latitude: z.coerce.number({
@@ -110,10 +111,11 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
         toast({
           description: <span>起飞成功</span>
         });
+        // localStorage.setItem("startTime", dayjs().format("yyyy-MM-dd HH:mm:ss"));
         getCustomSource("drone-wayline")?.entities.removeAll();
         const longitude = realtimeDeviceInfo.dock?.basic_osd?.longitude;
         const latitude = realtimeDeviceInfo.dock?.basic_osd?.latitude;
-        const height = form.getValues("target_height")
+        const height = form.getValues("target_height");
         if (realtimeDeviceInfo.dock && longitude && latitude) {
           getCustomSource("drone-wayline")?.entities.add({
             polyline: {
@@ -199,7 +201,8 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
                   <FormItem className={"grid grid-cols-6 px-4"}>
                     <FormLabel className={"col-span-3 flex items-center"}>目标经度</FormLabel>
                     <FormControl className={"col-span-3"}>
-                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field} placeholder={"填入目标经度信息"}/>
+                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}
+                             placeholder={"填入目标经度信息"}/>
                     </FormControl>
                   </FormItem>
                 )}
@@ -211,7 +214,8 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
                   <FormItem className={"grid grid-cols-6 px-4"}>
                     <FormLabel className={"col-span-3 flex items-center"}>目标纬度</FormLabel>
                     <FormControl className={"col-span-3"}>
-                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field} placeholder={"填入目标纬度信息"}/>
+                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}
+                             placeholder={"填入目标纬度信息"}/>
                     </FormControl>
                   </FormItem>
                 )}
@@ -254,7 +258,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
                   )}
                   name={"rth_altitude"}
                 />
-                <FormField
+                {/*<FormField
                   control={form.control}
                   name={"rc_lost_action"}
                   render={({field}) => (
@@ -274,8 +278,8 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
                         </SelectContent>
                       </Select>
                     </FormItem>)}
-                />
-                <FormField
+                />*/}
+                {/*<FormField
                   control={form.control}
                   name={"exit_wayline_when_rc_lost"}
                   render={({field}) => (
@@ -295,7 +299,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
                         </SelectContent>
                       </Select>
                     </FormItem>)}
-                />
+                />*/}
                 {/*<FormField
                   control={form.control}
                   name={"rth_mode"}
