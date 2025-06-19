@@ -47,7 +47,7 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
       toast({
         description: "指令下发成功！"
       });
-      isRemoteControl && await exitFlightControl();
+      // isRemoteControl && await exitFlightControl();
       outRemoteControl();
     } catch (err) {
       toast({

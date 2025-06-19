@@ -23,13 +23,22 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog.tsx";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
-import {ChevronRight, ChevronDown, Edit} from "lucide-react";
+import {ChevronRight, ChevronDown, Edit, Trash} from "lucide-react";
 import {generateRandomString} from "@/lib/utils.ts";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {useAjax} from "@/lib/http.ts";
 import {v4 as uuidv4} from "uuid";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useNavigate} from "react-router-dom";
+import dayjs from "dayjs";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog.tsx";
 
 const formSchema = z.object({
   workspace_id: z.string(),
@@ -43,10 +52,10 @@ const formSchema = z.object({
     required_error: "请选择上级组织",
     invalid_type_error: "上级组织必须是数字"
   }),
-  lead_user: z.coerce.number({
-    required_error: "请选择负责人",
-    invalid_type_error: "负责人必须是数字"
-  }),
+  // lead_user: z.coerce.number({
+  //   required_error: "请选择负责人",
+  //   invalid_type_error: "负责人必须是数字"
+  // }),
   workspace_code: z.string().min(6).optional(),
 });
 
@@ -55,8 +64,11 @@ const MANAGE_HTTP_PREFIX = "/manage/api/v1";
 const OrganizationDataTable = () => {
   const [expandedRows, setExpandedRows] = useState<number[]>([]);
   const [open, setOpen] = useState(false);
-  const {post} = useAjax();
+  const {post, delete: deleteClient} = useAjax();
   const [currentOrg, setCurrentOrg] = useState<WorkSpace | null>(null);
+
+  // 下拉树专用展开收缩状态
+  const [treeExpandedIds, setTreeExpandedIds] = useState<number[]>([]);
 
   const toggleRow = (id: number) => {
     setExpandedRows(prev =>
@@ -139,7 +151,7 @@ const OrganizationDataTable = () => {
     },
     {
       accessorKey: "lead_user_name",
-      header: () => <div className="text-center">负责人</div>,
+      header: () => <div className="text-center">创建人</div>,
       cell: ({row}) => (
         <div className="text-center">{row.original.lead_user_name}</div>
       ),
@@ -162,20 +174,64 @@ const OrganizationDataTable = () => {
       size: 120,
     },
     {
+      accessorKey: "create_time",
+      header: () => <div className="text-center">创建时间</div>,
+      cell: ({row}) => (
+        <div className="text-center">{dayjs(row.getValue("create_time")).format("YYYY-MM-DD HH:mm:ss")}</div>
+      ),
+      size: 120,
+    },
+    {
       id: "actions",
       header: () => <div className="text-center">操作</div>,
       cell: ({row}) => (
-        <div className="text-center">
+        <div className="content-center space-x-2">
           <Edit
             size={16}
             className="cursor-pointer hover:text-[#43ABFF] transition-colors inline-block"
             onClick={() => handleEdit(row.original)}
           />
+          <AlertDialog>
+            <AlertDialogTrigger>
+              <Trash
+                size={16}
+                className="cursor-pointer hover:text-[#43ABFF] transition-colors inline-block"
+              />
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>删除组织</AlertDialogTitle>
+              </AlertDialogHeader>
+              <AlertDialogDescription>确认删除组织吗?</AlertDialogDescription>
+              <AlertDialogFooter>
+                <AlertDialogCancel
+                  className={"text-primary-foreground text-black"}>取消</AlertDialogCancel>
+                <AlertDialogCancel
+                  className={"bg-primary text-primary-foreground"}
+                  onClick={() => onDeleteWorkspace(row.original.id)}>确认</AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       ),
       size: 80,
     }
   ];
+
+  const onDeleteWorkspace = async (id: number) => {
+    try {
+      await deleteClient(`${MANAGE_HTTP_PREFIX}/workspaces/${id}`);
+      toast({
+        description: "删除成功！"
+      });
+      await mutateWorkSpaceList();
+    } catch (err: any) {
+      toast({
+        description: err.data.message,
+        variant: "destructive"
+      });
+    }
+  };
 
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const {data: currentUser} = useCurrentUser();
@@ -195,8 +251,8 @@ const OrganizationDataTable = () => {
     total: 0
   });
 
-  const {data: workSpaceList, mutate: mutateWorkSpaceList} = useWorkspaceAllList();
-  // const {data: workSpaceList, mutate: mutateWorkSpaceList} = useWorkspaceList();
+  // const {data: workSpaceList, mutate: mutateWorkSpaceList} = useWorkspaceAllList();
+  const {data: workSpaceList, mutate: mutateWorkSpaceList} = useWorkspaceList();
   // console.log("workSpaceList");
   // console.log(workSpaceList);
   const defaultValues = {
@@ -206,8 +262,7 @@ const OrganizationDataTable = () => {
     workspace_desc: "",
     platform_name: "",
     bind_code: generateRandomString(),
-    parent: 0,
-    lead_user: currentUser?.id
+    parent: 0
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -230,29 +285,37 @@ const OrganizationDataTable = () => {
       workspace_name: org.workspace_name,
       workspace_desc: org.workspace_desc,
       platform_name: org.platform_name,
-      bind_code: org.bind_code,
-      workspace_code: org.workspace_code,
-      parent: org.parent,
-      lead_user: org.lead_user
+      // bind_code: org.bind_code,
+      // workspace_code: org.workspace_code,
+      parent: org.parent
     });
     setOpen(true);
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("onSubmit values:", values);
+    if (!currentUser) return;
     const formData = {
       ...values,
-      workspace_id: currentOrg ? currentOrg.workspace_id : uuidv4(),
+      workspace_id: currentOrg ? undefined : uuidv4(),
+      lead_user: currentUser?.id,
+      id: currentOrg?.id
     };
     console.log("formData", formData);
-    const res: any = await post(`${MANAGE_HTTP_PREFIX}/workspaces/save`, formData);
-    if (res.data.code === 0) {
+
+    try {
+      await post(`${MANAGE_HTTP_PREFIX}/workspaces/save`, formData);
       toast({
         description: `${currentOrg ? "更新" : "创建"}组织成功！`
       });
       setOpen(false);
       form.reset(defaultValues);
       await mutateWorkSpaceList();
+    } catch (err) {
+      toast({
+        description: `${currentOrg ? "更新" : "创建"}组织失败！`,
+        variant: "destructive"
+      });
     }
   };
 
@@ -284,15 +347,21 @@ const OrganizationDataTable = () => {
         addChildren(item.id);
       }
     });
-    console.log("result");
-    console.log(result);
+
     return result;
+  };
+
+  // 下拉树切换展开收缩
+  const toggleTreeRow = (id: number) => {
+    setTreeExpandedIds(prev =>
+      prev.includes(id)
+        ? prev.filter(rowId => rowId !== id)
+        : [...prev, id]
+    );
   };
 
   // 递归渲染组织树选项
   const renderTreeOptions = (parentId: number | null = null, level: number = 0): JSX.Element[] | undefined => {
-    const indent = "\u00A0\u00A0\u00A0\u00A0".repeat(level);
-
     // 找出顶级节点（parentId 为 null 时，返回没有父节点的项）
     const items = workSpaceList?.filter(item =>
       parentId === null
@@ -302,14 +371,38 @@ const OrganizationDataTable = () => {
 
     if (!items?.length) return undefined;
 
-    return items.map(item => (
-      <Fragment key={item.id}>
-        <SelectItem value={item.workspace_id}>
-          {indent + item.workspace_name}
-        </SelectItem>
-        {renderTreeOptions(item.id, level + 1)}
-      </Fragment>
-    ));
+    return items.map(item => {
+      const hasChildren = workSpaceList?.some(child => child.parent === item.id);
+      const isExpanded = treeExpandedIds.includes(item.id);
+      return (
+        <Fragment key={item.id}>
+          <div className="flex items-center">
+            {hasChildren ? (
+              <span
+                className="p-0 cursor-pointer flex items-center"
+                style={{marginLeft: `${level * 16}px`}}
+                onClick={e => {
+                  e.stopPropagation();
+                  toggleTreeRow(item.id);
+                }}
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4 inline-block align-middle"/>
+                ) : (
+                  <ChevronRight className="h-4 w-4 inline-block align-middle"/>
+                )}
+              </span>
+            ) : (
+              <span className="w-4" style={{marginLeft: `${level * 16}px`}}/>
+            )}
+            <SelectItem value={String(item.id)} className="pl-6 ml-0">
+              {item.workspace_name}
+            </SelectItem>
+          </div>
+          {hasChildren && isExpanded && renderTreeOptions(item.id, level + 1)}
+        </Fragment>
+      );
+    });
   };
 
   const table = useReactTable({
@@ -368,58 +461,59 @@ const OrganizationDataTable = () => {
                   />
                   <FormField
                     control={form.control}
-                    render={({field: {value, onChange, ...field}}) => (
+                    render={({field}) => (
                       <FormItem className={"grid grid-cols-4 items-center gap-4"}>
                         <FormLabel className={"text-right"}>上级组织：</FormLabel>
-                        <Select
-                          {...field}
-                          value={String(value)}
-                          onValueChange={onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger className={"col-span-3"}>
-                              <SelectValue placeholder="选择上级组织"/>
-                            </SelectTrigger>
-                          </FormControl>
+                        <div className={"col-span-3"}>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value.toString()}
+                          >
+                            <FormControl>
+                              <SelectTrigger className={"col-span-3"}>
+                                <SelectValue placeholder="选择上级组织"/>
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="0">无</SelectItem>
+                              {renderTreeOptions()}
+                            </SelectContent>
+                          </Select>
                           <FormMessage/>
-                          <SelectContent>
-                            <SelectItem value="0">无</SelectItem>
-                            {renderTreeOptions()}
-                          </SelectContent>
-                        </Select>
+                        </div>
                       </FormItem>
                     )}
                     name={"parent"}
                   />
-                  <FormField
-                    control={form.control}
-                    render={({field: {value, onChange, ...field}}) => (
-                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
-                        <FormLabel className={"text-right"}>负责人：</FormLabel>
-                        <Select
-                          {...field}
-                          value={String(value)}
-                          onValueChange={onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger className={"col-span-3"}>
-                              <SelectValue placeholder="选择负责人"/>
-                            </SelectTrigger>
-                          </FormControl>
-                          {/*<FormMessage/>*/}
-                          <SelectContent>
-                            <SelectItem value="0">无</SelectItem>
-                            {data?.list.map(item => (
-                              <SelectItem key={item.id} value={String(item.id)}>
-                                {item.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                    name={"lead_user"}
-                  />
+                  {/*<FormField*/}
+                  {/*  control={form.control}*/}
+                  {/*  render={({field: {value, onChange, ...field}}) => (*/}
+                  {/*    <FormItem className={"grid grid-cols-4 items-center gap-4"}>*/}
+                  {/*      <FormLabel className={"text-right"}>负责人：</FormLabel>*/}
+                  {/*      <Select*/}
+                  {/*        {...field}*/}
+                  {/*        value={String(value)}*/}
+                  {/*        onValueChange={onChange}*/}
+                  {/*      >*/}
+                  {/*        <FormControl>*/}
+                  {/*          <SelectTrigger className={"col-span-3"}>*/}
+                  {/*            <SelectValue placeholder="选择负责人"/>*/}
+                  {/*          </SelectTrigger>*/}
+                  {/*        </FormControl>*/}
+                  {/*        /!*<FormMessage/>*!/*/}
+                  {/*        <SelectContent>*/}
+                  {/*          <SelectItem value="0">无</SelectItem>*/}
+                  {/*          {data?.list.map(item => (*/}
+                  {/*            <SelectItem key={item.id} value={String(item.id)}>*/}
+                  {/*              {item.name}*/}
+                  {/*            </SelectItem>*/}
+                  {/*          ))}*/}
+                  {/*        </SelectContent>*/}
+                  {/*      </Select>*/}
+                  {/*    </FormItem>*/}
+                  {/*  )}*/}
+                  {/*  name={"lead_user"}*/}
+                  {/*/>*/}
                   <DialogFooter>
                     <Button type="submit">确认</Button>
                   </DialogFooter>

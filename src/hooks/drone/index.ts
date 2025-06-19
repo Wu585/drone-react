@@ -466,7 +466,7 @@ interface MembersData {
 // Get all uses
 export const useMembers = (workspaceId: string, body: Pagination) => {
   const {get} = useAjax();
-  const url = `${HTTP_PREFIX}/users/${workspaceId}/users`;
+  const url = `${HTTP_PREFIX}/users/users`;
   const key = body ? [url, body] as const : null;
   return useSWR(key, async ([path, body]) => (await get<Resource<MembersData>>(path, {
     ...body

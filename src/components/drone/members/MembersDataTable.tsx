@@ -27,7 +27,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
-import {Edit} from "lucide-react";
+import {ChevronDown, ChevronRight, Edit} from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -127,10 +127,20 @@ const MembersDataTable = () => {
 
   const {data: workSpaceList} = useWorkspaceList();
 
+  // 下拉树专用展开收缩状态
+  const [treeExpandedIds, setTreeExpandedIds] = useState<number[]>([]);
+
+  // 下拉树切换展开收缩
+  const toggleTreeRow = (id: number) => {
+    setTreeExpandedIds(prev =>
+      prev.includes(id)
+        ? prev.filter(rowId => rowId !== id)
+        : [...prev, id]
+    );
+  };
+
   // 递归渲染组织树选项
   const renderTreeOptions = (parentId: number | null = null, level: number = 0): JSX.Element[] | undefined => {
-    const indent = "\u00A0\u00A0\u00A0\u00A0".repeat(level);
-
     // 找出顶级节点（parentId 为 null 时，返回没有父节点的项）
     const items = workSpaceList?.filter(item =>
       parentId === null
@@ -140,14 +150,38 @@ const MembersDataTable = () => {
 
     if (!items?.length) return undefined;
 
-    return items.map(item => (
-      <Fragment key={item.id}>
-        <SelectItem value={item.workspace_id}>
-          {indent + item.workspace_name}
-        </SelectItem>
-        {renderTreeOptions(item.id, level + 1)}
-      </Fragment>
-    ));
+    return items.map(item => {
+      const hasChildren = workSpaceList?.some(child => child.parent === item.id);
+      const isExpanded = treeExpandedIds.includes(item.id);
+      return (
+        <Fragment key={item.id}>
+          <div className="flex items-center">
+            {hasChildren ? (
+              <span
+                className="p-0 cursor-pointer flex items-center"
+                style={{marginLeft: `${level * 16}px`}}
+                onClick={e => {
+                  e.stopPropagation();
+                  toggleTreeRow(item.id);
+                }}
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4 inline-block align-middle"/>
+                ) : (
+                  <ChevronRight className="h-4 w-4 inline-block align-middle"/>
+                )}
+              </span>
+            ) : (
+              <span className="w-4" style={{marginLeft: `${level * 16}px`}}/>
+            )}
+            <SelectItem value={item.workspace_id} className="pl-6 ml-0">
+              {item.workspace_name}
+            </SelectItem>
+          </div>
+          {hasChildren && isExpanded && renderTreeOptions(item.id, level + 1)}
+        </Fragment>
+      );
+    });
   };
 
   const defaultValues = {
@@ -172,6 +206,8 @@ const MembersDataTable = () => {
 
   const handleEdit = (user: UserItem) => {
     setCurrentUser(user);
+    console.log('user');
+    console.log(user);
     form.reset({
       ...user,
       user_type: user.user_type === "Web" ? 1 : 2,

@@ -14,6 +14,7 @@ import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
+import {useEffect} from "react";
 
 const DRC_API_PREFIX = "/control/api/v1";
 
@@ -24,11 +25,16 @@ const Tsa = () => {
     deviceState,
     osdVisible,
     hmsInfo,
-    setOsdVisible
+    setOsdVisible,
+    clearDeviceState
   } = useSceneStore();
   const {post} = useAjax();
   const {onlineDocks} = useOnlineDocks();
   const realTime = useRealTimeDeviceInfo(osdVisible.gateway_sn, osdVisible.sn);
+
+  useEffect(() => {
+    clearDeviceState();
+  }, [clearDeviceState]);
 
   const switchVisible = (dock: OnlineDevice) => {
     if (dock.sn === osdVisible.sn) {
@@ -112,7 +118,7 @@ const Tsa = () => {
         variant: "destructive"
       });
     }
-  }
+  };
 
   return (
     <div className={"w-full h-full flex space-x-[20px]"}>

@@ -57,6 +57,7 @@ import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.t
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group.tsx";
 import {WorkOrderCarousel} from "@/components/drone/WorkOrderCarousel.tsx";
 import {Switch} from "@/components/ui/switch.tsx";
+import {useSceneStore} from "@/store/useSceneStore.ts";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -67,6 +68,12 @@ type ModuleType = "drone" | "dock" | "map" | "ai";
 
 const Cockpit = () => {
   useInitialConnectWebSocket();
+
+  const {clearDeviceState} = useSceneStore();
+
+  useEffect(() => {
+    clearDeviceState();
+  }, [clearDeviceState]);
 
   const {post} = useAjax();
   const {onlineDocks} = useOnlineDocks();
@@ -1129,7 +1136,7 @@ const Cockpit = () => {
                 <div className={"flex flex-col col-span-3"}>
                   <span className={"text-[#D0D0D0]"}>剩余飞行时长</span>
                   <span
-                    className={"whitespace-nowrap"}>{deviceInfo.device ? (deviceInfo.device.battery.remain_flight_time / 60) + " min" : str}</span>
+                    className={"whitespace-nowrap"}>{deviceInfo.device ? (deviceInfo.device.battery.remain_flight_time / 60).toFixed(2) + " min" : str}</span>
                 </div>
               </div>
               <div className={"space-x-6 grid grid-cols-4 pl-12 items-center"}>
