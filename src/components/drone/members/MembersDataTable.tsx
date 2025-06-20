@@ -119,10 +119,9 @@ const MembersDataTable = () => {
     pageSize: 10,
   });
 
-  const {data, mutate} = useMembers(workspaceId, {
+  const {data, mutate} = useMembers({
     page: pagination.pageIndex + 1,
     page_size: pagination.pageSize,
-    total: 0
   });
 
   const {data: workSpaceList} = useWorkspaceList();

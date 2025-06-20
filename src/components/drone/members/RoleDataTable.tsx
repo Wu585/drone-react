@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-table";
 import {useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {buildTree, Role, useMembers, useResourceList, useRoleList} from "@/hooks/drone";
+import {buildTree, Role, useResourceList, useRoleList} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
@@ -110,12 +110,6 @@ const RoleDataTable = () => {
     pageSize: 10,
   });
 
-  const {data} = useMembers(workspaceId, {
-    page: pagination.pageIndex + 1,
-    page_size: pagination.pageSize,
-    total: 0
-  });
-
   const {data: roleList, mutate: mutateRoleList} = useRoleList();
   const {data: _resourceList} = useResourceList();
 
@@ -191,7 +185,7 @@ const RoleDataTable = () => {
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
     manualPagination: true,
-    rowCount: data?.pagination.total,
+    rowCount: roleList?.length,
     state: {
       columnFilters,
       columnVisibility,
@@ -320,7 +314,7 @@ const RoleDataTable = () => {
       </div>
       <div className="flex items-center justify-between space-x-2 py-4">
         <Label className={"text-left"}>
-          共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
+          共 {roleList?.length || 0} 条记录，共 {table.getPageCount()} 页
         </Label>
         <div className={"space-x-2"}>
           <Button

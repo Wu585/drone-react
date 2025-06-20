@@ -73,6 +73,7 @@ export interface Pagination {
   dock_sn?: string;
   keyword?: string;
   job_id?: string | null;
+  reqWorkSpaceId?: string;
 }
 
 export interface WaylineItem {
@@ -464,7 +465,7 @@ interface MembersData {
 }
 
 // Get all uses
-export const useMembers = (workspaceId: string, body: Pagination) => {
+export const useMembers = (body: Pagination) => {
   const {get} = useAjax();
   const url = `${HTTP_PREFIX}/users/users`;
   const key = body ? [url, body] as const : null;
@@ -561,6 +562,7 @@ export interface WorkSpace {
   lead_user: number;
   lead_user_name: string;
   workspace_code: string;
+  logo?:string
 }
 
 // 获取组织列表
@@ -684,6 +686,13 @@ export const useCurrentUser = () => {
   const url = `${MANAGE_HTTP_PREFIX}/users/current`;
   return useSWR(url, async (path) => (await get<Resource<UserItem>>(path)).data.data);
 };
+
+// 判断是否是组织管理员
+export const useWorkspaceManager = () => {
+  const {data: user} = useCurrentUser();
+
+  return user?.role === 3
+}
 
 export const useDepartPermission = (departId: number, workSpaceId: string) => {
   const {data: user} = useCurrentUser();

@@ -9,7 +9,7 @@ import {
   useDepartList,
   useEditDepart,
   useMembers, User,
-  useWorkspaceList
+  useWorkspaceList, useWorkspaceManager
 } from "@/hooks/drone";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {ELocalStorageKey} from "@/types/enum.ts";
@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog.tsx";
+import DepartScene from "@/components/drone/public/DepartScene.tsx";
 
 const OPERATION_HTTP_PREFIX = "/operation/api/v1";
 
@@ -52,7 +53,7 @@ const DepartPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const currentWorkSpaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const currentWorkSpaceId = localStorage.getItem(ELocalStorageKey.SelectedWorkspaceId) || localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const tmpWorkspaceId = searchParams.get("id") || undefined;
 
   const [visible, setVisible] = useState(false);
@@ -67,10 +68,10 @@ const DepartPage = () => {
   }, [workSpaceList, currentWorkSpaceId]);
 
 
-  const {data: _userList} = useMembers(currentWorkSpaceId, {
+  const {data: _userList} = useMembers({
     page: 1,
     page_size: 1000,
-    total: 0
+    reqWorkSpaceId: currentWorkSpaceId
   });
 
   const userList = useMemo(() => {
@@ -154,9 +155,12 @@ const DepartPage = () => {
     }
 
     // 检查是否在当前工作区，并且用户是否在部门用户列表中
-    return currentWorkSpaceId !== depart.workspace_id || depart.user_ids.includes(currentUser.id);
+    return depart.user_ids.includes(currentUser.id);
   };
 
+  const permission = useWorkspaceManager();
+  console.log('permission');
+  console.log(permission);
   const onDeleteDepart = async (id: number) => {
     await deleteClient(`${OPERATION_HTTP_PREFIX}/organ/delete?id=${id}`);
     toast({
@@ -199,43 +203,44 @@ const DepartPage = () => {
                   <span>创建时间：</span>
                   <span>{dayjs(item.create_time).format("YYYY-MM-DD HH:MM:ss")}</span>
                 </div>
-                {hasPermission(item) && <div className={"flex space-x-2 items-center"}>
-                  <Pencil
+                <div className={"flex space-x-2 items-center"}>
+                  {permission && <>
+                    <Pencil
+                      size={16}
+                      className={"cursor-pointer"}
+                      onClick={() => {
+                        setVisible(true);
+                        setDepartId(item.id);
+                      }}
+                    />
+                    <AlertDialog>
+                      <AlertDialogTrigger>
+                        <Trash2 size={16} className={"cursor-pointer"}/>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>删除部门</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            确认删除部门吗？
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>取消</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => onDeleteDepart(item.id)}>确认</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>}
+                  {(permission || hasPermission(item)) && <LogInIcon
                     size={16}
+                    // className={`${!permission ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                     className={"cursor-pointer"}
                     onClick={() => {
-                      setVisible(true);
-                      setDepartId(item.id);
+                      navigate(`/tsa?workspace=${item?.workspace_id}`);
+                      localStorage.setItem("departId", item.id.toString());
                     }}
-                  />
-                  <AlertDialog>
-                    <AlertDialogTrigger>
-                      <Trash2 size={16} className={"cursor-pointer"}/>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>删除部门</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          确认删除部门吗？
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onDeleteDepart(item.id)}>确认</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                  <LogInIcon
-                    size={16}
-                    className={`${!hasPermission(item) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                    onClick={() => {
-                      if (hasPermission(item)) {
-                        navigate(`/tsa?workspace=${item?.workspace_id}`);
-                        localStorage.setItem("departId", item.id.toString());
-                      }
-                    }}
-                  />
-                </div>}
+                  />}
+                </div>
               </div>
             </div>)}
         </div>
@@ -402,7 +407,7 @@ const DepartPage = () => {
         </Form>
       </div>}
       <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative ml-[20px]"}>
-        <GMap/>
+        <DepartScene/>
       </div>
     </div>
   );
