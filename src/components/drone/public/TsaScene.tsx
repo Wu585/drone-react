@@ -95,9 +95,9 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
 
   useEffect(() => {
     if (!viewer || !deviceTopo) return;
-    Object.keys(deviceState.dockInfo).forEach(dockSn => {
+    deviceTopo.map(device => device.device_sn).forEach(dockSn => {
       const dockInfo = deviceState.dockInfo[dockSn];
-      if (dockInfo.basic_osd && dockInfo.basic_osd.longitude && dockInfo.basic_osd.latitude) {
+      if (dockInfo && dockInfo.basic_osd && dockInfo.basic_osd.longitude && dockInfo.basic_osd.latitude) {
         if (getCustomSource("dock")?.entities.getById(`dock-${dockSn}`)) return;
         const device = deviceTopo?.find(item => item.device_sn === dockSn);
         const nickname = device?.nickname;

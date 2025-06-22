@@ -105,7 +105,7 @@ const GroupItem = ({
           )}
         </div>
 
-        <span className=" text-white truncate flex-1  text-base">{group.name}</span>
+        <span className=" text-white truncate flex-1  text-base" title={group.name}>{group.name}</span>
 
         {/* 操作按钮组 */}
         <div
@@ -211,7 +211,7 @@ const GroupItem = ({
                 {element.resource.type === MapElementEnum.CIRCLE && <Circle className="h-4 w-4 text-[#43ABFF]"/>}
               </div>
               <span onClick={() => onSelect(element.id)}
-                    className="w-40 text-base text-white truncate ">{element.name}</span>
+                    className="w-40 text-base text-white truncate" title={element.name}>{element.name}</span>
               <div
                 className={"opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 absolute right-2"}>
                 <PermissionButton
@@ -468,8 +468,8 @@ const Elements = () => {
           </SheetFooter>
         </SheetContent>
       </Sheet>
-      <div className="w-[340px] min-w-[340px] border-[1px] border-[#43ABFF] bg-gradient-to-r
-        from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0 rounded-tr-lg rounded-br-lg flex flex-col">
+      <div className="w-[340px] min-w-[340px] border-[1px] border-[#43ABFF] bg-gradient-to-l
+        from-[#32547E]/[.5] to-[#1F2D4B] border-l-0 rounded-tr-lg rounded-br-lg flex flex-col">
         <div
           className="flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between">
           <div className={"h-8 text-base"}>地图标注</div>

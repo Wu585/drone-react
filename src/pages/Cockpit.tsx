@@ -20,7 +20,7 @@ import {cn} from "@/lib/utils.ts";
 import PayloadControl from "@/components/drone/PayloadControl.tsx";
 import compassPng from "@/assets/images/drone/cockpit/compass.png";
 import pointerPng from "@/assets/images/drone/cockpit/pointer.png";
-import {ArrowRightLeft, ChevronsUpDown, Maximize2, RefreshCcw, Settings, Undo2, X} from "lucide-react";
+import {ArrowRightLeft, ChevronsUpDown, Maximize2, RefreshCcw, Settings, Triangle, Undo2, X} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,6 +58,8 @@ import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group.tsx";
 import {WorkOrderCarousel} from "@/components/drone/WorkOrderCarousel.tsx";
 import {Switch} from "@/components/ui/switch.tsx";
 import {useSceneStore} from "@/store/useSceneStore.ts";
+import CustomPopover from "@/components/public/CustomPopover.tsx";
+import {TaskStatus, TaskType} from "@/types/task.ts";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -582,7 +584,9 @@ const Cockpit = () => {
   const renderMainViewActionGroup = (type: ModuleType) => {
     switch (type) {
       case "dock":
-        return (<>
+        return (<div style={{
+          background: "linear-gradient( 270deg, rgba(76,175,255,0) 0%, rgba(36,144,232,0.29) 16%, rgba(58,186,255,0.45) 51%, rgba(40,141,222,0.37) 84%, rgba(67,171,255,0) 100%)"
+        }} className={"content-center space-x-4 px-4 py-2"}>
           <DropdownMenu>
             <DropdownMenuTrigger>
               <Settings size={16}/>
@@ -602,7 +606,7 @@ const Cockpit = () => {
             onClick={() => startDockLive()}
             size={16}
           />
-        </>);
+        </div>);
 
       case "drone":
         return deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? <PayloadControl
@@ -619,27 +623,41 @@ const Cockpit = () => {
         return null;
       case "ai":
         return (
-          <>
-            <Popover>
-              <PopoverTrigger>
-                  <span className={"text-[18px] flex items-center"}>
+          <div style={{
+            background: "linear-gradient( 270deg, rgba(76,175,255,0) 0%, rgba(36,144,232,0.29) 16%, rgba(58,186,255,0.45) 51%, rgba(40,141,222,0.37) 84%, rgba(67,171,255,0) 100%)"
+          }} className={"content-center space-x-4 px-4 py-2"}>
+            <CustomPopover
+              trigger={
+                <span className={"text-[18px] flex items-center"}>
                     <ChevronsUpDown size={18}/>
                   </span>
-              </PopoverTrigger>
-              <PopoverContent className={"w-48"}>
+              }
+              content={
                 <ToggleGroup type="single" className={"flex flex-col"}>
                   {deviceSn && result[deviceSn]?.["0"]?.map(item =>
-                    <ToggleGroupItem
-                      onClick={() => onChangeAiVideo?.(AlgorithmPlatform.CloudPlatForm, item.instance_id)}
-                      value={item.instance_id}
-                      key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
+                    <div className={"flex items-center w-full justify-between"}>
+                      <ToggleGroupItem
+                        className={"hover:bg-[#4BB5FF] hover:text-white w-full flex justify-between data-[state=on]:bg-[#4BB5FF] data-[state=on]:text-white"}
+                        onClick={() => onChangeAiVideo?.(AlgorithmPlatform.CloudPlatForm, item.instance_id)}
+                        value={item.instance_id}
+                        key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>
+                      {item.task_id && <Switch className={"data-[state=checked]:bg-[#4BB5FF]"} checked={
+                        !!taskList?.items.find(
+                          (x) =>
+                            x.id === +item.task_id! &&
+                            x.status &&
+                            x.status !== "not_started"
+                        )
+                      } onCheckedChange={(checked) => onSwitchTask(checked, item.task_id)}/>}
+                    </div>)}
                   {deviceSn && result[deviceSn]?.["1"]?.map(item =>
                     <ToggleGroupItem
+                      className={"w-full flex justify-between hover:bg-[#4BB5FF] hover:text-white"}
                       value={item.instance_id}
                       key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
                 </ToggleGroup>
-              </PopoverContent>
-            </Popover>
+              }
+            />
             {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] && (
               <div className="flex items-center space-x-2">
                 {fpvDroneVideoId && fpvOrAi === "fpv" && <RefreshCcw
@@ -655,7 +673,7 @@ const Cockpit = () => {
                   />}
               </div>
             )}
-          </>
+          </div>
         );
     }
   };
@@ -761,21 +779,22 @@ const Cockpit = () => {
       case "ai":
         return (
           <>
-            <Popover>
-              <PopoverTrigger>
-                  <span className={"text-[18px] flex items-center"}>
+            <CustomPopover
+              trigger={
+                <span className={"text-[18px] flex items-center"}>
                     <ChevronsUpDown size={18}/>
                   </span>
-              </PopoverTrigger>
-              <PopoverContent className={"max-w-60"}>
+              }
+              content={
                 <ToggleGroup type="single" className={"flex flex-col"}>
                   {deviceSn && result[deviceSn]?.["0"]?.map(item =>
-                    <div className={"content-center"}>
+                    <div className={"flex items-center w-full justify-between"}>
                       <ToggleGroupItem
+                        className={"hover:bg-[#4BB5FF] hover:text-white w-full flex justify-between data-[state=on]:bg-[#4BB5FF] data-[state=on]:text-white"}
                         onClick={() => onChangeAiVideo?.(AlgorithmPlatform.CloudPlatForm, item.instance_id)}
                         value={item.instance_id}
                         key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>
-                      {item.task_id && <Switch checked={
+                      {item.task_id && <Switch className={"data-[state=checked]:bg-[#4BB5FF]"} checked={
                         !!taskList?.items.find(
                           (x) =>
                             x.id === +item.task_id! &&
@@ -786,11 +805,12 @@ const Cockpit = () => {
                     </div>)}
                   {deviceSn && result[deviceSn]?.["1"]?.map(item =>
                     <ToggleGroupItem
+                      className={"w-full flex justify-between hover:bg-[#4BB5FF] hover:text-white"}
                       value={item.instance_id}
                       key={item.instance_id}>{item.algorithm_name}</ToggleGroupItem>)}
                 </ToggleGroup>
-              </PopoverContent>
-            </Popover>
+              }
+            />
             {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] && (
               <div className="flex items-center space-x-2">
                 {fpvDroneVideoId && fpvOrAi === "fpv" && <RefreshCcw
@@ -810,6 +830,20 @@ const Cockpit = () => {
         );
     }
   };
+
+  const departId = localStorage.getItem("departId")!;
+
+  const {data: jobList} = useWaylinJobs(workspaceId, {
+    page: 1,
+    page_size: 100,
+    start_time: "",
+    end_time: "",
+    task_type: undefined as TaskType | undefined,
+    dock_sn: dockSn,
+    keyword: "",
+    // status: TaskStatus.Wait,
+    organs: departId ? [+departId] : undefined
+  });
 
   return (
     <FitScreen mode={"full"}>
@@ -833,6 +867,28 @@ const Cockpit = () => {
             </div>
             <img src={wurenjiPng} alt=""/>
             <span>{currentTopo?.nickname + " - " + currentTopo?.children.nickname}</span>
+            <CustomPopover
+              trigger={<Triangle fill={"white"} size={12} className="rotate-180"/>}
+              className={"max-h-48 overflow-auto max-w-80"}
+              content={
+                <div className={""}>
+                  {!jobList ? (
+                    <div className={"text-center"}>加载中...</div>
+                  ) : jobList.list.length ? (
+                    <>
+                      <h1>待执行任务：</h1>
+                      {jobList.list.map(job => (
+                        <div key={job.id} className={"space-x-4"}>
+                          <span>{job.begin_time}</span>
+                          <span>{job.job_name}</span>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div className={"text-center"}>暂无任务</div>
+                  )}
+                </div>
+              }/>
           </div>
           {/* 中间部分（绝对居中） */}
           <div className={"py-4 text-xl font-bold text-[#63E5FF] z-50 absolute left-1/2 top-0 -translate-x-1/2"}>
@@ -1136,7 +1192,7 @@ const Cockpit = () => {
                 <div className={"flex flex-col col-span-3"}>
                   <span className={"text-[#D0D0D0]"}>剩余飞行时长</span>
                   <span
-                    className={"whitespace-nowrap"}>{deviceInfo.device ? (deviceInfo.device.battery.remain_flight_time / 60).toFixed(2) + " min" : str}</span>
+                    className={"whitespace-nowrap"}>{deviceInfo.device ? (deviceInfo.device.battery.remain_flight_time / 60).toFixed(0) + " min" : str}</span>
                 </div>
               </div>
               <div className={"space-x-6 grid grid-cols-4 pl-12 items-center"}>

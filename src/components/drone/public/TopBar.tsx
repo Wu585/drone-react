@@ -43,7 +43,7 @@ const TopBar = () => {
   const {data: weatherInfo} = useWeatherInfo("101021000");
 
   return (
-    <div className={"h-[70px] bg-gradient-to-b from-[#1f2849]/[.82] to-[#325088]/[.82] " +
+    <div className={"h-[70px] bg-gradient-to-b from-[#1A3369]/[.82] to-[#305286] " +
       "flex justify-between items-center px-[30px] py-[18px] whitespace-nowrap"}>
       <div className={"text-[24px] font-semibold content-center space-x-2"}>
         <img src={logo} alt=""/>

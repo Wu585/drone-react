@@ -1,25 +1,16 @@
 import {useAjax} from "@/lib/http.ts";
 import {
-  Airplay,
-  Earth,
   LandPlot,
   Rocket,
   Satellite,
   Settings,
-  Thermometer,
   ThermometerSun,
   X,
-  Forward, CircleStop, BatteryFull, Wind, CloudHail, Send
+  Forward, CircleStop, BatteryFull, Wind, CloudHail, Send, ClipboardList
 } from "lucide-react";
-import yjqfPng from "@/assets/images/drone/yjqf.png";
-import yjfhPng from "@/assets/images/drone/yjfh.png";
-import xnzcPng from "@/assets/images/drone/xnzcPng.png";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import TakeOffFormPanel from "@/components/drone/public/TakeOffFormPanel.tsx";
 import {useVisible} from "@/hooks/public/utils.ts";
-import remoteControlPng from "@/assets/images/drone/remote-control.png";
-import compassPng from "@/assets/images/drone/compass.png";
-import pointerPng from "@/assets/images/drone/pointer.png";
 import {cn} from "@/lib/utils.ts";
 import KeyboardControl from "@/components/drone/public/KeyboardControl.tsx";
 import {useNavigate} from "react-router-dom";
@@ -32,7 +23,7 @@ import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {EDockModeCode, EDockModeCodeMap, EModeCode, EModeCodeMap, RainfallMap} from "@/types/device.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {useDockControl} from "@/hooks/drone/useDockControl.ts";
-import {DeviceCmd, DeviceCmdItem, noDebugCmdList} from "@/types/device-cmd.ts";
+import {DeviceCmd} from "@/types/device-cmd.ts";
 import {useFlightControl} from "@/hooks/drone/useFlightControl.ts";
 import DebugPanel from "@/components/drone/public/DebugPanel.tsx";
 import {copyToClipboard} from "@/hooks/drone/media";
@@ -40,7 +31,10 @@ import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
 import dockDemoPng from "@/assets/images/drone/dock-demo.png";
 import droneDemoPng from "@/assets/images/drone/drone-demo.png";
-import {usePermission} from "@/hooks/drone";
+import {usePermission, useWaylinJobs} from "@/hooks/drone";
+import {TaskStatus, TaskType} from "@/types/task.ts";
+import {ELocalStorageKey} from "@/types/enum.ts";
+import dayjs from "dayjs";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -70,21 +64,10 @@ const DronePanel = () => {
 
   const {
     isRemoteControl,
-    exitFlightControl,
-    enterFlightControl,
     deviceTopicInfo,
-    outRemoteControl
   } = useFlightControl();
 
   useMqtt(deviceTopicInfo);
-
-  const onClickFightControl = async () => {
-    if (isRemoteControl) {
-      await exitFlightControl();
-      return;
-    }
-    await enterFlightControl();
-  };
 
   const {
     resetControlState,
@@ -101,13 +84,6 @@ const DronePanel = () => {
 
   const onClickCockpit = () => {
     navigate(`/cockpit-new?sn=${osdVisible.sn}&gateway_sn=${osdVisible.gateway_sn}`);
-  };
-
-  const onStopFlyToPoint = async () => {
-    await deleteClient(`${DRC_API_PREFIX}/devices/${osdVisible.gateway_sn}/jobs/fly-to-point`);
-    toast({
-      description: "停止飞行成功"
-    });
   };
 
   const onClickReturnButton = async () => {
@@ -166,7 +142,7 @@ const DronePanel = () => {
 
   const onShareDockLink = async () => {
     const base = import.meta.env.MODE === "development" ? "localhost:5173/#/" : "http://36.152.38.220:8920/#/";
-    const url = `${base}video-share?sn=${osdVisible.gateway_sn}`;
+    const url = `${base}video-share?dockSn=${osdVisible.gateway_sn}`;
     await copyToClipboard(url);
     toast({
       description: "直播链接已复制到粘贴板！"
@@ -175,18 +151,12 @@ const DronePanel = () => {
 
   const onShareDroneLink = async () => {
     const base = import.meta.env.MODE === "development" ? "localhost:5173/#/" : "http://36.152.38.220:8920/#/";
-    const url = `${base}video-share?sn=${osdVisible.sn}`;
+    const url = `${base}video-share?dockSn=${osdVisible.gateway_sn}&droneSn=${osdVisible.sn}`;
     await copyToClipboard(url);
     toast({
       description: "直播链接已复制到粘贴板！"
     });
   };
-
-  const headingDegrees = useMemo(() => {
-    if (deviceInfo.device) {
-      return deviceInfo.device.attitude_head;
-    }
-  }, [deviceInfo]);
 
   useEffect(() => {
     return () => {
@@ -208,19 +178,67 @@ const DronePanel = () => {
     return deviceInfo.dock.basic_osd.wind_speed < 8 && deviceInfo.dock.basic_osd.rainfall < 1;
   }, [deviceInfo]);
 
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const departId = localStorage.getItem("departId")!;
+
+  const {data: taskList} = useWaylinJobs(workspaceId, {
+    page: 1,
+    page_size: 10,
+    start_time: "",
+    end_time: "",
+    task_type: undefined as TaskType | undefined,
+    dock_sn: osdVisible.gateway_sn,
+    keyword: "",
+    status: undefined as TaskStatus | undefined,
+    organs: departId ? [+departId] : undefined
+  });
+
+  const taskStaus = useMemo(() => {
+    if (!taskList) return "暂无任务";
+    if (taskList.list?.[0].status === TaskStatus.Wait) return "待执行";
+    if (taskList.list?.[0].status === TaskStatus.Carrying) return "执行中";
+
+    return "暂无任务";
+  }, [taskList]);
+
+  const taskTime = useMemo(() => {
+    if (!taskList) return null;
+    if (taskList.list?.[0].status === TaskStatus.Wait) {
+      const task = taskList.list?.[0];
+      if (task.begin_time) {
+        return dayjs(task.begin_time).format("MM-DD HH:mm");
+      }
+    }
+  }, [taskList]);
+
   return (
     <div className={"flex relative"}>
       <div className={"w-[422px] bg-control-panel bg-full-size relative"}>
         <X onClick={() => setOsdVisible({...osdVisible, visible: !osdVisible.visible})}
            className={"absolute right-2 top-2 cursor-pointer"}/>
-        <div className={"h-[39px] flex items-center pl-6 text-lg"}>
-          {osdVisible.gateway_callsign} - {osdVisible.callsign ?? "暂无机器"}
+        <div
+          style={{
+            backgroundSize: "100% 100%"
+          }}
+          className={"h-[39px] flex items-center pl-6 text-lg bg-control-header space-x-12"}>
+          <div className={"text-[12px] flex flex-col items-center justify-center leading-4"}>
+            <div className={"flex items-center space-x-[2px]"}>
+              <ClipboardList size={12}/>
+              <span>{taskStaus}</span>
+            </div>
+            <span>{taskTime}</span>
+          </div>
+          <span className={"text-[16px] pt-2"}>
+           {osdVisible.gateway_callsign} - {osdVisible.callsign ?? "暂无机器"}
+          </span>
         </div>
-        <div className={"flex text-[12px] border-b-[1px] border-[#104992]/[.85] mr-[4px]"}>
-          <div className={"w-[65px] bg-[#2A8DFE]/[.5] content-center cursor-pointer"} onClick={onPintoDock}>
+        <div className={"flex text-[12px] border-b-[1px] border-[#0C2D57]/[.85] mr-[4px]"}>
+          <div
+            className={"w-[65px] bg-gradient-to-r from-[#274177]/[.5] to-[#3661BA]/[.4] content-center cursor-pointer"}
+            onClick={onPintoDock}>
             <img src={dockDemoPng} alt=""/>
           </div>
-          <div className={"flex-1 p-[12px] space-y-2 bg-[#001E37]/[.9]"}>
+          <div className={"flex-1 p-[12px] space-y-2 "}>
             <div className={"grid grid-cols-4"}>
               <span className={"col-span-1 py-[2px] text-[#40F2FF] text-base"}>设备状态</span>
               <div
@@ -323,7 +341,7 @@ const DronePanel = () => {
                 </Tooltip>
               </TooltipProvider>*/}
             </div>
-            <div className={"flex justify-between text-base"}>
+            <div className={"grid grid-cols-12"}>
               <PermissionButton
                 permissionKey={"Collection_LiveStream"}
                 onClick={() => {
@@ -334,13 +352,14 @@ const DronePanel = () => {
                     startDockLive();
                   }
                 }}
-                className={cn("h-[24px] rounded-[2px] px-20 cursor-pointer content-center py-[2px] bg-[#104992]/[.85] text-base",
-                  dockVideoVisible ? "border-[#43ABFF] border-[1px]" : "")}>
-                机场直播
+                className={cn("col-span-8 relative h-[24px] rounded-[2px] px-20 cursor-pointer content-center py-[2px] bg-[#2C4274]/[.85] text-base",
+                  dockVideoVisible ? "border-[#4391FF] border-[1px]" : "")}>
+                <div className={"w-[7px] h-[14px] absolute left-[4px] bg-[#4393FF] rounded-[1px]"}></div>
+                <span>机场直播</span>
               </PermissionButton>
-              <div className={"col-span-4 content-center flex justify-end space-x-4"}>
+              <div className={"col-span-4  flex justify-start items-center px-4"}>
                 {dockVideoVisible && (
-                  <div className={"flex h-[24px] space-x-4"}>
+                  <div className={"flex space-x-4 mr-4"}>
                     <Button
                       className={"px-0 bg-transparent h-[24px]"}
                       onClick={() => {
@@ -376,13 +395,14 @@ const DronePanel = () => {
             />
           </div>
         </div>
-        <div className={"flex text-[12px] border-b-[1px] border-[#104992]/[.85] mr-[4px]"}>
-          <div className={"flex flex-col w-[65px] bg-[#2A8DFE]/[.5] content-center text-center cursor-pointer"}
-               onClick={onPointDrone}>
+        <div className={"flex text-[12px] border-b-[1px] border-[#0C2D57]/[.85] mr-[4px]"}>
+          <div
+            className={"flex flex-col w-[65px] bg-gradient-to-r from-[#274177]/[.5] to-[#3661BA]/[.4] content-center text-center cursor-pointer"}
+            onClick={onPointDrone}>
             <img src={droneDemoPng} alt=""/>
             {/*{osdVisible.model}*/}
           </div>
-          <div className={"flex-1 p-[12px] space-y-2 bg-[#001E37]/[.9]"}>
+          <div className={"flex-1 p-[12px] space-y-2 "}>
             <div className={"grid grid-cols-4"}>
               <span className={"col-span-1 py-[2px] text-[#40F2FF] text-base"}>设备状态</span>
               <div
@@ -408,13 +428,14 @@ const DronePanel = () => {
                         startDroneLive(false);
                       }
                     }}
-                    className={cn("col-span-8 border-[#43ABFF] rounded-[2px] cursor-pointer content-center py-[2px] bg-[#104992]/[.85] text-base",
-                      droneVideoVisible ? "border-[#43ABFF] border-[1px]" : "")}>
-                    飞行器直播
+                    className={cn("relative col-span-8 border-[#43ABFF] rounded-[2px] cursor-pointer content-center bg-[#2C4274]/[.85] text-base",
+                      droneVideoVisible ? "border-[#4391FF] border-[1px]" : "")}>
+                    <div className={"w-[7px] h-[14px] absolute left-[4px] bg-[#4393FF] rounded-[1px]"}></div>
+                    <span>飞行器直播</span>
                   </span>
-                  <div className={"col-span-4 content-center flex justify-end space-x-2"}>
+                  <div className={"col-span-4 flex justify-start items-center px-4"}>
                     {droneVideoVisible && (
-                      <div className={"flex space-x-2"}>
+                      <div className={"flex space-x-4"}>
                         <CircleStop
                           size={17}
                           className="cursor-pointer"
@@ -450,13 +471,13 @@ const DronePanel = () => {
               controls
               autoPlay
               className={cn(
-                deviceStatus !== EModeCode[EModeCode.Disconnected] && droneVideoVisible ? "h-64" : "h-0"
+                deviceStatus !== EModeCode[EModeCode.Disconnected] && droneVideoVisible ? "h-48 aspect-video object-fill" : "h-0"
               )}
             />
           </div>
         </div>
         <div
-          className={"mr-[4px] grid grid-cols-4 bg-[#001E37]/[.9] border-b-[1px] border-[#104992]/[.85] text-[12px] pl-4 py-2 gap-y-2"}>
+          className={"mr-[4px] grid grid-cols-4 border-b-[1px] border-[#0C2D57]/[.85] text-[12px] pl-4 py-2 gap-y-2"}>
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger>
@@ -574,9 +595,9 @@ const DronePanel = () => {
             </Tooltip>
           </TooltipProvider>*/}
         </div>
-        <div className={"bg-[#001E37]/[.9] mr-[4px] grid grid-cols-7 py-2"}>
+        <div className={"mr-[4px] grid grid-cols-7 py-2"}>
           {hasFlyControlPermission ?
-            <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center col-span-2"}>
+            <div className={" h-full content-center col-span-2"}>
               {isRemoteControl ? <KeyboardControl onMouseUp={onMouseUp} onMouseDown={onMouseDown}/> :
                 <Button
                   disabled={deviceInfo?.dock?.basic_osd?.mode_code !== EDockModeCode.Idle}
@@ -590,9 +611,8 @@ const DronePanel = () => {
                 }}>
                   <span className={"mb-4 text-[12px]"}>一键起飞</span>
                 </Button>}
-            </div> : <div
-              className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center text-sm text-[#d0d0d0]"}>无飞控权限</div>}
-          <div className={"border-r-[1px] border-r-[#104992]/[.85] h-full content-center col-span-3"}>
+            </div> : <div className={"h-full content-center text-sm text-[#d0d0d0]"}>无飞控权限</div>}
+          <div className={"h-full content-center col-span-3"}>
             <Button style={{
               backgroundSize: "100% 100%"
             }} className={"w-[163px] px-0 h-[96px] bg-xnzc flex items-end"} onClick={onClickCockpit}>

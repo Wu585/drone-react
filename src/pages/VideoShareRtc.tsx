@@ -1,22 +1,36 @@
 import {useSearchParams} from "react-router-dom";
 import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
-import {useRef} from "react";
+import {useEffect, useRef} from "react";
 
 const VideoShareRtc = () => {
   const [searchParams] = useSearchParams();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const sn = searchParams.get("sn");
-  const {startLive} = useDeviceLive(videoRef.current, sn || "");
+  const dockSn = searchParams.get("dockSn");
+  const droneSn = searchParams.get("droneSn");
+  const {startLive: startDockLive} = useDeviceLive(videoRef.current, dockSn || "");
+  const {startLive: startDroneLive} = useDeviceLive(videoRef.current, dockSn || "", droneSn || "");
 
-  startLive();
+  console.log(dockSn);
+  console.log(droneSn);
+
+
+  if (dockSn && droneSn) {
+    startDroneLive(false);
+  }
+
+  if (dockSn && !droneSn) {
+    startDockLive();
+  }
 
   return (
-    <video
-      className={"w-full h-full"}
-      ref={videoRef}
-      controls
-      autoPlay
-    />
+    <div className="w-screen h-screen border-2">
+      <video
+        className={"aspect-video object-fill h-full w-full"}
+        ref={videoRef}
+        controls
+        autoPlay
+      />
+    </div>
   );
 };
 

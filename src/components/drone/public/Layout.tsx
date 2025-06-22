@@ -107,19 +107,19 @@ const Layout = () => {
         {!pathname.includes("organ") && !pathname.includes("depart") && !pathname.includes("create-wayline") &&
           <aside className={cn(
             "border-[1px] border-[#43ABFF] border-r-0 rounded-l-lg relative transition-all duration-300 ease-in-out",
-            expanded ? "w-[180px]" : "w-[72px]" // Adjust these widths as needed
+            expanded ? "w-[165px] bg-gradient-to-l from-[#2C4372] to-[#35537F]" : "w-[54px] bg-gradient-to-l from-[#2C4372] to-[#35537F]" // Adjust these widths as needed
           )}>
-            <div className="bg-[#375f9f]/[.68] h-full rounded-l-lg overflow-hidden">
+            <div className="h-full rounded-l-lg overflow-hidden">
               {menuList.map((item, index) =>
-                <div key={item.name} className={cn("flex items-center pl-2",
-                  pathname.includes(item.name) ? "bg-[#43ABFF]" : "",
+                <div key={item.name} className={cn("flex items-center justify-center",
+                  pathname.includes(item.name) ? "bg-gradient-to-l from-[#3085E5] to-[#5FA1EB]" : "",
                   index === 0 ? "rounded-tl-lg" : "rounded-none")}>
                   <PermissionButton permissionKey={item.permission} variant={"link"}
                                     className={cn(
-                                      "py-[32px] cursor-pointer text-white rounded-none space-x-2 " +
+                                      "py-[32px] cursor-pointer text-white rounded-none " +
                                       "hover:no-underline w-full text-left flex justify-start text-base",
                                       "transition-all duration-200 ease-in-out",
-                                      "whitespace-nowrap" // Prevent text wrapping
+                                      "whitespace-nowrap"
                                     )}
                                     onClick={() => navigate(item.href)}
                   >
@@ -136,7 +136,7 @@ const Layout = () => {
             </div>
             <Button
               className={cn(
-                "absolute left-6 bottom-6 cursor-pointer p-2 rounded-full bg-[#375f9f] hover:bg-[#43ABFF]",
+                "absolute left-2 bottom-6 cursor-pointer p-2 rounded-full bg-[#375f9f] hover:bg-[#43ABFF]",
                 "transition-all duration-300 ease-in-out",
               )}
               onClick={() => setExpanded(!expanded)}
@@ -151,7 +151,7 @@ const Layout = () => {
             </Button>
           </aside>}
         <div
-          className="flex-1 bg-gradient-to-r from-[#074578]/[.4] to-[#0B142E]/[.7] transition-all duration-300 ease-in-out">
+          className="flex-1 transition-all duration-300 ease-in-out">
           <Outlet/>
         </div>
       </div>

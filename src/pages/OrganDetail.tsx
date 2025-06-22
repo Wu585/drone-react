@@ -29,7 +29,7 @@ const OrganDetail = () => {
   const [currentMenu, setCurrentMenu] = useState(menuList[0].name);
 
   return (
-    <div className={"w-full h-full"}>
+    <div className={"w-full h-full bg-gradient-to-r from-[#172A4F]/[.6] to-[#233558]/[.6]"}>
       <div className={"flex-1 border-[#43ABFF] border-[1px] flex flex-col h-full rounded-[8px]"}>
         <h1 className={"flex justify-between items-center"}>
           <div className={"py-4 px-4 flex space-x-4"}>

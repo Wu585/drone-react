@@ -349,7 +349,7 @@ const TaskCreate = () => {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit, onerr)}
-          className={cn("w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0", selectPanelVisible ? "" : "rounded-tr-lg rounded-br-lg")}>
+          className={cn("w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-l from-[#32547E]/[.5] to-[#1F2D4B] border-l-0", selectPanelVisible ? "" : "rounded-tr-lg rounded-br-lg")}>
           <div
             className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-[14px] justify-between text-[14px]"}>
             <span>任务列表</span>
@@ -641,8 +641,8 @@ const TaskCreate = () => {
           </div>
         </form>
       </Form>
-      {selectPanelVisible && <div className={"w-[266px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r " +
-        "from-[#074578]/[.5] to-[#0B142E]/[.9] rounded-tr-lg rounded-br-lg border-l-0 relative text-sm"}>
+      {selectPanelVisible && <div className={"w-[266px] border-[1px] h-full border-[#43ABFF] bg-[#1E3357] " +
+        "rounded-tr-lg rounded-br-lg border-l-0 relative text-sm"}>
         <X className={"absolute right-2 top-2 cursor-pointer"} onClick={hide}/>
         <div className={"border-b-[#265C9A] border-b-[1px] p-4"}>{title}</div>
         <div className={"p-4 space-y-2 h-[calc(100vh-180px)] overflow-y-auto"}>

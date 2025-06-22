@@ -516,24 +516,34 @@ export enum EModeCode {
   Three_Blades_Landing,
   Upgrading,
   Disconnected,
+  APAS,
+  VirtualJoystick,
+  CommandFlight,
+  AirRTK,
+  DockSelectAddress,
 }
 
 export const EModeCodeMap = {
   [EModeCode.Standby]: "待机模式",
-  [EModeCode.Preparing]: "准备中",
-  [EModeCode.Ready]: "就绪",
-  [EModeCode.Manual]: "手动模式",
-  [EModeCode.Automatic]: "自动模式",
-  [EModeCode.Waypoint]: "航点模式",
-  [EModeCode.Panoramic]: "全景模式",
+  [EModeCode.Preparing]: "起飞准备",
+  [EModeCode.Ready]: "起飞准备完毕",
+  [EModeCode.Manual]: "手动飞行",
+  [EModeCode.Automatic]: "自动起飞",
+  [EModeCode.Waypoint]: "航线飞行",
+  [EModeCode.Panoramic]: "全景拍照",
   [EModeCode.Active_Track]: "智能跟随",
-  [EModeCode.ADS_B]: "ADS-B（广播式自动相关监视）",
-  [EModeCode.Return_To_Home]: "返航中",
-  [EModeCode.Landing]: "降落",
+  [EModeCode.ADS_B]: "ADS-B 躲避",
+  [EModeCode.Return_To_Home]: "自动返航",
+  [EModeCode.Landing]: "自动降落",
   [EModeCode.Forced_Landing]: "强制降落",
   [EModeCode.Three_Blades_Landing]: "三桨叶降落",
   [EModeCode.Upgrading]: "升级中",
-  [EModeCode.Disconnected]: "离线",
+  [EModeCode.Disconnected]: "未连接",
+  [EModeCode.APAS]: "APAS",
+  [EModeCode.VirtualJoystick]: "虚拟摇杆状态",
+  [EModeCode.CommandFlight]: "指令飞行",
+  [EModeCode.AirRTK]: "空中 RTK 收敛模式",
+  [EModeCode.DockSelectAddress]: "机场选址中",
 };
 
 export enum EGear {
@@ -556,15 +566,17 @@ export enum EDockModeCode {
   Remote_Debugging,
   Upgrading,
   Working,
+  RTK,
 }
 
 export const EDockModeCodeMap = {
   [EDockModeCode.Disconnected]: "设备已离线",
   [EDockModeCode.Idle]: "空闲",
-  [EDockModeCode.Debugging]: "本地调试中",
-  [EDockModeCode.Remote_Debugging]: "远程调试中",
+  [EDockModeCode.Debugging]: "现场调试",
+  [EDockModeCode.Remote_Debugging]: "远程调试",
   [EDockModeCode.Upgrading]: "固件升级中",
-  [EDockModeCode.Working]: "工作中",
+  [EDockModeCode.Working]: "作业中",
+  [EDockModeCode.RTK]: "待标定",
 };
 
 export interface DeviceHms {

@@ -13,8 +13,9 @@ import useSWRImmutable from "swr/immutable";
 
 export const useDeviceTopo = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const departId = localStorage.getItem("departId");
   const {get} = useAjax();
-  const url = `${HTTP_PREFIX}/devices/${workspaceId}/devices`;
+  const url = `${HTTP_PREFIX}/devices/${workspaceId}/devices?organ=${departId}`;
   return useSWR(url, async (path) => (await get<Resource<any[]>>(path)).data.data);
 };
 
@@ -26,7 +27,7 @@ export const useOnlineDocks = () => {
   useEffect(() => {
     if (!deviceTopo) return;
 
-    const deviceList: OnlineDevice[] = deviceTopo.filter(item => item.organ.toString() === departId).map((gateway: any) => {
+    const deviceList: OnlineDevice[] = deviceTopo.map((gateway: any) => {
       const child = gateway.children;
       return {
         model: child?.device_name,
@@ -75,6 +76,8 @@ export interface Pagination {
   job_id?: string | null;
   reqWorkSpaceId?: string;
   role?: number;
+  organs?: number[];
+  task_type?: number;
 }
 
 export interface WaylineItem {

@@ -1,5 +1,4 @@
 import {Button} from "@/components/ui/button.tsx";
-import GMap from "@/components/drone/public/GMap.tsx";
 import {useMemo, useState, useEffect} from "react";
 import {LogInIcon, Pencil, Plus, Trash2, X} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
@@ -68,21 +67,11 @@ const DepartPage = () => {
   }, [workSpaceList, currentWorkSpaceId]);
 
 
-  const {data: _userList} = useMembers({
+  const {data: userList} = useMembers({
     page: 1,
     page_size: 1000,
     reqWorkSpaceId: currentWorkSpaceId
   });
-
-  const userList = useMemo(() => {
-      if (!_userList) return [];
-      if (currentDepart) {
-        return _userList.list.filter(user => user.workspace_id === currentDepart?.workspace_id);
-      } else {
-        return _userList.list.filter(user => user.workspace_id === currentWorkSpaceId);
-      }
-    }
-    , [_userList, currentDepart, currentWorkSpaceId]);
 
   const {data: _droneList} = useBindingDevice(currentWorkSpaceId, {
     page: 1,
@@ -159,7 +148,7 @@ const DepartPage = () => {
   };
 
   const permission = useWorkspaceManager();
-  console.log('permission');
+  console.log("permission");
   console.log(permission);
   const onDeleteDepart = async (id: number) => {
     await deleteClient(`${OPERATION_HTTP_PREFIX}/organ/delete?id=${id}`);
@@ -172,7 +161,7 @@ const DepartPage = () => {
   return (
     <div className={"w-full h-full flex"}>
       <div
-        className={cn("w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r from-[#074578]/[.5] to-[#0B142E]/[.9] rounded-lg",
+        className={cn("w-[360px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-l from-[#32547E]/[.5] to-[#1F2D4B] rounded-lg",
           visible && "rounded-r-none")}>
         <div
           className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 justify-between"}>
@@ -188,8 +177,12 @@ const DepartPage = () => {
           {!departList || departList.length === 0 &&
             <div className={"content-center py-8 text-[#d0d0d0]"}>暂无数据</div>}
           {departList?.map(item =>
-            <div key={item.id}
-                 className={"bg-panel-item bg-full-size text-[14px] p-4 space-y-2"}>
+            <div
+              style={{
+                backgroundSize: "100% 100%"
+              }}
+              key={item.id}
+              className={cn("bg-full-size text-[14px] p-4 space-y-2", item.id === departId ? "bg-panel-item-active" : "bg-panel-item")}>
               <div>
                 <span>部门名称：</span>
                 <span>{item.name}</span>
@@ -245,8 +238,8 @@ const DepartPage = () => {
             </div>)}
         </div>
       </div>
-      {visible && <div className={"w-[266px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r " +
-        "from-[#074578]/[.5] to-[#0B142E]/[.9] rounded-tr-lg rounded-br-lg border-l-0 relative"}>
+      {visible && <div className={"w-[266px] border-[1px] h-full border-[#43ABFF] bg-[#1E3357] " +
+        "rounded-tr-lg rounded-br-lg border-l-0 relative"}>
         <X className={"absolute right-2 top-4 cursor-pointer"} onClick={() => setVisible(false)}/>
         <div className={"border-b-[#265C9A] border-b-[1px] p-4"}>{departId === 0 ? "创建部门" : "编辑部门"}</div>
         <Form {...form}>
@@ -283,7 +276,7 @@ const DepartPage = () => {
                     {/*<FormMessage/>*/}
                     <SelectContent>
                       <SelectItem value="0">无</SelectItem>
-                      {userList.map(item => (
+                      {userList?.list.map(item => (
                         <SelectItem key={item.id} value={String(item.id)}>
                           {item.name}
                         </SelectItem>
@@ -303,7 +296,7 @@ const DepartPage = () => {
                     <FormLabel>人员列表：</FormLabel>
                   </div>
                   <div className={"space-y-2 max-h-[200px] overflow-auto"}>
-                    {userList.length > 0 ? userList.map((item) => (
+                    {userList && userList?.list?.length > 0 ? userList?.list.map((item) => (
                       <FormField
                         key={item.id}
                         control={form.control}

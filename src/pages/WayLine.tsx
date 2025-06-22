@@ -99,8 +99,8 @@ const WayLine = () => {
   return (
     <div className={"w-full h-full flex space-x-[20px]"}>
       <div
-        className={"w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r " +
-          "from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0 rounded-tr-lg rounded-br-lg"}>
+        className={"w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-l " +
+          "from-[#32547E]/[.5] to-[#1F2D4B] border-l-0 rounded-tr-lg rounded-br-lg"}>
         <div
           className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 justify-between"}>
           <span className={"text-base h-8 "}>航线列表</span>

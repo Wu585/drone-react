@@ -583,8 +583,8 @@ const MapPhoto = () => {
             </div>}
         </SheetContent>
       </Sheet>
-      <div className="w-[340px] min-w-[340px] border-[1px] border-[#43ABFF] bg-gradient-to-r
-        from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0 rounded-tr-lg rounded-br-lg flex flex-col">
+      <div className="w-[340px] min-w-[340px] border-[1px] border-[#43ABFF] bg-gradient-to-l
+        from-[#32547E]/[.5] to-[#1F2D4B] border-l-0 rounded-tr-lg rounded-br-lg flex flex-col">
         <div
           className="flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between">
           <div className={"h-8 text-base"}>媒体/工单照片</div>

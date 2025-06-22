@@ -1,7 +1,6 @@
 import Keyboard from "@/components/drone/public/Keyboard.tsx";
-import {ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, RedoDot} from "lucide-react";
+import {ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Drone, RedoDot} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
-import remoteControlPng from "@/assets/images/drone/remote-control.png";
 import {useFlightControl} from "@/hooks/drone/useFlightControl.ts";
 import {useMqtt} from "@/hooks/drone/use-mqtt.ts";
 import {useManualControl} from "@/hooks/drone/useManualControl.ts";
@@ -71,7 +70,8 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
           onClick={onClickFightControl}
           className={cn("w-[32px] content-center border-[1px] border-[#43ABFF] cursor-pointer",
             isRemoteControl ? "bg-[#43ABFF]" : "")}>
-                        <img src={remoteControlPng} className={"w-[24px]"} alt=""/>
+                        {/*<img src={remoteControlPng} className={"w-[24px]"} alt=""/>*/}
+          <Drone className={"w-[24px]"}/>
         </span>}
       </div>
 
