@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-table";
 import {Fragment, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {useMembers, UserItem, useRoleList, useWorkspaceList} from "@/hooks/drone";
+import {useMembers, useMembersPage, UserItem, useRoleList, useWorkspaceList} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog.tsx";
-import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
@@ -39,6 +39,12 @@ const formSchema = z.object({
   password: z.string().min(3, {
     message: "请输入密码"
   }).optional(),
+  phone: z.string()
+    .regex(/^1[3-9]\d{9}$/, {
+      message: "请输入有效的手机号码"
+    })
+    .optional()
+    .or(z.literal("")), // Allow empty string
   workspace_id: z.string(),
   user_type: z.number(),
   mqtt_username: z.string(),
@@ -65,15 +71,18 @@ const MembersDataTable = () => {
       header: "姓名",
     },
     {
-      accessorKey: "role",
-      header: "角色",
+      accessorKey: "phone",
+      header: "手机号",
       cell: ({row}) => (
-        <div>{roleList?.find(item => item.id === row.original.role)?.name}</div>
+        <div>{row.original.phone || "--"}</div>
       ),
     },
     {
-      accessorKey: "user_type",
-      header: "用户类型",
+      accessorKey: "role",
+      header: "角色",
+      cell: ({row}) => (
+        <div>{roleList?.find(item => item.id === row.original.role)?.name || "--"}</div>
+      ),
     },
     {
       accessorKey: "workspace_name",
@@ -119,7 +128,7 @@ const MembersDataTable = () => {
     pageSize: 10,
   });
 
-  const {data, mutate} = useMembers({
+  const {data, mutate} = useMembersPage({
     page: pagination.pageIndex + 1,
     page_size: pagination.pageSize,
   });
@@ -205,7 +214,7 @@ const MembersDataTable = () => {
 
   const handleEdit = (user: UserItem) => {
     setCurrentUser(user);
-    console.log('user');
+    console.log("user");
     console.log(user);
     form.reset({
       ...user,
@@ -228,9 +237,9 @@ const MembersDataTable = () => {
     const body = currentUser ? {
       ...values,
       id: currentUser.id,
-      ...(values.password ? {} : { password: undefined })
+      ...(values.password ? {} : {password: undefined})
     } : values;
-    console.log('body');
+    console.log("body");
     console.log(body);
     const res: any = await post(`${MANAGE_HTTP_PREFIX}/users/save`, body);
     if (res.data.code === 0) {
@@ -288,7 +297,10 @@ const MembersDataTable = () => {
                       <FormItem className={"grid grid-cols-4 items-center gap-4"}>
                         <FormLabel className={"text-right"}>姓名：</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={"输入人员姓名"} className={"col-span-3"}/>
+                          <div className="col-span-3 space-y-1">
+                            <Input {...field} placeholder={"输入人员姓名"} className={"col-span-3"}/>
+                            <FormMessage/>
+                          </div>
                         </FormControl>
                       </FormItem>
                     )}
@@ -300,7 +312,10 @@ const MembersDataTable = () => {
                       <FormItem className={"grid grid-cols-4 items-center gap-4"}>
                         <FormLabel className={"text-right"}>账号：</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={"输入账号"} className={"col-span-3"}/>
+                          <div className="col-span-3 space-y-1">
+                            <Input {...field} placeholder={"输入账号"} className={"col-span-3"}/>
+                            <FormMessage/>
+                          </div>
                         </FormControl>
                       </FormItem>
                     )}
@@ -312,12 +327,59 @@ const MembersDataTable = () => {
                       <FormItem className={"grid grid-cols-4 items-center gap-4"}>
                         <FormLabel className={"text-right"}>密码：</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={"输入密码"} className={"col-span-3"}/>
+                          <div className="col-span-3 space-y-1">
+                            <Input {...field} placeholder={"输入密码"} className={"col-span-3"}/>
+                            <FormMessage/>
+                          </div>
                         </FormControl>
                       </FormItem>
                     )}
                     name={"password"}
                   />}
+                  <FormField
+                    control={form.control}
+                    render={({field}) => (
+                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                        <FormLabel className={"text-right"}>手机号：</FormLabel>
+                        <FormControl>
+                          <div className="col-span-3 space-y-1">
+                            <Input
+                              {...field}
+                              type="tel"
+                              pattern="[0-9]*"
+                              placeholder={"输入人员手机号"}
+                              className={"w-full"}
+                              maxLength={11}
+                              onKeyDown={(e) => {
+                                // 只允许数字、退格、删除、Tab和箭头键
+                                if (
+                                  !/[0-9]/.test(e.key) &&
+                                  e.key !== 'Backspace' &&
+                                  e.key !== 'Delete' &&
+                                  e.key !== 'Tab' &&
+                                  !e.key.startsWith('Arrow')
+                                ) {
+                                  e.preventDefault();
+                                }
+                              }}
+                              onChange={(e) => {
+                                // 确保输入值只包含数字
+                                const value = e.target.value.replace(/[^0-9]/g, '');
+                                field.onChange(value);
+                              }}
+                            />
+                            <FormMessage/>
+                            {/*{form.formState.errors.phone && (
+                              <FormMessage className="text-sm text-red-500">
+                                {form.formState.errors.phone.message}
+                              </FormMessage>
+                            )}*/}
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                    name={"phone"}
+                  />
                   <FormField
                     control={form.control}
                     render={({field: {value, onChange, ...field}}) => (

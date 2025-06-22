@@ -20,6 +20,7 @@ import {EditDeviceDialog, EditDeviceFormValues} from "./EditDeviceDialog";
 const HTTP_PREFIX = "/manage/api/v1";
 
 const DroneDataTable = () => {
+  const departId = localStorage.getItem("departId");
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
   const [currentDevice, setCurrentDevice] = useState<Device>();
@@ -154,8 +155,8 @@ const DroneDataTable = () => {
   const {data, mutate} = useBindingDevice(workspaceId, {
     page: pagination.pageIndex + 1,
     page_size: pagination.pageSize,
-    total: 0,
-    domain: EDeviceTypeName.Aircraft
+    domain: EDeviceTypeName.Aircraft,
+    organ: departId ? +departId : undefined,
   });
 
   const table = useReactTable({

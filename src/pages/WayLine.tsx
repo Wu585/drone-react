@@ -29,6 +29,7 @@ import {useSetViewByWaylineData} from "@/hooks/drone/wayline/useSetViewByWayline
 const HTTP_PREFIX_Wayline = "wayline/api/v1";
 
 const WayLine = () => {
+  const departId = localStorage.getItem("departId");
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const navigate = useNavigate();
 
@@ -38,7 +39,8 @@ const WayLine = () => {
   const {data: waylines, mutate} = useWaylines(workspaceId, {
     order_by: "update_time desc",
     page: 1,
-    page_size: 1000
+    page_size: 1000,
+    organ: departId ? +departId : undefined,
   });
 
   const onComplete = (xhr: XMLHttpRequest) => {
@@ -114,7 +116,7 @@ const WayLine = () => {
               <Uploady
                 isSuccessfulCall={(x) => onComplete(x)}
                 destination={{
-                  url: `${CURRENT_CONFIG.baseURL}${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/waylines/file/upload`,
+                  url: `${CURRENT_CONFIG.baseURL}${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/waylines/file/upload/${departId}`,
                   headers: {
                     [ELocalStorageKey.Token]: getAuthToken()
                   }

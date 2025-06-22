@@ -172,7 +172,8 @@ const TaskDataTable = () => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onDeleteTask(row.original.job_id)}>确认</AlertDialogAction>
+                  <AlertDialogAction
+                    onClick={() => onDeleteTask(row.original.job_id, row.original.workspace_id)}>确认</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>}
@@ -193,7 +194,8 @@ const TaskDataTable = () => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onSuspandTask(row.original.job_id)}>确认</AlertDialogAction>
+                  <AlertDialogAction
+                    onClick={() => onSuspandTask(row.original.job_id, row.original.workspace_id)}>确认</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>}
@@ -214,7 +216,8 @@ const TaskDataTable = () => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onResumeTask(row.original.job_id)}>确认</AlertDialogAction>
+                  <AlertDialogAction
+                    onClick={() => onResumeTask(row.original.job_id, row.original.workspace_id)}>确认</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>}
@@ -264,7 +267,7 @@ const TaskDataTable = () => {
   };
 
   // 删除任务
-  const onDeleteTask = async (jobId: string) => {
+  const onDeleteTask = async (jobId: string, workspaceId: string) => {
     try {
       await deleteClient(`${HTTP_PREFIX}/workspaces/${workspaceId}/jobs`, {
         job_id: jobId
@@ -282,7 +285,7 @@ const TaskDataTable = () => {
   };
 
   // 中止任务
-  const onSuspandTask = async (jobId: string) => {
+  const onSuspandTask = async (jobId: string, workspaceId: string) => {
     try {
       await put(`${HTTP_PREFIX}/workspaces/${workspaceId}/jobs/${jobId}`, {
         status: UpdateTaskStatus.Suspend
@@ -300,7 +303,7 @@ const TaskDataTable = () => {
   };
 
   // 恢复任务
-  const onResumeTask = async (jobId: string) => {
+  const onResumeTask = async (jobId: string, workspaceId: string) => {
     try {
       await put(`${HTTP_PREFIX}/workspaces/${workspaceId}/jobs/${jobId}`, {
         status: UpdateTaskStatus.Resume
@@ -326,7 +329,8 @@ const TaskDataTable = () => {
   const {data: dockList} = useBindingDevice(workspaceId, {
     page: 1,
     page_size: 1000,
-    domain: EDeviceTypeName.Dock
+    domain: EDeviceTypeName.Dock,
+    organ: departId ? +departId : undefined
   });
 
   const [pagination, setPagination] = useState<PaginationState>({

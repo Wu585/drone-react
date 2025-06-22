@@ -26,6 +26,7 @@ const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
 const DockDataTable = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const departId = localStorage.getItem("departId");
 
   const [currentDock, setCurrentDock] = useState<Device>();
   const [currentDockId, setCurrentDockId] = useState<number>();
@@ -179,8 +180,8 @@ const DockDataTable = () => {
   const {data, mutate} = useBindingDevice(workspaceId, {
     page: pagination.pageIndex + 1,
     page_size: pagination.pageSize,
-    total: 0,
-    domain: EDeviceTypeName.Dock
+    domain: EDeviceTypeName.Dock,
+    organ: departId ? +departId : undefined
   });
 
   const currentDevice = data?.list.find(item => item.id === currentDockId);

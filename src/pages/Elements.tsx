@@ -255,6 +255,7 @@ const GroupItem = ({
 };
 
 const Elements = () => {
+  const departId = localStorage.getItem("departId");
   const [selectedId, setSelectedId] = useState<string>("");
   const [selectedParentId, setSelectedParentId] = useState<string>("");
   const [hasChild, setHasChild] = useState(false);
@@ -262,7 +263,7 @@ const Elements = () => {
   const [editElement, setEditElement] = useState<ElementParam>();
   const [editParam, setEditParam] = useState<Element>();
 
-  const {data: groups, mutate} = useElementsGroup();
+  const {data: groups, mutate} = useElementsGroup(departId ? +departId : undefined);
   const {addGroup, updateGroup, deleteGroup} = useElementsGroupActions();
   const {deleteElement, updateElement, updateElementVisible} = useElementActions();
 
@@ -318,7 +319,8 @@ const Elements = () => {
     try {
       await addGroup({
         name: groupName,
-        parent_id: selectedParentId
+        parent_id: selectedParentId,
+        organ: departId ? +departId : undefined,
       });
       toast({
         description: "创建成功"
@@ -498,7 +500,8 @@ const Elements = () => {
           </div>
         </div>
         <div className="flex-1 px-[12px] py-4 space-y-2 overflow-y-auto">
-          {groups && buildTree(groups)}
+          {(!groups || groups?.length === 0) && <div className={"content-center py-8 text-[#d0d0d0]"}>暂无数据</div>}
+          {groups && groups?.length > 0 && buildTree(groups)}
         </div>
       </div>
       <div className="flex-1 min-w-0 ml-[20px] border-[2px] rounded-lg border-[#43ABFF] relative">

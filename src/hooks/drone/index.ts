@@ -74,6 +74,7 @@ export interface Pagination {
   keyword?: string;
   job_id?: string | null;
   reqWorkSpaceId?: string;
+  role?: number;
 }
 
 export interface WaylineItem {
@@ -101,7 +102,8 @@ export const HTTP_PREFIX_Wayline = "/wayline/api/v1";
 export const useWaylines = (workspace_id: string, body: {
   order_by: string
   page: number
-  page_size: number
+  page_size: number,
+  organ?: number
 }) => {
   const {get} = useAjax();
   const url = `${HTTP_PREFIX_Wayline}/workspaces/${workspace_id}/waylines`;
@@ -179,7 +181,8 @@ interface BindingDevice {
 
 // 获取绑定设备列表
 export const useBindingDevice = (workspace_id: string, body: Pagination & {
-  domain: number
+  domain: number,
+  organ?: number
 }) => {
   const {get} = useAjax();
   const url = `${HTTP_PREFIX}/devices/${workspace_id}/devices/bound`;
@@ -448,6 +451,7 @@ export interface UserItem {
   role: number;
   workspace_id: string;
   organs: number[];
+  phone?: string;
   resources: {
     create_time: string;
     id: number
@@ -472,6 +476,14 @@ export const useMembers = (body: Pagination) => {
   return useSWR(key, async ([path, body]) => (await get<Resource<MembersData>>(path, {
     ...body
   })).data.data);
+};
+
+// Get all uses
+export const useMembersPage = (body: Pagination) => {
+  const {post} = useAjax();
+  const url = `${HTTP_PREFIX}/users/page`;
+  const key = body ? [url, body] as const : null;
+  return useSWR(key, async ([path, body]) => (await post<Resource<MembersData>>(path, body)).data.data);
 };
 
 interface Content {
@@ -562,7 +574,7 @@ export interface WorkSpace {
   lead_user: number;
   lead_user_name: string;
   workspace_code: string;
-  logo?:string
+  logo?: string;
 }
 
 // 获取组织列表
@@ -691,8 +703,8 @@ export const useCurrentUser = () => {
 export const useWorkspaceManager = () => {
   const {data: user} = useCurrentUser();
 
-  return user?.role === 3
-}
+  return user?.role === 3;
+};
 
 export const useDepartPermission = (departId: number, workSpaceId: string) => {
   const {data: user} = useCurrentUser();

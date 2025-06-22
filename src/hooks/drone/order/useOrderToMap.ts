@@ -9,14 +9,16 @@ import {generateLabelConfig} from "@/hooks/drone/elements";
 
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
-export const useOrderListVisual = () => {
+export const useOrderListVisual = (departId?: number) => {
   const {get} = useAjax();
-  const url = `${OPERATION_HTTP_PREFIX}/order/listVisual`;
-  return useSWR(url, async (path) => (await get<Resource<WorkOrder[]>>(path)).data.data);
+  const url = departId ? [`${OPERATION_HTTP_PREFIX}/order/listVisual?organ=${departId}`] : undefined;
+  return useSWR(url, async ([path]) => (await get<Resource<WorkOrder[]>>(path)).data.data);
 };
 
 export const useOrderToMap = () => {
-  const {data: orderListVisual} = useOrderListVisual();
+  const departId = localStorage.getItem("departId");
+
+  const {data: orderListVisual} = useOrderListVisual(departId ? +departId : undefined);
   useEffect(() => {
     const source = getCustomSource("map-orders");
     if (source) {

@@ -16,7 +16,8 @@ export const useDirectory = (onSuccess?: () => void) => {
 
   const createDir = async (params: {
     name: string
-    parent: number
+    parent: number,
+    organ?: number
   }) => {
     try {
       await post(`${MEDIA_API}/files/${workspaceId}/createDir`, params);
@@ -34,7 +35,8 @@ export const useDirectory = (onSuccess?: () => void) => {
 
   const updateFile = async (params: {
     id: number,
-    name: string
+    name: string,
+    organ?: number
   }) => {
     return await post(`${MEDIA_API}/files/${workspaceId}/updateDir`, params);
   };

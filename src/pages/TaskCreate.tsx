@@ -110,14 +110,16 @@ const TaskCreate = () => {
   const {data: waylines, mutate} = useWaylines(workspaceId, {
     order_by: "update_time desc",
     page: 1,
-    page_size: 1000
+    page_size: 1000,
+    organ: departId ? +departId : undefined,
   });
 
   const {data: bindingDevices} = useBindingDevice(workspaceId, {
     page: 1,
     total: -1,
     page_size: 100,
-    domain: EDeviceTypeName.Dock
+    domain: EDeviceTypeName.Dock,
+    organ: departId ? +departId : undefined,
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -176,8 +178,11 @@ const TaskCreate = () => {
 
     createPlanBody.organ = departId || 0;
 
+    const device = bindingDevices?.list.find(item => item.device_sn === createPlanBody.dock_sn);
+    if (!device) return;
+
     try {
-      await post(`${HTTP_PREFIX_Wayline}/workspaces/${workspaceId}/flight-tasks`, createPlanBody as any);
+      await post(`${HTTP_PREFIX_Wayline}/workspaces/${device.workspace_id}/flight-tasks`, createPlanBody as any);
     } catch (error: any) {
       console.error("Create plan failed:", error);
       toast({

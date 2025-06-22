@@ -68,6 +68,7 @@ import CreateWaylineScene from "@/components/drone/wayline/CreateWaylineScene.ts
 import SearchPositionInput from "@/components/drone/SearchPositionInput.tsx";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import Keyboard from "@/components/drone/public/Keyboard.tsx";
+import dayjs from "dayjs";
 
 interface WayPoint {
   id: string;
@@ -253,7 +254,30 @@ function isNumericString(str) {
   return !isNaN(str) && !isNaN(parseFloat(str));
 }
 
+// 表单默认值
+const defaultValues: z.infer<typeof formSchema> = {
+  device: {
+    drone_type: 67,
+    sub_drone_type: 1,
+    payload_type: 53,
+    payload_position: 0
+  },
+  take_off_ref_point: "",
+  image_format: ["zoom", "wide", "ir"] as ImageFormat[],
+  fly_to_wayline_mode: "safely",
+  global_height: 120,
+  take_off_security_height: 100,
+  auto_flight_speed: 10,
+  global_transitional_speed: 15,
+  global_waypoint_turn_mode: "toPointAndStopWithDiscontinuityCurvature",
+  gimbal_pitch_mode: "manual",
+  finish_action: "goHome",
+  waypoint_heading_mode: "followWayline",
+  name: `新建航点航线`,
+};
+
 const CreateWayLine0517 = () => {
+  const departId = localStorage.getItem("departId");
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id") || "";
   const {data: currentWaylineData} = useWaylineById(id || "");
@@ -268,7 +292,7 @@ const CreateWayLine0517 = () => {
   useSetViewByWaylineData(id);
 
   // 表单默认值
-  const defaultValues: z.infer<typeof formSchema> = {
+  /*const defaultValues: z.infer<typeof formSchema> = {
     device: {
       drone_type: 67,
       sub_drone_type: 1,
@@ -286,8 +310,8 @@ const CreateWayLine0517 = () => {
     gimbal_pitch_mode: "manual",
     finish_action: "goHome",
     waypoint_heading_mode: "followWayline",
-    name: "新建航点航线"
-  };
+    name: `新建航点航线`
+  };*/
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -1016,6 +1040,7 @@ const CreateWayLine0517 = () => {
     });
     const formValue = {
       ...values,
+      organ: departId || 0,
       template_type: "waypoint",
       image_format: values.image_format.join(","),
       ...values.device,

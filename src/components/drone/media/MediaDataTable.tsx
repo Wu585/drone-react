@@ -199,6 +199,7 @@ interface Props {
 }
 
 const MediaDataTable = ({onChangeDir}: Props) => {
+  const departId = localStorage.getItem("departId");
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const [searchParams] = useSearchParams();
   const job_id = searchParams.get("job_id");
@@ -225,6 +226,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     parent: 0,
     page: pagination.pageIndex + 1,
     page_size: pagination.pageSize,
+    organ: departId ? departId : undefined,
   };
 
   const [queryParams, setQueryParams] = useState(defaultParams);
@@ -374,7 +376,8 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     try {
       await updateFile({
         id: file.id,
-        name: inputName
+        name: inputName,
+        organ: departId ? +departId : undefined
       });
       toast({
         description: "更新文件成功"
@@ -954,7 +957,8 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                 <DialogClose>
                   <Button onClick={() => createDir({
                     name,
-                    parent: breadcrumbList[breadcrumbList.length - 1].id || 0
+                    parent: breadcrumbList[breadcrumbList.length - 1].id || 0,
+                    organ: departId ? +departId : undefined
                   })}>确认</Button>
                 </DialogClose>
               </DialogFooter>

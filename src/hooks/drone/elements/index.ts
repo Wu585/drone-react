@@ -43,17 +43,17 @@ export interface Layer {
   is_lock: boolean;
 }
 
-export const useElementsGroup = () => {
+export const useElementsGroup = (departId?: number) => {
   const workspace_id = localStorage.getItem(ELocalStorageKey.WorkspaceId);
   const {get} = useAjax();
-  const url = `${PREFIX}/workspaces/` + workspace_id + "/element-groups";
-  return useSWR(url, async (path) => (await get<Resource<Layer[]>>(path)).data.data);
+  const url = departId ? [`${PREFIX}/workspaces/` + workspace_id + `/element-groups?organ=${departId}`] : undefined;
+  return useSWR(url, async ([path]) => (await get<Resource<Layer[]>>(path)).data.data);
 };
 
 export const useElementsGroupActions = () => {
   const {post, delete: deleteClient} = useAjax();
   const workspace_id = localStorage.getItem(ELocalStorageKey.WorkspaceId);
-  const addGroup = (body: { name: string, parent_id: string }) =>
+  const addGroup = (body: { name: string, parent_id: string, organ?: number }) =>
     post(`${PREFIX}/workspaces/${workspace_id}/element-groups/add`, body);
 
   const updateGroup = (body: { group_id: string, name: string }) =>

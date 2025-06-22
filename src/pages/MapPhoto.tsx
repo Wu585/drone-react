@@ -362,6 +362,7 @@ const ImagePreview = ({url}: { url?: string }) => {
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
 const MapPhoto = () => {
+  const departId = localStorage.getItem("departId");
   const [sheetOpen, setSheetOpen] = useState(false);
   const {changePhotoVisual} = useMapLoadMedia();
   const {data: mapPhotoData, mutate} = useMapPhoto();
@@ -475,7 +476,7 @@ const MapPhoto = () => {
 
   }, [mapPhotoData]);
 
-  const {data: orderListVisual, mutate: mutateOrderListVisual} = useOrderListVisual();
+  const {data: orderListVisual, mutate: mutateOrderListVisual} = useOrderListVisual(departId ? +departId : undefined);
 
   const flyToOrder = (order: WorkOrder) => {
     if (order.longitude && order.latitude) {

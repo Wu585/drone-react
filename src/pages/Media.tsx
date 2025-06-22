@@ -11,14 +11,15 @@ const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
 const Media = () => {
+  const departId = localStorage.getItem("departId");
   const [dirId, setDirId] = useState(0);
   const [isUploadOrder, setIsUploadOrder] = useState(false);
 
   return (
     <Uploady
       destination={{
-        url: isUploadOrder ? `${CURRENT_CONFIG.baseURL}${OPERATION_HTTP_PREFIX}/file/upload` :
-          `${CURRENT_CONFIG.baseURL}${MEDIA_HTTP_PREFIX}/files/${workspaceId}/upload?parent=${dirId}`,
+        url: isUploadOrder ? `${CURRENT_CONFIG.baseURL}${OPERATION_HTTP_PREFIX}/file/upload/${departId}` :
+          `${CURRENT_CONFIG.baseURL}${MEDIA_HTTP_PREFIX}/files/${workspaceId}/upload/${departId}?parent=${dirId}`,
         headers: {
           [ELocalStorageKey.Token]: getAuthToken()
         }

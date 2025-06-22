@@ -19,8 +19,9 @@ interface Props {
 }
 
 const DrawPanel = ({groupId, onSuccess}: Props) => {
+  const departId = localStorage.getItem("departId");
   const {addElement} = useElementActions();
-  const {data: groups} = useElementsGroup();
+  const {data: groups} = useElementsGroup(departId ? +departId : undefined);
   // 使用 ref 来保存最新的 groupId
   const groupIdRef = useRef(groupId);
   // 更新 ref
@@ -37,6 +38,8 @@ const DrawPanel = ({groupId, onSuccess}: Props) => {
 
   useEffect(() => {
     const elementsSource = getCustomSource("elements");
+    console.log("elementsSource==");
+    console.log(elementsSource);
     if (!groups || !elementsSource) return;
     console.log("remove all===");
     // 清理现有实体
