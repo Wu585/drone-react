@@ -23,6 +23,7 @@ import AlgorithmConfig from "@/pages/AlgorithmConfig.tsx";
 import CreateWayLine0517 from "@/pages/CreateWayLine0517.tsx";
 import VideoShareRtc2 from "@/pages/VideoShareRtc2.tsx";
 import _Cockpit from "@/pages/_Cockpit.tsx";
+import MultiLivePage from "@/pages/MultiLivePage.tsx";
 
 const Login = lazy(() => import("@/pages/hgyq/Login.tsx"));
 
@@ -140,6 +141,12 @@ export const routes: RouteObject[] = [
       {
         path: "map-photo",
         element: <MapPhoto/>
+      },
+      {
+        path: "multi-live",
+        element: (
+          <MultiLivePage/>
+        ),
       },
     ]
   },

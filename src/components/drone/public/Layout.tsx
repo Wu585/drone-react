@@ -104,7 +104,7 @@ const Layout = () => {
         <TopBar/>
       </header>
       <div className="flex-1 p-[22px] flex overflow-hidden">
-        {!pathname.includes("organ") && !pathname.includes("depart") && !pathname.includes("create-wayline") &&
+        {!pathname.includes("organ") && !pathname.includes("depart") && !pathname.includes("create-wayline") && !pathname.includes("multi-live") &&
           <aside className={cn(
             "border-[1px] border-[#43ABFF] border-r-0 rounded-l-lg relative transition-all duration-300 ease-in-out",
             expanded ? "w-[165px] bg-gradient-to-l from-[#2C4372] to-[#35537F]" : "w-[54px] bg-gradient-to-l from-[#2C4372] to-[#35537F]" // Adjust these widths as needed

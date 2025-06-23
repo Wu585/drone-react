@@ -78,6 +78,7 @@ export interface Pagination {
   role?: number;
   organs?: number[];
   task_type?: number;
+  workspace_id?: string;
 }
 
 export interface WaylineItem {

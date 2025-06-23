@@ -841,7 +841,7 @@ const Cockpit = () => {
     task_type: undefined as TaskType | undefined,
     dock_sn: dockSn,
     keyword: "",
-    // status: TaskStatus.Wait,
+    status: TaskStatus.Wait,
     organs: departId ? [+departId] : undefined
   });
 

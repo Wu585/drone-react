@@ -7,7 +7,7 @@ import {
   useBindingDevice, useCurrentUser,
   useDepartList,
   useEditDepart,
-  useMembers, User,
+  useMembers, useMembersPage, User,
   useWorkspaceList, useWorkspaceManager
 } from "@/hooks/drone";
 import {useNavigate, useSearchParams} from "react-router-dom";
@@ -66,11 +66,10 @@ const DepartPage = () => {
     return workSpaceList?.find(item => item.workspace_id === currentWorkSpaceId);
   }, [workSpaceList, currentWorkSpaceId]);
 
-
-  const {data: userList} = useMembers({
+  const {data: userList} = useMembersPage({
     page: 1,
     page_size: 1000,
-    reqWorkSpaceId: currentWorkSpaceId
+    workspace_id: currentWorkSpaceId
   });
 
   const {data: _droneList} = useBindingDevice(currentWorkSpaceId, {
@@ -240,7 +239,11 @@ const DepartPage = () => {
       </div>
       {visible && <div className={"w-[266px] border-[1px] h-full border-[#43ABFF] bg-[#1E3357] " +
         "rounded-tr-lg rounded-br-lg border-l-0 relative"}>
-        <X className={"absolute right-2 top-4 cursor-pointer"} onClick={() => setVisible(false)}/>
+        <X className={"absolute right-2 top-4 cursor-pointer"}
+           onClick={() => {
+             setVisible(false);
+             setDepartId(0);
+           }}/>
         <div className={"border-b-[#265C9A] border-b-[1px] p-4"}>{departId === 0 ? "创建部门" : "编辑部门"}</div>
         <Form {...form}>
           <form className={"p-4 space-y-2"} onSubmit={form.handleSubmit(onSubmit, onError)}>

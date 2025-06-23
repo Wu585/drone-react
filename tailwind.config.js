@@ -157,6 +157,7 @@ module.exports = {
         'compass-drone': "url('@/assets/images/drone/drone.png')",
         'algorithm-panel': "url('@/assets/images/drone/algorithm/panel-bg.png')",
         'algorithm-jjgj': "url('@/assets/images/drone/algorithm/jjgj.png')",
+        'multi-live-panel': "url('@/assets/images/drone/bg-multi-live-panel.png')",
       }
     },
   },

@@ -1,4 +1,4 @@
-import {Bot, Drone, Eye, EyeOff, Package2} from "lucide-react";
+import {Bot, Drone, Eye, EyeOff, Grid3x2, Package2} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion.tsx";
 import {useOnlineDocks} from "@/hooks/drone";
@@ -15,6 +15,7 @@ import MapChange from "@/components/drone/public/MapChange.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 import {useEffect} from "react";
+import {Link} from "react-router-dom";
 
 const DRC_API_PREFIX = "/control/api/v1";
 
@@ -126,8 +127,14 @@ const Tsa = () => {
           "from-[#32547E]/[.5] to-[#1F2D4B] rounded-tr-lg rounded-br-lg border-l-0"}>
         <div className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between"}>
           <div className={"h-8 text-base"}>机场</div>
+          <Button variant={"link"} className={"p-0 hover:no-underline h-8"}>
+            <Link to={"/multi-live"} className={"content-center space-x-2  w-full h-full text-white hover:text-[#43ABFF]"}>
+              <Grid3x2 size={16}/>
+              <span>多路直播</span>
+            </Link>
+          </Button>
         </div>
-        <div className={"p-[12px]"}>
+        <div className={"p-[12px] flex-1 h-[calc(100vh-180px)] overflow-y-auto"}>
           {!onlineDocks || onlineDocks.length === 0 && <div className={"content-center py-8 text-[#d0d0d0]"}>
             暂无数据
           </div>}
@@ -150,7 +157,7 @@ const Tsa = () => {
                         <Package2 className={"text-white"} size={15}/>
                         <span>
                               {deviceState.dockInfo[dock.gateway.sn] ? EDockModeCodeMap[deviceState.dockInfo[dock.gateway.sn].basic_osd?.mode_code] : "设备已离线"}
-                            </span>
+                        </span>
                       </div>
                       {/*<div className={"w-1/3 bg-[#52607D] pl-4"}>*/}
                       {/*  <span>{hmsInfo[dock.gateway.sn]?.length}</span>*/}
