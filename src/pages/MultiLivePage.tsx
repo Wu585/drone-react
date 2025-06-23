@@ -233,7 +233,7 @@ const MultiLivePage = () => {
                     <div
                       className={cn("w-2 h-2 rounded mr-2", deviceState.dockInfo[dock.device_sn || ""] ? "bg-[#2BE7FF]" : "bg-[#BABABA]")}></div>
                     <Package2 size={16}/>
-                    <span className={"pl-2 text-sm"}>{dock.device_name} | {dock.nickname}</span>
+                    <div className={"pl-2 text-sm truncate w-42"} title={dock.nickname}>{dock.device_name} | {dock.nickname}</div>
                   </div>
                   <Button
                     className={cn("px-2 h-6", gridStreams.some(s => s && s.isDock && s.dockSn === dock.device_sn) ? "bg-blue-500" : "bg-[#2A3145]/[.88]")}
@@ -247,7 +247,7 @@ const MultiLivePage = () => {
                     <div
                       className={cn("w-2 h-2 rounded mr-2", deviceState.deviceInfo[dock.children?.device_sn || ""] ? "bg-[#2BE7FF]" : "bg-[#BABABA]")}></div>
                     <Drone size={16}/>
-                    <span className={"pl-2 text-sm"}>{dock.children?.device_name} | {dock.children?.nickname}</span>
+                    <div className={"pl-2 text-sm w-42 truncate"} title={dock.children?.nickname}>{dock.children?.device_name} | {dock.children?.nickname}</div>
                   </div>
                   <Button
                     className={cn("bg-[#52607D]/[.88] content-center rounded-[1px] h-[24px] relative",

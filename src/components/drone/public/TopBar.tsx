@@ -71,7 +71,7 @@ const TopBar = () => {
         </div>
 
         <CircleUser/>
-        <span>{currentUser?.username || "未登录"} |</span>
+        <span>{currentUser?.name || "未登录"} </span>
         <span>{"当前组织: " + currentWorkSpace}</span>
         {username && <DropdownMenu>
           <DropdownMenuTrigger asChild>
