@@ -1,7 +1,7 @@
 import {useState, useEffect, createRef, RefObject} from "react";
 import {Drone, Grid2x2, Grid3x3, Logs, Package2, Square, Undo2, Video, X} from "lucide-react";
 import {Button} from "@/components/ui/button.tsx";
-import {useDeviceTopo,} from "@/hooks/drone";
+import {useDeviceTopo} from "@/hooks/drone";
 import {Link} from "react-router-dom";
 import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
@@ -24,9 +24,14 @@ interface LiveStream {
   videoRef: RefObject<HTMLVideoElement>;
 }
 
-const StreamItem = ({stream, onRemove}: {
+const StreamItem = ({stream, onRemove, index, onDragStart, onDragOver, onDrop, onDragEnd}: {
   stream: LiveStream;
-  onRemove: (id: string) => void
+  onRemove: (id: string) => void;
+  index: number;
+  onDragStart: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
+  onDrop: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
+  onDragEnd: (e: React.DragEvent<HTMLDivElement>) => void;
 }) => {
   const {startLive} = useDeviceLive(
     stream.videoRef.current,
@@ -39,11 +44,16 @@ const StreamItem = ({stream, onRemove}: {
     if (stream.videoRef.current) {
       startLive(stream.isDock);
     }
-
   }, [stream.videoRef, stream.isDock, startLive]);
 
   return (
-    <div className="bg-[#1E3557] rounded-md relative overflow-hidden">
+    <div
+      draggable
+      onDragStart={(e) => onDragStart(e, index)}
+      onDragOver={onDragOver}
+      onDrop={(e) => onDrop(e, index)}
+      className="bg-[#1E3557] rounded-md relative overflow-hidden cursor-move"
+    >
       <video
         ref={stream.videoRef}
         className="w-full h-full object-fill rounded-md aspect-video"
@@ -75,6 +85,7 @@ const MultiLivePage = () => {
   const [grid, setGrid] = useState<MultiGrid>(MultiGrid["2*2"]);
   const [streams, setStreams] = useState<LiveStream[]>([]);
   const {data: dockList} = useDeviceTopo();
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     clearDeviceState();
@@ -82,7 +93,6 @@ const MultiLivePage = () => {
 
   // Add a new stream
   const addStream = (dockSn: string, droneSn: string | undefined, isDock: boolean, title: string) => {
-    // Check if stream already exists
     const existingStream = streams.find(s =>
       s.dockSn === dockSn && s.isDock === isDock && (!droneSn || s.droneSn === droneSn)
     );
@@ -106,6 +116,47 @@ const MultiLivePage = () => {
     setStreams(prev => prev.filter(stream => stream.id !== id));
   };
 
+  // 拖拽开始
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", (e.target as HTMLElement).innerHTML);
+    // (e.target as HTMLElement).style.opacity = "0.4";
+  };
+
+  // 拖拽经过
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  // 拖拽结束
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newStreams = [...streams];
+    const [removed] = newStreams.splice(draggedIndex, 1);
+    newStreams.splice(index, 0, removed);
+
+    setStreams(newStreams);
+    setDraggedIndex(null);
+  };
+
+  // 拖拽结束恢复样式
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    (e.target as HTMLElement).style.opacity = "1";
+  };
+
+  // Adjust streams when grid changes
+  const changeGrid = (newGrid: MultiGrid) => {
+    setGrid(newGrid);
+    const maxStreams = newGrid * newGrid;
+    if (streams.length > maxStreams) {
+      setStreams(streams.slice(0, maxStreams));
+    }
+  };
+
   // Render grid layout with streams
   const renderGridLayout = () => {
     const gridSize = Number(grid);
@@ -123,11 +174,16 @@ const MultiLivePage = () => {
           gridTemplateRows: gridTemplate
         }}
       >
-        {streams.map(stream => (
+        {streams.map((stream, index) => (
           <StreamItem
             key={stream.id}
             stream={stream}
             onRemove={removeStream}
+            index={index}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragEnd={handleDragEnd}
           />
         ))}
 
@@ -142,9 +198,6 @@ const MultiLivePage = () => {
       </div>
     );
   };
-
-  console.log("streams");
-  console.log(streams);
 
   return (
     <div className="w-full h-full flex space-x-[16px]">
@@ -194,27 +247,21 @@ const MultiLivePage = () => {
         <div className="w-[43px] border-l-[1px] border-[#364E76] flex flex-col justify-between items-center pb-2">
           <div className="py-2 flex-1 flex flex-col items-center space-y-4">
             <Button
-              onClick={() => {
-                setGrid(MultiGrid["1*1"]);
-                setStreams(streams.slice(0, 1));
-              }}
+              onClick={() => changeGrid(MultiGrid["1*1"])}
               className={`p-2 bg-transparent rounded-md ${grid === MultiGrid["1*1"] ? "bg-blue-500 text-white" : "text-gray-300 hover:bg-gray-700"}`}
               title="1x1 布局"
             >
               <Square size={20}/>
             </Button>
             <Button
-              onClick={() => {
-                setGrid(MultiGrid["2*2"]);
-                setStreams(streams.slice(0, 4));
-              }}
+              onClick={() => changeGrid(MultiGrid["2*2"])}
               className={`p-2 bg-transparent rounded-md ${grid === MultiGrid["2*2"] ? "bg-blue-500 text-white" : "text-gray-300 hover:bg-gray-700"}`}
               title="2x2 布局"
             >
               <Grid2x2 size={20}/>
             </Button>
             <Button
-              onClick={() => setGrid(MultiGrid["3*3"])}
+              onClick={() => changeGrid(MultiGrid["3*3"])}
               className={`p-2 bg-transparent rounded-md ${grid === MultiGrid["3*3"] ? "bg-blue-500 text-white" : "text-gray-300 hover:bg-gray-700"}`}
               title="3x3 布局"
             >
@@ -226,7 +273,7 @@ const MultiLivePage = () => {
           </Link>
         </div>
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-h-0 overflow-hidden">
         {renderGridLayout()}
       </div>
     </div>
