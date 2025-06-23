@@ -13,6 +13,7 @@ import {useSearchParams} from "react-router-dom";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {useWaylinJobs} from "@/hooks/drone";
 import {useAddWaylineEntityById} from "@/hooks/drone/useAddWaylineEntityById.ts";
+import {useSceneStore} from "@/store/useSceneStore.ts";
 
 const mapLayerList = [
   {
@@ -31,6 +32,8 @@ const mapLayerList = [
 
 const CockpitScene = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const viewerInitialized = useSceneStore(state => state.viewerInitialized);
+  const setViewerInitialized = useSceneStore(state => state.setViewerInitialized);
 
   const addMapLayer = () => {
     mapLayerList.forEach(item => {
@@ -56,8 +59,6 @@ const CockpitScene = () => {
     height: 0,
     heading: 0
   });
-
-  const [viewerInitialized, setViewerInitialized] = useState(false);
 
   // const dock = realTimeDeviceInfo
   useEffect(() => {
@@ -86,12 +87,12 @@ const CockpitScene = () => {
     const yx = findMapLayer("影像");
     yx && (yx.show = false);
 
-    setViewerInitialized(true);
+    setTimeout(() => {
+      setViewerInitialized(true);
+    }, 100);
 
-    return () => {
-      setViewerInitialized(false);
-    };
-  }, []);
+    console.log("set true");
+  }, [setViewerInitialized]);
 
   // 机场坐标字符串
   const dockPoiStr = useMemo(() => {
@@ -163,6 +164,13 @@ const CockpitScene = () => {
 
   useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id, viewerInitialized);
 
+  useEffect(() => {
+    return () => {
+      setViewerInitialized(false);
+      console.log("set false");
+    };
+  }, [setViewerInitialized]);
+
   /*useEffect(() => {
     dynamicAddSceneDroneModel(dronePositionRef.current);
   }, []);*/
@@ -187,7 +195,7 @@ const CockpitScene = () => {
     }, [deviceState]);*/
 
   return (
-    <div id="cesiumContainer" className={"h-full w-full"}></div>
+    <div id="cesiumContainer" className={"h-full w-full relative"}></div>
   );
 };
 

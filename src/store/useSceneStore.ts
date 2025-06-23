@@ -70,6 +70,7 @@ interface SceneState {
     }
   };
   devicesCmdExecuteInfo: DevicesCmdExecuteInfo;
+  viewerInitialized: boolean;
 }
 
 interface SceneActions {
@@ -93,6 +94,7 @@ interface SceneActions {
   deleteMarkerInfoPathMap: (key: string) => void;
   setDevicesCmdExecuteInfo: (info: any) => void;
   clearDeviceState: () => void;
+  setViewerInitialized: (bool: boolean) => void;
 }
 
 export const useSceneStore = create<SceneState & SceneActions>()(
@@ -138,6 +140,7 @@ export const useSceneStore = create<SceneState & SceneActions>()(
       pathMap: {},
       coverMap: {}
     },
+    viewerInitialized: false,
     devicesCmdExecuteInfo: {},
     // Actions
     setKeyAreas: (keyAreas) => set((state) => {
@@ -268,6 +271,9 @@ export const useSceneStore = create<SceneState & SceneActions>()(
       };
       state.hmsInfo = {};
       state.devicesCmdExecuteInfo = {};
-    })
+    }),
+    setViewerInitialized: (bool: boolean) => set((state) => {
+      state.viewerInitialized = bool;
+    }),
   }))
 );

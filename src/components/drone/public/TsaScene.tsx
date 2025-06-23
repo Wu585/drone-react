@@ -39,6 +39,8 @@ interface Props {
 
 const TsaScene = ({dockSn, deviceSn}: Props) => {
   const deviceState = useSceneStore(state => state.deviceState);
+  const viewerInitialized = useSceneStore(state => state.viewerInitialized);
+  const setViewerInitialized = useSceneStore(state => state.setViewerInitialized);
   const addMapLayer = () => {
     mapLayerList.forEach(item => {
       const layer = new Cesium.SuperMapImageryProvider(item);
@@ -51,7 +53,7 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
 
   const {data: deviceTopo} = useDeviceTopo();
 
-  const [viewerInitialized, setViewerInitialized] = useState(false);
+  // const [viewerInitialized, setViewerInitialized] = useState(false);
 
   useEffect(() => {
     window.viewer = new Cesium.Viewer("cesiumContainer", {
@@ -221,6 +223,12 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
   }
 
   useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id, viewerInitialized);
+
+  useEffect(() => {
+    return () => {
+      setViewerInitialized(false);
+    };
+  }, [setViewerInitialized]);
 
   return (
     <div id="cesiumContainer" className={"h-full relative"}>

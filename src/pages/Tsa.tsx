@@ -14,7 +14,7 @@ import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
-import {useEffect} from "react";
+import {useCallback, useEffect} from "react";
 import {Link} from "react-router-dom";
 
 const DRC_API_PREFIX = "/control/api/v1";
@@ -26,7 +26,7 @@ const Tsa = () => {
     deviceState,
     osdVisible,
     setOsdVisible,
-    clearDeviceState
+    clearDeviceState,
   } = useSceneStore();
   const {post} = useAjax();
   const {onlineDocks} = useOnlineDocks();
@@ -76,11 +76,11 @@ const Tsa = () => {
     }
   };
 
- /* const {RightClickPanel, MenuItem, contextMenu} = useRightClickPanel({
+  const {RightClickPanel, MenuItem, contextMenu} = useRightClickPanel({
     containerId: "cesiumContainer",
-  });*/
+  });
 
-  /*const onFlyTo = async () => {
+  const onFlyTo = useCallback(async () => {
     if (!realTime.device) return toast({
       description: "当前状态不支持操作",
       variant: "destructive"
@@ -118,17 +118,19 @@ const Tsa = () => {
         variant: "destructive"
       });
     }
-  };*/
+  }, [realTime.device, contextMenu, osdVisible.gateway_sn]);
 
   return (
     <div className={"w-full h-full flex space-x-[20px]"}>
       <div
         className={"w-[400px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-l " +
           "from-[#32547E]/[.5] to-[#1F2D4B] rounded-tr-lg rounded-br-lg border-l-0"}>
-        <div className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between"}>
+        <div
+          className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between"}>
           <div className={"h-8 text-base"}>机场</div>
           <Button variant={"link"} className={"p-0 hover:no-underline h-8"}>
-            <Link to={"/multi-live"} className={"content-center space-x-2  w-full h-full text-white hover:text-[#43ABFF]"}>
+            <Link to={"/multi-live"}
+                  className={"content-center space-x-2  w-full h-full text-white hover:text-[#43ABFF]"}>
               <Grid3x2 size={16}/>
               <span>多路直播</span>
             </Link>
@@ -197,9 +199,9 @@ const Tsa = () => {
         <div className={"absolute right-0 bottom-0 z-100"}>
           <MapChange/>
         </div>
-        {/*<RightClickPanel>*/}
-        {/*  <MenuItem onClick={onFlyTo}>飞向此处</MenuItem>*/}
-        {/*</RightClickPanel>*/}
+        <RightClickPanel>
+          <MenuItem onClick={onFlyTo}>飞向此处</MenuItem>
+        </RightClickPanel>
         <div className={"absolute left-2 top-2"}>
           {osdVisible.visible && <DronePanel/>}
         </div>

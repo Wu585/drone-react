@@ -77,6 +77,11 @@ const Cockpit = () => {
     clearDeviceState();
   }, [clearDeviceState]);
 
+  const [mainView, setMainView] = useState<ModuleType>("drone");
+  const [dockView, setDockView] = useState<ModuleType>("dock");
+  const [mapView, setMapView] = useState<ModuleType>("map");
+  const [aiView, setAiView] = useState<ModuleType>("ai");
+
   const {post} = useAjax();
   const {onlineDocks} = useOnlineDocks();
   const [searchParams] = useSearchParams();
@@ -269,7 +274,7 @@ const Cockpit = () => {
     }
   };
 
-  const onFlyTo = async () => {
+  const onFlyTo = useCallback(async () => {
     try {
       await post(`${DRC_API_PREFIX}/devices/${dockSn}/jobs/fly-to-point`, {
         max_speed: 14,
@@ -290,7 +295,7 @@ const Cockpit = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [dockSn, contextMenu]);
 
   // 添加状态记录鼠标按下的位置和是否正在拖动
   const [isDragging, setIsDragging] = useState(false);
@@ -482,11 +487,6 @@ const Cockpit = () => {
     }
   };
 
-  const [mainView, setMainView] = useState<ModuleType>("drone");
-  const [dockView, setDockView] = useState<ModuleType>("dock");
-  const [mapView, setMapView] = useState<ModuleType>("map");
-  const [aiView, setAiView] = useState<ModuleType>("ai");
-
   const getTitleName = (type: ModuleType) => {
     switch (type) {
       case "dock":
@@ -537,7 +537,12 @@ const Cockpit = () => {
         />
       );
     } else if (mainView === "map") {
-      return <CockpitScene/>;
+      return <div className={"relative w-full h-full"}>
+        <CockpitScene/>
+        <RightClickPanel>
+          <MenuItem onClick={onFlyTo}>飞向此处</MenuItem>
+        </RightClickPanel>
+      </div>;
     } else if (mainView === "ai") {
       return deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (
         fpvDroneVideoId ?
@@ -702,8 +707,11 @@ const Cockpit = () => {
             />
         );
       case "map":
-        return <div className={cn("h-[268px] w-full", !showDockLive && "h-[550px]")}>
+        return <div className={cn("h-[268px] w-full relative", !showDockLive && "h-[550px]")}>
           <CockpitScene/>
+          <RightClickPanel>
+            <MenuItem onClick={onFlyTo}>飞向此处</MenuItem>
+          </RightClickPanel>
         </div>;
       case "ai":
         return deviceStatus !== EModeCodeMap[EModeCode.Disconnected] ? (

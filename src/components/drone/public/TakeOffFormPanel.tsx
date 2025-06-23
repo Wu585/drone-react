@@ -23,6 +23,7 @@ import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
 import dayjs from "dayjs";
+import {useNavigate} from "react-router-dom";
 
 export const formSchema = z.object({
   target_latitude: z.coerce.number({
@@ -60,13 +61,15 @@ interface Props {
   sn: string;
   onClose?: () => void;
   type: "take-off" | "fly-to";
+  droneSn: string;
 }
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
 
-const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
+const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
   const {post} = useAjax();
+  const navigate = useNavigate();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -84,7 +87,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
     },
   });
 
-  const realtimeDeviceInfo = useRealTimeDeviceInfo();
+  const realtimeDeviceInfo = useRealTimeDeviceInfo(sn, droneSn);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!sn) return;
@@ -115,17 +118,33 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type}) => {
         getCustomSource("drone-wayline")?.entities.removeAll();
         const longitude = realtimeDeviceInfo.dock?.basic_osd?.longitude;
         const latitude = realtimeDeviceInfo.dock?.basic_osd?.latitude;
+        const dockHeight = realtimeDeviceInfo.dock?.basic_osd?.height;
         const height = form.getValues("target_height");
         if (realtimeDeviceInfo.dock && longitude && latitude) {
           getCustomSource("drone-wayline")?.entities.add({
             polyline: {
               // positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realtimeDeviceInfo.device.height, values.target_longitude, values.target_latitude, realtimeDeviceInfo.device.height]),
-              positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, height, values.target_longitude, values.target_latitude, height]),
+              positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+                longitude, latitude, dockHeight,
+                longitude, latitude, height + dockHeight,
+
+                longitude, latitude, height + dockHeight,
+                values.target_longitude, values.target_latitude, height + dockHeight,
+
+                values.target_longitude, values.target_latitude, height + dockHeight,
+                values.target_longitude, values.target_latitude, height,
+              ]),
               width: 3,  // 设置折线的宽度
               material: Cesium.Color.BLUE,  // 折线的颜色
             }
           });
         }
+        // navigate(`/cockpit-new?sn=${droneSn}&gateway_sn=${sn}`);
+      } else {
+        toast({
+          description: <span>起飞失败!</span>,
+          variant: "destructive"
+        });
       }
       onClose?.();
     } else {
