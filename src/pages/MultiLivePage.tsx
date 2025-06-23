@@ -50,8 +50,9 @@ const StreamItem = ({stream, onRemove, index, onDragStart, onDragOver, onDrop, o
     <div
       draggable
       onDragStart={(e) => onDragStart(e, index)}
-      onDragOver={onDragOver}
+      onDragOver={(e) => onDragOver(e, index)}
       onDrop={(e) => onDrop(e, index)}
+      onDragEnd={onDragEnd}
       className="bg-[#1E3557] rounded-md relative overflow-hidden cursor-move"
     >
       <video
@@ -83,7 +84,8 @@ const MultiLivePage = () => {
   } = useSceneStore();
 
   const [grid, setGrid] = useState<MultiGrid>(MultiGrid["2*2"]);
-  const [streams, setStreams] = useState<LiveStream[]>([]);
+  // gridStreams: 每个格子一个流或null
+  const [gridStreams, setGridStreams] = useState<(LiveStream|null)[]>(Array(MultiGrid["2*2"]*MultiGrid["2*2"]).fill(null));
   const {data: dockList} = useDeviceTopo();
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
@@ -91,14 +93,20 @@ const MultiLivePage = () => {
     clearDeviceState();
   }, [clearDeviceState]);
 
-  // Add a new stream
+  // grid变化时，调整gridStreams长度
+  useEffect(() => {
+    setGridStreams(prev => {
+      const total = Number(grid) * Number(grid);
+      if (prev.length === total) return prev;
+      if (prev.length > total) return prev.slice(0, total);
+      return [...prev, ...Array(total - prev.length).fill(null)];
+    });
+  }, [grid]);
+
+  // 新增流，插入第一个空位
   const addStream = (dockSn: string, droneSn: string | undefined, isDock: boolean, title: string) => {
-    const existingStream = streams.find(s =>
-      s.dockSn === dockSn && s.isDock === isDock && (!droneSn || s.droneSn === droneSn)
-    );
-
-    if (existingStream) return;
-
+    // 已存在则不添加
+    if (gridStreams.some(s => s && s.dockSn === dockSn && s.isDock === isDock && (!droneSn || s.droneSn === droneSn))) return;
     const newStream: LiveStream = {
       id: `${dockSn}-${isDock ? "dock" : "drone"}-${Date.now()}`,
       dockSn,
@@ -107,13 +115,18 @@ const MultiLivePage = () => {
       title,
       videoRef: createRef<HTMLVideoElement>()
     };
-
-    setStreams(prev => [...prev, newStream]);
+    setGridStreams(prev => {
+      const idx = prev.findIndex(s => s === null);
+      if (idx === -1) return prev; // 没空位
+      const arr = [...prev];
+      arr[idx] = newStream;
+      return arr;
+    });
   };
 
-  // Remove a stream
+  // 删除流
   const removeStream = (id: string) => {
-    setStreams(prev => prev.filter(stream => stream.id !== id));
+    setGridStreams(prev => prev.map(s => (s && s.id === id ? null : s)));
   };
 
   // 拖拽开始
@@ -121,51 +134,49 @@ const MultiLivePage = () => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/html", (e.target as HTMLElement).innerHTML);
-    // (e.target as HTMLElement).style.opacity = "0.4";
   };
 
   // 拖拽经过
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, overIdx: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   };
 
-  // 拖拽结束
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+  // 拖拽释放，交换或插入
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropIdx: number) => {
     e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
-
-    const newStreams = [...streams];
-    const [removed] = newStreams.splice(draggedIndex, 1);
-    newStreams.splice(index, 0, removed);
-
-    setStreams(newStreams);
+    if (draggedIndex === null || draggedIndex === dropIdx) return;
+    setGridStreams(prev => {
+      const arr = [...prev];
+      const dragged = arr[draggedIndex];
+      if (!dragged) return arr;
+      if (arr[dropIdx]) {
+        // 目标有流，直接交换
+        [arr[draggedIndex], arr[dropIdx]] = [arr[dropIdx], arr[draggedIndex]];
+      } else {
+        // 目标为空，移动
+        arr[draggedIndex] = null;
+        arr[dropIdx] = dragged;
+      }
+      return arr;
+    });
     setDraggedIndex(null);
   };
 
-  // 拖拽结束恢复样式
   const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
     (e.target as HTMLElement).style.opacity = "1";
   };
 
-  // Adjust streams when grid changes
+  // grid变化时裁剪多余流
   const changeGrid = (newGrid: MultiGrid) => {
     setGrid(newGrid);
-    const maxStreams = newGrid * newGrid;
-    if (streams.length > maxStreams) {
-      setStreams(streams.slice(0, maxStreams));
-    }
   };
 
-  // Render grid layout with streams
+  // 渲染所有格子
   const renderGridLayout = () => {
     const gridSize = Number(grid);
     const gridTemplate = `repeat(${gridSize}, 1fr)`;
-
-    // Fill empty slots if needed
     const totalSlots = gridSize * gridSize;
-    const emptySlots = Math.max(0, totalSlots - streams.length);
-
     return (
       <div
         className="w-full h-full grid gap-2"
@@ -174,27 +185,34 @@ const MultiLivePage = () => {
           gridTemplateRows: gridTemplate
         }}
       >
-        {streams.map((stream, index) => (
-          <StreamItem
-            key={stream.id}
-            stream={stream}
-            onRemove={removeStream}
-            index={index}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onDragEnd={handleDragEnd}
-          />
-        ))}
-
-        {Array.from({length: emptySlots}).map((_, index) => (
-          <div
-            key={`empty-${index}`}
-            className="bg-[#1E3557] rounded-md flex items-center justify-center"
-          >
-            <span className="text-gray-500">暂无视频</span>
-          </div>
-        ))}
+        {Array.from({length: totalSlots}).map((_, slotIdx) => {
+          const stream = gridStreams[slotIdx];
+          if (stream) {
+            return (
+              <StreamItem
+                key={stream.id}
+                stream={stream}
+                onRemove={removeStream}
+                index={slotIdx}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+              />
+            );
+          } else {
+            return (
+              <div
+                key={`empty-${slotIdx}`}
+                className="bg-[#1E3557] rounded-md flex items-center justify-center min-h-[80px]"
+                onDragOver={(e) => handleDragOver(e, slotIdx)}
+                onDrop={(e) => handleDrop(e, slotIdx)}
+              >
+                <span className="text-gray-500">暂无视频</span>
+              </div>
+            );
+          }
+        })}
       </div>
     );
   };
@@ -218,7 +236,7 @@ const MultiLivePage = () => {
                     <span className={"pl-2 text-sm"}>{dock.device_name} | {dock.nickname}</span>
                   </div>
                   <Button
-                    className={cn("px-2 h-6", streams.find(item => item.isDock && item.dockSn === dock.device_sn) ? "bg-blue-500" : "bg-[#2A3145]/[.88]")}
+                    className={cn("px-2 h-6", gridStreams.some(s => s && s.isDock && s.dockSn === dock.device_sn) ? "bg-blue-500" : "bg-[#2A3145]/[.88]")}
                     onClick={() => addStream(dock.device_sn, undefined, true, `${dock.nickname} (机场)`)}
                   >
                     <Video size={18}/>
@@ -233,7 +251,7 @@ const MultiLivePage = () => {
                   </div>
                   <Button
                     className={cn("bg-[#52607D]/[.88] content-center rounded-[1px] h-[24px] relative",
-                      streams.find(item => !item.isDock && item.droneSn === dock.children?.device_sn) ? "text-blue-400" : "text-[#c0c0c0]")}
+                      gridStreams.some(s => !s?.isDock && s?.droneSn === dock.children?.device_sn) ? "text-blue-400" : "text-[#c0c0c0]")}
                     onClick={() => addStream(dock.device_sn, dock.children?.device_sn, false, `${dock.children?.nickname} (飞行器)`)}
                   >
                     <Logs className={"absolute left-2"} size={16}/>
