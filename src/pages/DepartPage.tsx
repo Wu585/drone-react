@@ -402,7 +402,7 @@ const DepartPage = () => {
           </form>
         </Form>
       </div>}
-      <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative ml-[20px]"}>
+      <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative ml-[20px] overflow-hidden"}>
         <DepartScene/>
       </div>
     </div>

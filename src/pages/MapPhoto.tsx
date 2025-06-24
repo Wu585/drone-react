@@ -590,7 +590,7 @@ const MapPhoto = () => {
           <div className={"h-8 text-base"}>媒体/工单照片</div>
         </div>
         <div className="flex-1 px-[12px] py-4 space-y-2 overflow-y-auto">
-          {getDirList?.length === 0 && orderListVisual?.length === 0 ? <div className={"text-center py-4 text-[#d0d0d0]"}>暂无数剧</div> :
+          {getDirList?.length === 0 && orderListVisual?.length === 0 ? <div className={"text-center py-4 text-[#d0d0d0]"}>暂无数据</div> :
             <>
               {/* 渲染文件夹列表 */}
               {getDirList.map(folder => (
@@ -612,7 +612,7 @@ const MapPhoto = () => {
             </>}
         </div>
       </div>
-      <div className="flex-1 min-w-0 ml-[20px] border-[2px] rounded-lg border-[#43ABFF] relative">
+      <div className="flex-1 min-w-0 ml-[20px] border-[2px] rounded-lg border-[#43ABFF] relative overflow-hidden">
         <Scene/>
         <div className="absolute right-0 bottom-0 z-[30]">
           <MapChange/>

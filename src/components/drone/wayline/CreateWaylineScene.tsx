@@ -23,6 +23,7 @@ const mapLayerList = [
 
 const CreateWaylineScene = () => {
   const deviceState = useSceneStore(state => state.deviceState);
+  const setViewerInitialized = useSceneStore(state => state.setViewerInitialized);
   useInitialConnectWebSocket();
   const addMapLayer = () => {
     mapLayerList.forEach(item => {
@@ -52,13 +53,18 @@ const CreateWaylineScene = () => {
     scene.hdrEnabled = false;
     scene.sun.show = true;
 
+    setViewerInitialized(true);
+
     addMapLayer();
     // resetView();
 
     const yx = findMapLayer("影像");
     yx && (yx.show = false);
 
-  }, []);
+    return () => {
+      setViewerInitialized(false);
+    };
+  }, [setViewerInitialized]);
 
   // 机场图标的集合
   useEntityCustomSource("dock");
@@ -96,7 +102,7 @@ const CreateWaylineScene = () => {
   // useAddAllElements();
 
   return (
-    <div id="cesiumContainer" className={"h-full rounded-lg"}></div>
+    <div id="cesiumContainer" className={"h-full relative"}></div>
   );
 };
 

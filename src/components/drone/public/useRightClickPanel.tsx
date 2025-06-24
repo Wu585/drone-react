@@ -31,9 +31,48 @@ const MenuItem = memo(({
   </button>
 ));
 
+export const useCssScale = (elementSelector: string) => {
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const element = document.querySelector(elementSelector);
+    if (!element) return;
+
+    const updateScale = () => {
+      const computedStyle = window.getComputedStyle(element);
+      const transform = computedStyle.transform;
+
+      if (transform && transform !== "none") {
+        // 解析 `matrix(a, b, c, d, tx, ty)`，其中 `a` = `scaleX`，`d` = `scaleY`
+        const matrix = transform.match(/^matrix\((.+)\)$/);
+        if (matrix) {
+          const values = matrix[1].split(", ").map(Number);
+          const scaleX = values[0];
+          const scaleY = values[3];
+          setScale(Math.max(scaleX, scaleY)); // 取较大值
+        }
+      } else {
+        setScale(1); // 无缩放
+      }
+    };
+
+    // 初始化
+    updateScale();
+
+    // 监听窗口变化（如果缩放是动态调整的）
+    window.addEventListener("resize", updateScale);
+
+    return () => {
+      window.removeEventListener("resize", updateScale);
+    };
+  }, [elementSelector]);
+
+  return scale;
+};
+
 export const useRightClickPanel = ({containerId, onRightClick}: UseRightClickPanelProps) => {
   const viewerInitialized = useSceneStore(state => state.viewerInitialized);
-
+  const scale = useCssScale(".fit-screen-scale");
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition>({
     show: false,
     x: 0,
@@ -54,10 +93,13 @@ export const useRightClickPanel = ({containerId, onRightClick}: UseRightClickPan
   // Memoized handler for right click
   const handleRightClick = useCallback((movement: any) => {
     if (!viewerInitialized) return;
+
     const canvas = viewer.scene.canvas;
     const canvasRect = canvas.getBoundingClientRect();
-    const x = movement.position.x;
-    const y = movement.position.y;
+
+    // 计算实际位置
+    const actualX = (movement.position.x / scale) + (canvasRect.left / scale);
+    const actualY = (movement.position.y / scale) + (canvasRect.top / scale);
 
     const cartesian = viewer.scene.pickPosition(movement.position);
     if (cartesian) {
@@ -67,8 +109,8 @@ export const useRightClickPanel = ({containerId, onRightClick}: UseRightClickPan
 
       setContextMenu({
         show: true,
-        x: x + canvasRect.left,
-        y: y + canvasRect.top,
+        x: actualX,
+        y: actualY,
         longitude,
         latitude
       });
@@ -114,7 +156,7 @@ export const useRightClickPanel = ({containerId, onRightClick}: UseRightClickPan
   // Memoized RightClickPanel component
   const RightClickPanel = useMemo(() => memo(({children}: { children: React.ReactNode }) => {
     if (!contextMenu.show) return null;
-    console.log('contextMenu==');
+    console.log("contextMenu==");
     console.log(contextMenu);
     return (
       <div
@@ -134,7 +176,7 @@ export const useRightClickPanel = ({containerId, onRightClick}: UseRightClickPan
         </div>
       </div>
     );
-  }), [contextMenu.show, contextMenu.x, contextMenu.y]);
+  }), [contextMenu]);
 
   // Memoized MenuItem with proper click handling
   const MemoizedMenuItem = useMemo(() => (props: {

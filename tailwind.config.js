@@ -158,6 +158,8 @@ module.exports = {
         'algorithm-panel': "url('@/assets/images/drone/algorithm/panel-bg.png')",
         'algorithm-jjgj': "url('@/assets/images/drone/algorithm/jjgj.png')",
         'multi-live-panel': "url('@/assets/images/drone/bg-multi-live-panel.png')",
+        'tab': "url('@/assets/images/drone/bg-tab.png')",
+        'tab-active': "url('@/assets/images/drone/bg-tab-active.png')",
       }
     },
   },

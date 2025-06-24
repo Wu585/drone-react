@@ -16,6 +16,9 @@ import {Button} from "@/components/ui/button.tsx";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
 import {useCallback, useEffect} from "react";
 import {Link} from "react-router-dom";
+import {ELocalStorageKey} from "@/types/enum.ts";
+import startPng from "@/assets/images/start.png";
+import endPng from "@/assets/images/end.png";
 
 const DRC_API_PREFIX = "/control/api/v1";
 
@@ -102,14 +105,41 @@ const Tsa = () => {
       getCustomSource("drone-wayline")?.entities.removeAll();
       const longitude = realTime.device?.longitude;
       const latitude = realTime.device?.latitude;
+      const targetHeight = +realTime.device.height;
+      const dockHeight = realTime.dock?.basic_osd?.height;
+      const commander_flight_height = localStorage.getItem(ELocalStorageKey.CommanderFlightHeight) ? +localStorage.getItem(ELocalStorageKey.CommanderFlightHeight)! : 120;
       if (realTime.device && longitude && latitude) {
         getCustomSource("drone-wayline")?.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(longitude, latitude, targetHeight),
+          billboard: {
+            image: startPng,
+            width: 64,
+            height: 64,
+          },
+        });
+        getCustomSource("drone-wayline")?.entities.add({
           polyline: {
-            positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realTime.device.height,
-              contextMenu.longitude, contextMenu.latitude, realTime.device.height]),
+            positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+              longitude, latitude, targetHeight,
+              longitude, latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
+
+              longitude, latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
+              contextMenu.longitude, contextMenu.latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
+
+              contextMenu.longitude, contextMenu.latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
+              contextMenu.longitude, contextMenu.latitude, realTime.device.height,
+            ]),
             width: 3,  // 设置折线的宽度
             material: Cesium.Color.BLUE,  // 折线的颜色
           }
+        });
+        getCustomSource("drone-wayline")?.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(contextMenu.longitude, contextMenu.latitude, targetHeight),
+          billboard: {
+            image: endPng,
+            width: 64,
+            height: 64,
+          },
         });
       }
     } catch (err: any) {
@@ -118,7 +148,7 @@ const Tsa = () => {
         variant: "destructive"
       });
     }
-  }, [realTime.device, contextMenu, osdVisible.gateway_sn]);
+  }, [realTime.device, contextMenu, osdVisible.gateway_sn, realTime.dock?.basic_osd?.height]);
 
   return (
     <div className={"w-full h-full flex space-x-[20px]"}>
@@ -193,7 +223,7 @@ const Tsa = () => {
             </div>)}
         </div>
       </div>
-      <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative"}>
+      <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative overflow-hidden"}>
         {/*<GMap/>*/}
         <TsaScene dockSn={osdVisible.gateway_sn} deviceSn={osdVisible.sn}/>
         <div className={"absolute right-0 bottom-0 z-100"}>

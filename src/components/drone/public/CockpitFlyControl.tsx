@@ -11,6 +11,7 @@ import {useSceneStore} from "@/store/useSceneStore.ts";
 import {usePermission} from "@/hooks/drone";
 import {Button} from "@/components/ui/button.tsx";
 import titleIcon from "@/assets/images/drone/cockpit/title-icon.png";
+import {getCustomSource} from "@/hooks/public/custom-source.ts";
 
 const CockpitFlyControl = ({sn}: { sn?: string }) => {
   const {
@@ -47,6 +48,7 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
         description: "指令下发成功！"
       });
       // isRemoteControl && await exitFlightControl();
+      getCustomSource("drone-wayline")?.entities.removeAll();
       outRemoteControl();
     } catch (err) {
       toast({

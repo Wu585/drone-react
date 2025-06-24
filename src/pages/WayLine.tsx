@@ -1,4 +1,4 @@
-import {Camera, Plus, Rocket, Upload, User} from "lucide-react";
+import {ArrowDownToLine, Camera, Drone, Edit, Plus, Rocket, Trash, Upload, User} from "lucide-react";
 import UploadButton from "@rpldy/upload-button";
 import Uploady from "@rpldy/uploady";
 import {ELocalStorageKey} from "@/types/enum.ts";
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog.tsx";
 import {useNavigate} from "react-router-dom";
 import Scene from "@/components/drone/public/Scene.tsx";
-import {calculateHaversineDistance} from "@/lib/utils.ts";
+import {calculateHaversineDistance, cn} from "@/lib/utils.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {useAddWaylineEntityById} from "@/hooks/drone/useAddWaylineEntityById.ts";
@@ -132,72 +132,81 @@ const WayLine = () => {
           {!waylines || waylines.list.length === 0 ? <div className={"content-center py-8 text-[#d0d0d0]"}>
             暂无数据
           </div> : waylines.list.map(line =>
-            <div className={"bg-panel-item bg-full-size text-base p-4 cursor-pointer whitespace-nowrap"}
-                 key={line.id}
-                 onClick={() => onClickWayline(line)}
+            <div
+              style={{
+                backgroundSize: "100% 100%"
+              }}
+              className={cn("text-base px-4 py-3 cursor-pointer whitespace-nowrap",
+                line.id === currentWayline ? "bg-panel-item-active" : "bg-panel-item")}
+              key={line.id}
+              onClick={() => onClickWayline(line)}
             >
-              <div className={"grid grid-cols-6 space-x-8 relative"}>
+              <div className={"flex items-center justify-between"}>
                 <span className={"col-span-2 w-28 truncate"} title={line.name}>{line.name}</span>
-                <span className={"space-x-4 text-[12px] text-[#d0d0d0] grid grid-cols-6 items-center"}>
-                <User className={"col-span-2"} size={16}/>
-                <span>{line.user_name}</span>
-              </span>
-                <Popover>
-                  <PopoverTrigger className={"col-span-2 absolute right-0"}>
-                    <span className={"cursor-pointer"}>...</span>
-                  </PopoverTrigger>
-                  <PopoverContent className={"w-24 flex flex-col "}>
-                    <PermissionButton
-                      permissionKey={"Collection_WaylineCreateEdit"}
-                      variant={"ghost"}
-                      onClick={() => navigate(`/create-wayline?id=${line.id}`)}
-                    >
-                      编辑
-                    </PermissionButton>
-                    <PermissionButton permissionKey={"Collection_WaylineDownload"} variant={"ghost"}
-                                      onClick={() => downloadWayline(line.id, line.name)}>下载</PermissionButton>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <PermissionButton
-                          permissionKey={"Collection_WaylineDelete"}
-                          variant={"ghost"}>删除</PermissionButton>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>删除航线</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            确认删除航线吗？
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>取消</AlertDialogCancel>
-                          <AlertDialogAction onClick={async () => {
-                            await deleteWaylineFile(line.id);
-                            await mutate();
-                          }}>确定</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </PopoverContent>
-                </Popover>
+                <div className={"space-x-4 text-[#d0d0d0]"}>
+                  <PermissionButton
+                    className={"px-0 hover:bg-transparent hover:text-white"}
+                    permissionKey={"Collection_WaylineCreateEdit"}
+                    variant={"ghost"}
+                    onClick={() => navigate(`/create-wayline?id=${line.id}`)}
+                  >
+                    <Edit size={16}/>
+                  </PermissionButton>
+                  <PermissionButton
+                    className={"px-0 hover:bg-transparent hover:text-white"}
+                    permissionKey={"Collection_WaylineDownload"}
+                    variant={"ghost"}
+                    onClick={() => downloadWayline(line.id, line.name)}>
+                    <ArrowDownToLine size={16}/>
+                  </PermissionButton>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <PermissionButton
+                        className={"px-0 hover:bg-transparent hover:text-white"}
+                        permissionKey={"Collection_WaylineDelete"}
+                        variant={"ghost"}>
+                        <Trash size={16}/>
+                      </PermissionButton>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>删除航线</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          确认删除航线吗？
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction onClick={async () => {
+                          await deleteWaylineFile(line.id);
+                          await mutate();
+                        }}>确定</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
-              <div className={"grid grid-cols-6 space-x-8 text-[12px] text-[#d0d0d0]"}>
+              <div className={"grid grid-cols-6 space-x-4 text-[12px] text-[#d0d0d0] text-sm"}>
                 <div className={"col-span-2 space-x-2 grid grid-cols-6 items-center"}>
-                  <Rocket className={"col-span-1"} size={14}/>
-                  <span>{DEVICE_NAME[line.drone_model_key]}</span>
+                  <Drone className={"col-span-1"} size={16}/>
+                  <span className={""}>{DEVICE_NAME[line.drone_model_key]}</span>
                 </div>
                 <div className={"col-span-2 space-x-2 whitespace-nowrap grid grid-cols-6 items-center"}>
                   <Camera className={"col-span-1"} size={14}/>
                   {line.payload_model_keys.map(payload => <span key={payload}>{DEVICE_NAME[payload]}</span>)}
                 </div>
               </div>
-              <div className={"text-[12px] text-[#d0d0d0]"}>
-                更新于 {new Date(line.update_time).toLocaleString()}
+              <div className={"text-sm text-[#d0d0d0] pt-2 pb-2 flex justify-between items-center"}>
+                <span>更新于 {new Date(line.update_time).toLocaleString()}</span>
+                <div className={"content-center space-x-2"}>
+                  <User size={14}/>
+                  <span>{line.user_name}</span>
+                </div>
               </div>
             </div>)}
         </div>
       </div>
-      <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative"}>
+      <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative overflow-hidden"}>
         <Scene/>
         <div className={"absolute right-0 bottom-0 z-100"}>
           <MapChange/>

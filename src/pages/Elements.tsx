@@ -504,7 +504,7 @@ const Elements = () => {
           {groups && groups?.length > 0 && buildTree(groups)}
         </div>
       </div>
-      <div className="flex-1 min-w-0 ml-[20px] border-[2px] rounded-lg border-[#43ABFF] relative">
+      <div className="flex-1 min-w-0 ml-[20px] border-[2px] rounded-lg border-[#43ABFF] relative overflow-hidden">
         <Scene/>
         {hasPermission("Collection_AnnotationEdit") && <div className="absolute right-6 top-80">
           <DrawPanel

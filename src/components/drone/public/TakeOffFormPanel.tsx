@@ -24,6 +24,9 @@ import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
 import dayjs from "dayjs";
 import {useNavigate} from "react-router-dom";
+import {ELocalStorageKey} from "@/types/enum.ts";
+import startPng from "@/assets/images/start.png";
+import endPng from "@/assets/images/end.png";
 
 export const formSchema = z.object({
   target_latitude: z.coerce.number({
@@ -78,7 +81,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
       target_height: 120,
       security_takeoff_height: "120",
       rth_altitude: "120",
-      commander_flight_height: "120",
+      commander_flight_height: "100",
       rc_lost_action: LostControlActionInCommandFLight.RETURN_HOME,
       exit_wayline_when_rc_lost: WaylineLostControlActionInCommandFlight.EXEC_LOST_ACTION,
       rth_mode: ERthMode.SETTING,
@@ -91,15 +94,16 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!sn) return;
+    const dockHeight = +realtimeDeviceInfo.dock?.basic_osd?.height;
     if (type === "take-off") {
       const body = {
         ...values,
-        target_latitude: values.target_latitude,
-        target_longitude: values.target_longitude,
-        target_height: values.target_height,
+        target_latitude: +values.target_latitude,
+        target_longitude: +values.target_longitude,
+        target_height: +values.target_height,
         security_takeoff_height: parseFloat(values.security_takeoff_height),
         rth_altitude: parseFloat(values.rth_altitude),
-        commanderFlightHeight: parseFloat(values.commander_flight_height),
+        commander_flight_height: parseFloat(values.commander_flight_height),
         rc_lost_action: +values.rc_lost_action,
         exit_wayline_when_rc_lost: +values.exit_wayline_when_rc_lost,
         rth_mode: +values.rth_mode,
@@ -114,29 +118,45 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
         toast({
           description: <span>起飞成功</span>
         });
+        localStorage.setItem(ELocalStorageKey.SecurityTakeoffHeight, values.security_takeoff_height);
+        localStorage.setItem(ELocalStorageKey.CommanderFlightHeight, values.commander_flight_height);
         // localStorage.setItem("startTime", dayjs().format("yyyy-MM-dd HH:mm:ss"));
         getCustomSource("drone-wayline")?.entities.removeAll();
-        const longitude = realtimeDeviceInfo.dock?.basic_osd?.longitude;
-        const latitude = realtimeDeviceInfo.dock?.basic_osd?.latitude;
-        const dockHeight = realtimeDeviceInfo.dock?.basic_osd?.height;
-        const height = form.getValues("target_height");
+        const longitude = +realtimeDeviceInfo.dock?.basic_osd?.longitude;
+        const latitude = +realtimeDeviceInfo.dock?.basic_osd?.latitude;
         if (realtimeDeviceInfo.dock && longitude && latitude) {
+          getCustomSource("drone-wayline")?.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(longitude, latitude, dockHeight),
+            billboard: {
+              image: startPng,
+              width: 64,
+              height: 64,
+            },
+          });
           getCustomSource("drone-wayline")?.entities.add({
             polyline: {
               // positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realtimeDeviceInfo.device.height, values.target_longitude, values.target_latitude, realtimeDeviceInfo.device.height]),
               positions: Cesium.Cartesian3.fromDegreesArrayHeights([
                 longitude, latitude, dockHeight,
-                longitude, latitude, height + dockHeight,
+                longitude, latitude, +dockHeight + 120,
 
-                longitude, latitude, height + dockHeight,
-                values.target_longitude, values.target_latitude, height + dockHeight,
+                longitude, latitude, +dockHeight + 120,
+                body.target_longitude, body.target_latitude, +dockHeight + 120,
 
-                values.target_longitude, values.target_latitude, height + dockHeight,
-                values.target_longitude, values.target_latitude, height,
+                body.target_longitude, body.target_latitude, +dockHeight + 120,
+                body.target_longitude, body.target_latitude, body.target_height,
               ]),
               width: 3,  // 设置折线的宽度
               material: Cesium.Color.BLUE,  // 折线的颜色
             }
+          });
+          getCustomSource("drone-wayline")?.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(body.target_longitude, body.target_latitude, body.target_height),
+            billboard: {
+              image: endPng,
+              width: 64,
+              height: 64,
+            },
           });
         }
         // navigate(`/cockpit-new?sn=${droneSn}&gateway_sn=${sn}`);
@@ -167,7 +187,16 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
       if (realtimeDeviceInfo.device && longitude && latitude) {
         getCustomSource("drone-wayline")?.entities.add({
           polyline: {
-            positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realtimeDeviceInfo.device.height, values.target_longitude, values.target_latitude, realtimeDeviceInfo.device.height]),
+            positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+              longitude, latitude, realtimeDeviceInfo.device.height,
+              longitude, latitude, values.security_takeoff_height + dockHeight,
+
+              longitude, latitude, values.security_takeoff_height + dockHeight,
+              values.target_longitude, values.target_latitude, values.security_takeoff_height + dockHeight,
+
+              values.target_longitude, values.target_latitude, values.security_takeoff_height + dockHeight,
+              values.target_longitude, values.target_latitude, values.target_height
+            ]),
             width: 3,  // 设置折线的宽度
             material: Cesium.Color.BLUE,  // 折线的颜色
           }
@@ -264,6 +293,18 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
                     </FormItem>
                   )}
                   name={"security_takeoff_height"}
+                />
+                <FormField
+                  control={form.control}
+                  render={({field}) => (
+                    <FormItem className={"grid grid-cols-6 px-4"}>
+                      <FormLabel className={"col-span-3 flex items-center"}>飞行作业高</FormLabel>
+                      <FormControl className={"col-span-3"}>
+                        <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                  name={"commander_flight_height"}
                 />
                 <FormField
                   control={form.control}

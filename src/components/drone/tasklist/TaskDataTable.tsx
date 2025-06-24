@@ -39,6 +39,10 @@ import {Input} from "@/components/ui/input.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import dayjs from "dayjs";
 import {useNavigate} from "react-router-dom";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
+import {CommonDateRangePicker} from "@/components/drone/public/CommDateRangePicker.tsx";
 
 const TaskDataTable = () => {
   const {delete: deleteClient, put, post} = useAjax();
@@ -458,82 +462,73 @@ const TaskDataTable = () => {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <div className={"flex items-center whitespace-nowrap w-80"}>
-            <Label>执行时间：</Label>
-            <NewCommonDateRangePicker setDate={onChangeDateRange} className={""}/>
+          <div className={"flex items-center whitespace-nowrap w-60"}>
+            <CommonDateRangePicker onChange={onChangeDateRange}/>
           </div>
-          <div className={"flex items-center"}>
-            <Label>名称：</Label>
-            <Input
-              className={"bg-transparent w-36 border-[#43ABFF] border-[1px]"}
-              onChange={(e) => handleQueryParamsChange({keyword: e.target.value})}
-              placeholder={"请输入名称"}
-              value={queryParams.keyword}
-            />
-          </div>
-          <div className={"flex items-center whitespace-nowrap"}>
-            <Label>机场：</Label>
-            <Select
-              onValueChange={(value) => handleQueryParamsChange({
-                dock_sn: value === "all" ? undefined : value
-              })}
-              value={queryParams.dock_sn || "all"}
-            >
-              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
-                <SelectValue placeholder="机场"/>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部</SelectItem>
-                {dockList?.list.map(dock => <SelectItem value={dock.device_sn}>{dock.nickname}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className={"flex items-center whitespace-nowrap"}>
-            <Label>执行状态：</Label>
-            <Select
-              onValueChange={(value) => handleQueryParamsChange({
-                status: value === "all" ? undefined : Number(value) as TaskStatus
-              })}
-              value={queryParams.status?.toString() || "all"}
-            >
-              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
-                <SelectValue placeholder="执行状态"/>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部</SelectItem>
-                {Object.entries(TaskStatusMap).map(([key, value]) => (
-                  <SelectItem key={key} value={key}>{value}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className={"flex items-center whitespace-nowrap"}>
-            <Label>任务类型：</Label>
-            <Select
-              onValueChange={(value) => handleQueryParamsChange({
-                task_type: value === "all" ? undefined : Number(value) as TaskType
-              })}
-              value={queryParams.task_type?.toString() || "all"}
-            >
-              <SelectTrigger className="w-[150px] bg-transparent border-[#43ABFF] border-[1px]">
-                <SelectValue placeholder="任务类型"/>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部</SelectItem>
-                {Object.entries(TaskTypeMap).map(([key, value]) => (
-                  <SelectItem key={key} value={key}>{value}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]  text-base"}
-                  disabled={loading}
-                  onClick={onGenerateReports}>
-            {loading && <Loader2 className="h-4 w-4 animate-spin" size={16}/>}
-            <span>导出飞行报告</span>
-          </Button>
+          <CommonInput
+            className={""}
+            onChange={(e) => handleQueryParamsChange({keyword: e.target.value})}
+            placeholder={"请输入任务名称"}
+            value={queryParams.keyword}
+          />
+          <CommonSelect
+            onValueChange={(value) => handleQueryParamsChange({
+              dock_sn: value === "all" ? undefined : value
+            })}
+            value={queryParams.dock_sn}
+            placeholder={"请选择机场"}
+            options={
+              dockList?.list.map(dock => ({
+                value: dock.device_sn,
+                label: dock.nickname
+              })) || []
+            }
+          />
+          <CommonSelect
+            onValueChange={(value) => handleQueryParamsChange({
+              status: Number(value) as TaskStatus
+            })}
+            value={queryParams.status?.toString()}
+            placeholder={"请选择执行状态"}
+            options={
+              Object.entries(TaskStatusMap).map(([key, value]) => ({
+                value: key,
+                label: value
+              }))
+            }
+          />
+          <CommonSelect
+            onValueChange={(value) => handleQueryParamsChange({
+              task_type: Number(value) as TaskType
+            })}
+            value={queryParams.task_type?.toString()}
+            placeholder={"请选择任务类型"}
+            options={
+              Object.entries(TaskTypeMap).map(([key, value]) => ({
+                value: key,
+                label: value
+              }))
+            }
+          />
+          <CommonButton disabled={loading} onClick={onGenerateReports} isLoading={loading} className={"w-36"}>
+            导出飞行报告
+          </CommonButton>
+        </div>
+        <div className={"flex items-center space-x-4"}>
+          <CommonButton
+            permissionKey={"Collection_PlanCreate"}
+            onClick={() => navigate("/task-create-apply")}
+          >
+            申请任务
+          </CommonButton>
+          <CommonButton
+            permissionKey={"Collection_PlanCreate"}
+            onClick={() => navigate("/task-create")}
+          >
+            创建任务
+          </CommonButton>
         </div>
       </div>
 

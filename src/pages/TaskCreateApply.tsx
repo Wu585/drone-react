@@ -722,7 +722,7 @@ const TaskCreateApply = () => {
         </div>
       </div>}
       <div
-        className={cn("flex-1 border-[2px] rounded-lg border-[#43ABFF] relative ml-[20px]")}>
+        className={cn("flex-1 border-[2px] rounded-lg border-[#43ABFF] relative ml-[20px] overflow-hidden")}>
         <Scene/>
       </div>
     </div>

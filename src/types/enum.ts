@@ -16,6 +16,8 @@ export enum ELocalStorageKey {
   UserId = 'user_id',
   Device = 'device',
   GatewayOnline = 'gateway_online',
+  SecurityTakeoffHeight = 'security_takeoff_height',
+  CommanderFlightHeight = 'commander_flight_height',
 }
 
 export enum EBizCode {

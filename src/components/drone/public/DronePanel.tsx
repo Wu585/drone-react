@@ -35,6 +35,7 @@ import {usePermission, useWaylinJobs} from "@/hooks/drone";
 import {TaskStatus, TaskType} from "@/types/task.ts";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import dayjs from "dayjs";
+import {getCustomSource} from "@/hooks/public/custom-source.ts";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -87,6 +88,8 @@ const DronePanel = () => {
   };
 
   const onClickReturnButton = async () => {
+    getCustomSource("drone-wayline")?.entities.removeAll();
+    viewer.entities.removeById("fly-point");
     try {
       if (deviceInfo?.device?.mode_code === EModeCode.Return_To_Home) {
         await sendDockControlCmd({

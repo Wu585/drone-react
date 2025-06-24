@@ -60,6 +60,9 @@ import {Switch} from "@/components/ui/switch.tsx";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import CustomPopover from "@/components/public/CustomPopover.tsx";
 import {TaskStatus, TaskType} from "@/types/task.ts";
+import {getCustomSource} from "@/hooks/public/custom-source.ts";
+import startPng from "@/assets/images/start.png";
+import endPng from "@/assets/images/end.png";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -275,6 +278,10 @@ const Cockpit = () => {
   };
 
   const onFlyTo = useCallback(async () => {
+    const targetHeight = +deviceInfo.device.height;
+    const commander_flight_height = localStorage.getItem(ELocalStorageKey.CommanderFlightHeight) ? +localStorage.getItem(ELocalStorageKey.CommanderFlightHeight)! : 120;
+    const dockHeight = deviceInfo.dock?.basic_osd?.height;
+
     try {
       await post(`${DRC_API_PREFIX}/devices/${dockSn}/jobs/fly-to-point`, {
         max_speed: 14,
@@ -282,12 +289,52 @@ const Cockpit = () => {
           {
             latitude: contextMenu.latitude,
             longitude: contextMenu.longitude,
-            height: 100
+            height: targetHeight
           }
         ]
       });
       toast({
         description: "指点飞行成功"
+      });
+      getCustomSource("drone-wayline")?.entities.removeAll();
+
+      const longitude = deviceInfo.device?.longitude;
+      const latitude = deviceInfo.device?.latitude;
+      const height = deviceInfo.device?.height;
+
+      getCustomSource("drone-wayline")?.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
+        billboard: {
+          image: startPng,
+          width: 64,
+          height: 64,
+        },
+      });
+
+      getCustomSource("drone-wayline")?.entities.add({
+        polyline: {
+          positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+            longitude, latitude, height,
+            longitude, latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
+
+            longitude, latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
+            contextMenu.longitude, contextMenu.latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
+
+            contextMenu.longitude, contextMenu.latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
+            contextMenu.longitude, contextMenu.latitude, height,
+          ]),
+          width: 3,  // 设置折线的宽度
+          material: Cesium.Color.BLUE,  // 折线的颜色
+        }
+      });
+
+      getCustomSource("drone-wayline")?.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(contextMenu.longitude, contextMenu.latitude, height),
+        billboard: {
+          image: endPng,
+          width: 64,
+          height: 64,
+        },
       });
     } catch (err: any) {
       toast({
@@ -295,7 +342,7 @@ const Cockpit = () => {
         variant: "destructive"
       });
     }
-  }, [dockSn, contextMenu]);
+  }, [deviceInfo.device?.longitude, deviceInfo.device?.latitude, deviceInfo.device?.height, deviceInfo.dock?.basic_osd?.height, dockSn, contextMenu]);
 
   // 添加状态记录鼠标按下的位置和是否正在拖动
   const [isDragging, setIsDragging] = useState(false);
