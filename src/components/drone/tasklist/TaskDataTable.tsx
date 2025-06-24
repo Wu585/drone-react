@@ -464,9 +464,7 @@ const TaskDataTable = () => {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <div className={"flex items-center whitespace-nowrap w-60"}>
-            <CommonDateRangePicker onChange={onChangeDateRange}/>
-          </div>
+          <CommonDateRangePicker onChange={onChangeDateRange}/>
           <CommonInput
             className={""}
             onChange={(e) => handleQueryParamsChange({keyword: e.target.value})}
@@ -512,11 +510,24 @@ const TaskDataTable = () => {
               }))
             }
           />
-          <CommonButton disabled={loading} onClick={onGenerateReports} isLoading={loading} className={"w-36"}>
-            导出飞行报告
+          <CommonButton className={"w-36"} onClick={() => handleQueryParamsChange({
+            page: 1,
+            page_size: 10,
+            start_time: "",
+            end_time: "",
+            task_type: "",
+            dock_sn: "",
+            keyword: "",
+            status: "",
+            organs: [departId]
+          })}>
+            重置
           </CommonButton>
         </div>
         <div className={"flex items-center space-x-4"}>
+          <CommonButton disabled={loading} onClick={onGenerateReports} isLoading={loading} className={"w-30"}>
+            导出飞行报告
+          </CommonButton>
           <CommonButton
             permissionKey={"Collection_PlanCreate"}
             onClick={() => navigate("/task-create-apply")}
