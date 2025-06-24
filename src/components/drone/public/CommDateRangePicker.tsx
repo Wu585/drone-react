@@ -60,9 +60,9 @@ export const CommonDateRangePicker = ({
           variant="outline"
           className={cn(
             "w-full justify-start text-left font-normal",
-            "bg-[#182640]/[.7] border-[1px] border-[#2D5FAC]/[.85] rounded h-8 text-xs",
+            "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] rounded h-8 text-xs",
             "hover:bg-[#2D5FAC]/[.3] hover:text-white",
-            "text-white focus:ring-1 focus:ring-[#2D5FAC]",
+            "text-white",
             !dateRange && "text-muted-foreground",
             className
           )}

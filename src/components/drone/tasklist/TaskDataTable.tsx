@@ -20,7 +20,7 @@ import {cn} from "@/lib/utils.ts";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {formatMediaTaskStatus, formatTaskStatus, groupTasksByDate, UpdateTaskStatus} from "@/hooks/drone/task";
-import {Circle, Loader2} from "lucide-react";
+import {Circle} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,9 +33,6 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog.tsx";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
-import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePicker.tsx";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
-import {Input} from "@/components/ui/input.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import dayjs from "dayjs";
 import {useNavigate} from "react-router-dom";
@@ -463,10 +460,9 @@ const TaskDataTable = () => {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-4">
           <CommonDateRangePicker onChange={onChangeDateRange}/>
           <CommonInput
-            className={""}
             onChange={(e) => handleQueryParamsChange({keyword: e.target.value})}
             placeholder={"请输入任务名称"}
             value={queryParams.keyword}

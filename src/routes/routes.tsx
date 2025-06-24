@@ -87,6 +87,10 @@ export const routes: RouteObject[] = [
         element: <TestStep/>
       },
       {
+        path: "test2",
+        element: <></>
+      },
+      {
         path: "depart",
         element: <DepartPage/>
       },

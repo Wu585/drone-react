@@ -5,7 +5,7 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {
   useCurrentUser, usePermission,
@@ -43,6 +43,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {Input} from "@/components/ui/input.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
 import {Checkbox} from "@/components/ui/checkbox.tsx";
+import {CommonTable, CommonTableHandle, ReactTableInstance} from "@/components/drone/public/CommonTable.tsx";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -116,14 +117,14 @@ const WorkOrderDataTable = () => {
   const {hasPermission} = usePermission();
   const isGly = hasPermission("Collection_TicketAssign");
 
-  console.log('isGly');
+  console.log("isGly");
   console.log(isGly);
   const urlFix = isGly ? "page" : "pageByOperator";
   const [currentOrder, setCurrentOrder] = useState<WorkOrder | null>(null);
 
   const columns: ColumnDef<WorkOrder>[] = useMemo(() => {
     return [
-      {
+      /*{
         id: "id",
         header: ({table}) => (
           <Checkbox
@@ -154,7 +155,7 @@ const WorkOrderDataTable = () => {
         ),
         enableSorting: false,
         enableHiding: false,
-      },
+      },*/
       {
         accessorKey: "name",
         header: "事件名称",
@@ -413,6 +414,22 @@ const WorkOrderDataTable = () => {
     }
   };
 
+  useEffect(() => {
+    console.log("rowSelection");
+    console.log(rowSelection);
+  }, [rowSelection]);
+
+  const tableRef = useRef<CommonTableHandle<WorkOrder>>(null);
+
+  const getSelectedFileIds1 = (): number[] => {
+    if (!tableRef.current) return [];
+    const selectedData = tableRef.current.getSelectedData();
+    return selectedData.map(item => item.id);
+  };
+
+  console.log("getSelectedFileIds1");
+  console.log(getSelectedFileIds1());
+
   return (
     <Uploady
       destination={{
@@ -646,68 +663,16 @@ const WorkOrderDataTable = () => {
           </PermissionButton>
         </div>
 
-        <div className="rounded-md border border-[#0A81E1] overflow-hidden">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      className="bg-[#0A81E1]/70 text-white h-10 font-medium"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody className="bg-[#0A4088]/70">
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className={cn(
-                      "h-[50px]",
-                      "border-b border-[#0A81E1]/30",
-                      "hover:bg-[#0A4088]/90 transition-colors duration-200",
-                      "data-[state=selected]:bg-transparent"
-                    )}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className={cn(
-                          "text-base",
-                          "py-3",
-                          "align-middle",
-                          "px-4",
-                          "leading-none"
-                        )}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center text-[#43ABFF]"
-                  >
-                    暂无数据
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+        <div className="">
+          <CommonTable<WorkOrder>
+            data={data?.list || []}
+            columns={columns}
+            getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+            enableRowSelection={true}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+            ref={tableRef}
+          />
         </div>
 
         <div className="flex items-center justify-between py-2">
