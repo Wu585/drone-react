@@ -1,43 +1,38 @@
-import {
-  ColumnDef,
-  ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel,
-  PaginationState,
-  useReactTable,
-  VisibilityState
-} from "@tanstack/react-table";
+import {ColumnDef} from "@tanstack/react-table";
 import {useMemo, useState} from "react";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {Device, useBindingDevice} from "@/hooks/drone";
+import {ChildDevice, Device, useBindingDevice} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {Button} from "@/components/ui/button.tsx";
-import {Label} from "@/components/ui/label.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import {BookImage, Edit, SquareGanttChart} from "lucide-react";
 import {getAuthToken, useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {EditDeviceDialog, EditDeviceFormValues} from "./EditDeviceDialog";
-import {Icon} from "@/components/public/Icon.tsx";
 import InsuranceSheet from "@/components/drone/device-manage/InsuranceSheet.tsx";
 import MaintainanceSheet from "@/components/drone/device-manage/Maintainance.tsx";
 import {CURRENT_CONFIG} from "@/lib/config.ts";
 import Uploady from "@rpldy/uploady";
 import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
+import {Icon} from "@/components/public/Icon.tsx";
 
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
+
+interface TableDevice extends Omit<Device, "children"> {
+  children: ChildDevice[];
+}
 
 const DockDataTable = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const departId = localStorage.getItem("departId");
 
-  const [currentDock, setCurrentDock] = useState<Device>();
+  const [currentDock, setCurrentDock] = useState<Device | TableDevice>();
   const [currentDockId, setCurrentDockId] = useState<number>();
   const [open, setOpen] = useState(false);
   const [insuranceSheetVisible, setInsuranceSheetVisible] = useState(false);
   const [maintainanceSheetVisible, setMaintainanceSheetVisible] = useState(false);
   const {put} = useAjax();
 
-  const handleEdit = (device: Device) => {
-    setCurrentDock(device);
+  const handleEdit = (device: Device | TableDevice) => {
+    setCurrentDock(device as Device);
     setOpen(true);
   };
 
@@ -57,14 +52,33 @@ const DockDataTable = () => {
     }
   };
 
-  const columns: ColumnDef<Device>[] = useMemo(() => {
+  const columns: ColumnDef<TableDevice>[] = useMemo(() => {
     return [
       {
         accessorKey: "device_name",
         header: "型号",
         cell: ({row}) => (
-          <div className="truncate" title={row.getValue("device_name")}>
-            {row.getValue("device_name")}
+          <div
+            className="truncate flex items-center gap-2"
+            style={{paddingLeft: `${row.depth * 2}rem`}}
+            title={row.getValue("device_name")}
+          >
+            {row.getCanExpand() ? (
+              <button
+                {...{
+                  onClick: row.getToggleExpandedHandler(),
+                  style: {cursor: "pointer"},
+                }}
+                className="w-4 h-4 flex items-center justify-center"
+              >
+                {row.getIsExpanded() ? "▼" : "▶"}
+              </button>
+            ) : (
+              <div className="w-4 h-4 flex items-center justify-center">
+                <Icon name={"topo-line"} className={""}/>
+              </div>
+            )}
+            <span className="truncate">{row.getValue("device_name")}</span>
           </div>
         )
       },
@@ -167,45 +181,23 @@ const DockDataTable = () => {
     ];
   }, []);
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
-
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-
-  const {data, mutate} = useBindingDevice(workspaceId, {
-    page: pagination.pageIndex + 1,
-    page_size: pagination.pageSize,
+  const initialQueryParams = {
     domain: EDeviceTypeName.Dock,
-    organ: departId ? +departId : undefined
-  });
+    organ: departId ? +departId : undefined,
+    page: 1,
+    page_size: 10,
+  };
+
+  const [queryParams, setQueryParams] = useState(initialQueryParams);
+
+  const {data, mutate} = useBindingDevice(workspaceId, queryParams);
 
   const currentDevice = data?.list.find(item => item.id === currentDockId);
 
-  const table = useReactTable({
-    data: data?.list || [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPagination,
-    manualPagination: true,
-    rowCount: data?.pagination.total,
-    state: {
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination: pagination,
-    },
-  });
+  const renderData = data?.list.map((item) => ({
+    ...item,
+    children: [item.children],
+  })) as TableDevice[];
 
   return (
     <Uploady
@@ -235,123 +227,18 @@ const DockDataTable = () => {
         />
         <MaintainanceSheet device={currentDock} open={maintainanceSheetVisible}
                            onOpenChange={setMaintainanceSheetVisible}/>
-        <div className="flex-1 overflow-hidden border border-[#43ABFF] rounded">
+        <div className="overflow-hidden">
           <CommonTable
-            data={data?.list || []}
+            data={renderData || []}
             columns={columns}
-            allCounts={data?.list?.length || 0}
+            allCounts={data?.pagination.total || 0}
             getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+            expandedAll
+            onPaginationChange={({pageIndex}) => setQueryParams({
+              ...queryParams,
+              page: pageIndex + 1
+            })}
           />
-          <Table> <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-b border-[#43ABFF]">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="bg-[#0A81E1]/70 text-white font-medium h-12"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-            <TableBody className="bg-[#0A4088]/70">
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <>
-                    <TableRow
-                      key={row.id}
-                      className="border-b border-[#43ABFF]/30 hover:bg-[#0A81E1]/10 transition-colors h-14"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          key={cell.id}
-                          className="text-white px-4 text-base"
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                    {row.original.children && (
-                      <TableRow
-                        key={`${row.id}-child`}
-                        className="border-b border-[#43ABFF]/30 hover:bg-[#0A81E1]/10 transition-colors h-14"
-                      >
-                        {row.getVisibleCells().map((cell, index) => (
-                          <TableCell
-                            key={`${cell.id}-child`}
-                            className="text-white px-4"
-                          >
-                            {index === 0 ? (
-                              <div className="flex items-center border-2">
-                                <div className="mr-2 h-4 flex w-4 pb-4 items-center">
-                                  <Icon name={"topo-line"} className={"h-2"}/>
-                                </div>
-                                <div className="truncate">
-                                  {row.original.children.device_name}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="truncate">
-                                {cell.column.id === "device_sn" && row.original.children.device_sn}
-                                {cell.column.id === "nickname" && row.original.children.nickname}
-                                {cell.column.id === "firmware_version" && row.original.children.firmware_version}
-                                {cell.column.id === "status" && (
-                                  <span className={row.original.children.status ? "text-green-500" : "text-red-500"}>
-                                  {row.original.children.status ? "在线" : "离线"}
-                                </span>
-                                )}
-                                {cell.column.id === "workspace_name" && row.original.children.workspace_name}
-                                {cell.column.id === "bound_time" && row.original.children.bound_time}
-                                {cell.column.id === "login_time" && row.original.children.login_time}
-                              </div>
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    )}
-                  </>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center text-[#43ABFF]"
-                  >
-                    暂无数据
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        <div className="flex items-center justify-between py-4 text-[#D0D0D0]">
-          <Label className="text-left">
-            共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
-          </Label>
-          <div className="space-x-2">
-            <Button
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-            >
-              上一页
-            </Button>
-            <Button
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-            >
-              下一页
-            </Button>
-          </div>
         </div>
       </div>
     </Uploady>

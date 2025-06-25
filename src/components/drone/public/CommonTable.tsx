@@ -8,9 +8,9 @@ import {
   useReactTable,
   VisibilityState,
   RowSelectionState,
-  OnChangeFn,
+  OnChangeFn, getExpandedRowModel, ExpandedState,
 } from "@tanstack/react-table";
-import {forwardRef, useImperativeHandle, useMemo, useState} from "react";
+import {forwardRef, useEffect, useImperativeHandle, useMemo, useState} from "react";
 import {
   Table,
   TableBody,
@@ -54,6 +54,8 @@ interface CommonTableProps<TData> {
   enableRowSelection?: boolean; // 新增：是否启用行选择
   enableMultiRowSelection?: boolean; // 新增：是否允许多选
   allCounts?: number;
+  getSubRows?: (row: TData) => TData[] | undefined;
+  expandedAll?: boolean;
 }
 
 const EmptyState = (
@@ -81,7 +83,9 @@ export const CommonTable = forwardRef(<TData, >({
                                                   manualPagination = true,
                                                   enableRowSelection = false, // 默认不启用
                                                   enableMultiRowSelection = true, // 默认允许多选,
-                                                  allCounts
+                                                  allCounts,
+                                                  getSubRows,
+                                                  expandedAll = false
                                                 }: CommonTableProps<TData>,
                                                 ref: React.Ref<ReactTableInstance<TData>>) => {
   const [uncontrolledPagination, setUncontrolledPagination] =
@@ -95,6 +99,8 @@ export const CommonTable = forwardRef(<TData, >({
 
   const [uncontrolledRowSelection, setUncontrolledRowSelection] =
     useState<RowSelectionState>({});
+
+  const [expanded, setExpanded] = useState<ExpandedState>({});
 
   const pagination = controlledPagination ?? uncontrolledPagination;
   const setPagination: OnChangeFn<PaginationState> = (updaterOrValue) => {
@@ -193,6 +199,7 @@ export const CommonTable = forwardRef(<TData, >({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    enableMultiRowSelection,
     onPaginationChange: setPagination,
     manualPagination,
     rowCount: allCounts,
@@ -200,12 +207,19 @@ export const CommonTable = forwardRef(<TData, >({
       pagination,
       columnVisibility,
       rowSelection: uncontrolledRowSelection,
+      expanded
     },
-    enableMultiRowSelection,
+    onExpandedChange: setExpanded,
+    getSubRows: getSubRows || ((row: any) => row.children),
+    getExpandedRowModel: getExpandedRowModel(),
   });
 
   // 暴露方法给父组件
   useImperativeHandle(ref, () => table, [table]);
+
+  useEffect(() => {
+    table.toggleAllRowsExpanded(expandedAll);
+  }, [expandedAll, table]);
 
   return (
     <div>

@@ -1,16 +1,10 @@
 import {
   ColumnDef,
-  ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel,
-  PaginationState,
-  useReactTable,
-  VisibilityState
 } from "@tanstack/react-table";
 import {useState} from "react";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {buildTree, Role, useResourceList, useRoleList} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
-import {Label} from "@/components/ui/label.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
@@ -101,16 +95,6 @@ const RoleDataTable = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const {post, delete: deleteClient} = useAjax();
   const [open, setOpen] = useState(false);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
-
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
 
   const {data: roleList, mutate: mutateRoleList} = useRoleList();
   const {data: _resourceList} = useResourceList();
@@ -175,26 +159,6 @@ const RoleDataTable = () => {
       setOpen(false);
     }
   };
-
-  const table = useReactTable({
-    data: roleList || [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPagination,
-    manualPagination: true,
-    rowCount: roleList?.length,
-    state: {
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination: pagination,
-    },
-  });
 
   return (
     <div>
