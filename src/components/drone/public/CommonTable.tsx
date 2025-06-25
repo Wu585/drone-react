@@ -22,13 +22,15 @@ import {
 import {cn} from "@/lib/utils";
 import {Checkbox} from "@/components/ui/checkbox";
 import noDataPng from "@/assets/images/drone/no-data.png";
+import {Label} from "@/components/ui/label.tsx";
+import {CommonPagination} from "@/components/drone/public/CommonPagination.tsx";
 
 export type ReactTableInstance<TData> = ReturnType<typeof useReactTable<TData>>;
 
 // 类型定义
 export type CommonTableHandle<TData> = {
-  getSelectedData: () => TData[];
   // 可以暴露其他你需要的方法
+  getSelectedData: () => TData[];
   tableInstance: ReturnType<typeof useReactTable<TData>>;
 };
 
@@ -40,8 +42,7 @@ interface CommonTableProps<TData> {
   onPaginationChange?: (pagination: PaginationState) => void;
   columnVisibility?: VisibilityState;
   onColumnVisibilityChange?: (visibility: VisibilityState) => void;
-  rowSelection?: RowSelectionState;
-  onRowSelectionChange?: OnChangeFn<RowSelectionState>;
+  onRowSelectionChange?: (selectedRows: TData[]) => void;
   className?: string;
   headerClassName?: string;
   bodyClassName?: string;
@@ -52,10 +53,11 @@ interface CommonTableProps<TData> {
   manualPagination?: boolean;
   enableRowSelection?: boolean; // 新增：是否启用行选择
   enableMultiRowSelection?: boolean; // 新增：是否允许多选
+  allCounts?: number;
 }
 
 const EmptyState = (
-  <div className={"content-center flex-col space-y-4 py-4"}>
+  <div className={"content-center flex-col space-y-4 py-4 w-full"}>
     <img src={noDataPng} alt=""/>
     <span className={"text-[#bababa] pr-1.5 text-xs"}>暂无数据</span>
   </div>
@@ -64,25 +66,24 @@ const EmptyState = (
 export const CommonTable = forwardRef(<TData, >({
                                                   data,
                                                   columns,
-                                                  totalCount = 0,
                                                   pagination: controlledPagination,
                                                   onPaginationChange,
                                                   columnVisibility: controlledColumnVisibility,
                                                   onColumnVisibilityChange,
-                                                  rowSelection: controlledRowSelection,
                                                   onRowSelectionChange,
                                                   className,
-                                                  headerClassName = "bg-[#4284D7]/70 text-white h-10 font-medium",
+                                                  headerClassName = "bg-[#4284D7]/70 text-white h-10 font-medium text-base",
                                                   bodyClassName = "bg-[#1E3762]/70",
                                                   rowClassName = "h-[50px] border-none",
-                                                  cellClassName = "text-base py-3 align-middle px-4 leading-none",
+                                                  cellClassName = "text-base py-3 align-middle px-4 leading-none text-sm",
                                                   getRowClassName,
                                                   emptyState = EmptyState,
-                                                  manualPagination = false,
+                                                  manualPagination = true,
                                                   enableRowSelection = false, // 默认不启用
-                                                  enableMultiRowSelection = true, // 默认允许多选
+                                                  enableMultiRowSelection = true, // 默认允许多选,
+                                                  allCounts
                                                 }: CommonTableProps<TData>,
-                                                ref: React.Ref<CommonTableHandle<TData>>) => {
+                                                ref: React.Ref<ReactTableInstance<TData>>) => {
   const [uncontrolledPagination, setUncontrolledPagination] =
     useState<PaginationState>({
       pageIndex: 0,
@@ -96,13 +97,46 @@ export const CommonTable = forwardRef(<TData, >({
     useState<RowSelectionState>({});
 
   const pagination = controlledPagination ?? uncontrolledPagination;
-  const setPagination = onPaginationChange ?? setUncontrolledPagination;
+  const setPagination: OnChangeFn<PaginationState> = (updaterOrValue) => {
+    const newPagination = typeof updaterOrValue === "function"
+      ? updaterOrValue(pagination)
+      : updaterOrValue;
+
+    setUncontrolledPagination(newPagination);
+    table.resetRowSelection();
+    if (onPaginationChange) {
+      onPaginationChange(newPagination);
+    }
+  };
 
   const columnVisibility = controlledColumnVisibility ?? uncontrolledColumnVisibility;
-  const setColumnVisibility = onColumnVisibilityChange ?? setUncontrolledColumnVisibility;
+  const setColumnVisibility: OnChangeFn<VisibilityState> = (updaterOrValue) => {
+    const newVisibility = typeof updaterOrValue === "function"
+      ? updaterOrValue(columnVisibility)
+      : updaterOrValue;
 
-  const rowSelection = controlledRowSelection ?? uncontrolledRowSelection;
-  const setRowSelection = onRowSelectionChange ?? setUncontrolledRowSelection;
+    setUncontrolledColumnVisibility(newVisibility);
+
+    if (onColumnVisibilityChange) {
+      onColumnVisibilityChange(newVisibility);
+    }
+  };
+
+  const setRowSelection: OnChangeFn<RowSelectionState> = (updaterOrValue) => {
+    const newRowSelection = typeof updaterOrValue === "function"
+      ? updaterOrValue(uncontrolledRowSelection)
+      : updaterOrValue;
+
+    // 更新内部状态
+    setUncontrolledRowSelection(newRowSelection);
+
+    // 如果有回调函数，传递选中的数据
+    if (onRowSelectionChange) {
+      // 使用新的选择状态直接从 data 中过滤选中的行
+      const selectedRows = data.filter((_, index) => newRowSelection[index]);
+      onRowSelectionChange(selectedRows);
+    }
+  };
 
   // 添加选择列到columns
   const tableColumns = useMemo(() => {
@@ -122,13 +156,21 @@ export const CommonTable = forwardRef(<TData, >({
             className={cn(
               "border-[#43ABFF] data-[state=checked]:bg-[#43ABFF]",
               "h-4 w-4",
-              "transition-colors duration-200"
+              "transition-colors duration-200",
+              "relative data-[state=indeterminate]:before:content-['-']", // 添加伪元素
+              "data-[state=indeterminate]:before:absolute", // 绝对定位
+              "data-[state=indeterminate]:before:left-1/2", // 水平居中
+              "data-[state=indeterminate]:before:top-1/2", // 垂直居中
+              "data-[state=indeterminate]:before:-translate-x-1/2", // 调整居中位置
+              "data-[state=indeterminate]:before:-translate-y-1/2", // 调整居中位置
+              "data-[state=indeterminate]:before:text-black" // 文字颜色
             )}
           />
         ) : null,
       cell: ({row}) => (
         <Checkbox
           checked={row.getIsSelected()}
+          disabled={!row.getCanSelect()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
           className={cn(
@@ -138,8 +180,6 @@ export const CommonTable = forwardRef(<TData, >({
           )}
         />
       ),
-      enableSorting: false,
-      enableHiding: false,
     };
 
     return [selectionColumn, ...columns];
@@ -155,66 +195,76 @@ export const CommonTable = forwardRef(<TData, >({
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
     manualPagination,
-    rowCount: totalCount,
+    rowCount: allCounts,
     state: {
       pagination,
       columnVisibility,
-      rowSelection,
+      rowSelection: uncontrolledRowSelection,
     },
     enableMultiRowSelection,
   });
 
   // 暴露方法给父组件
-  useImperativeHandle(ref, () => ({
-    getSelectedData: () => {
-      return table.getSelectedRowModel().rows.map(row => row.original);
-    },
-    tableInstance: table, // 如果需要完整实例
-  }), [table]);
+  useImperativeHandle(ref, () => table, [table]);
 
   return (
-    <Table className={className}>
-      <TableHeader className={headerClassName}>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id} className="border-none">
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody className={bodyClassName}>
-        {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map((row, index) => (
-            <TableRow
-              key={row.id}
-              className={cn(rowClassName, getRowClassName?.(row.original, index))}
-              data-state={row.getIsSelected() && "selected"}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className={cellClassName}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
+    <div>
+      <Table className={className}>
+        <TableHeader className={headerClassName}>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id} className="border-none">
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                </TableHead>
               ))}
             </TableRow>
-          ))
-        ) : (
-          <TableRow>
-            <TableCell colSpan={columns.length} className="h-24 text-center">
-              {emptyState}
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
-  );
+          ))}
+        </TableHeader>
+        <TableBody className={bodyClassName}>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row, index) => (
+              <TableRow
+                key={row.id}
+                className={cn(rowClassName, getRowClassName?.(row.original, index))}
+                data-state={row.getIsSelected() && "selected"}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id} className={cellClassName}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={tableColumns.length} className="h-24 text-center">
+                {emptyState}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      <div className="flex items-center py-6 relative">
+        <CommonPagination
+          currentPage={table.getState().pagination.pageIndex + 1}
+          totalPages={table.getPageCount()}
+          onPageChange={(page) => table.setPageIndex(page - 1)}
+        />
+        <div className={"absolute right-0"}>
+          <Label className="text-[#c0c0c0] whitespace-nowrap">
+            共 {allCounts || 0} 条记录，共 {table.getPageCount()} 页
+          </Label>
+        </div>
+      </div>
+    </div>
+  )
+    ;
 }) as <TData>(
-  props: CommonTableProps<TData> & { ref?: React.Ref<CommonTableHandle<TData>> }
+  props: CommonTableProps<TData> & { ref?: React.Ref<ReactTableInstance<TData>> }
 ) => React.ReactElement;

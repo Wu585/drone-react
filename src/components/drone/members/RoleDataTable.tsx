@@ -36,6 +36,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog.tsx";
+import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 
 const formSchema = z.object({
   name: z.string().min(3, {
@@ -205,7 +207,7 @@ const RoleDataTable = () => {
         <div>
           <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-              <Button className={"bg-[#43ABFF] w-24"}>添加</Button>
+              <CommonButton>添加</CommonButton>
               {/*<Button className={"bg-[#43ABFF] w-24"} onClick={createRole}>创建</Button>*/}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[625px]">
@@ -258,78 +260,13 @@ const RoleDataTable = () => {
         </div>
       </div>
       <div className="relative">
-        <Table className={"border-[1px] border-[#0A81E1] w-full table-fixed"}>
-          <TableHeader className={"bg-[#0A81E1]/[.7]"}>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className={"border-none"}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    style={{width: header.getSize()}}
-                    className="p-0 h-10"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-        </Table>
-        <div className="h-[calc(100vh-460px)] overflow-auto">
-          <Table className={"border-[1px] border-[#0A81E1] border-t-0 w-full table-fixed"}>
-            <TableBody className={"bg-[#0A4088]/[.7]"}>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    className={"border-b-[#0A81E1]"}
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        style={{width: cell.column.getSize()}}
-                        className="p-0 h-10"
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center text-[#43ABFF]">
-                    暂无数据
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <Label className={"text-left"}>
-          共 {roleList?.length || 0} 条记录，共 {table.getPageCount()} 页
-        </Label>
-        <div className={"space-x-2"}>
-          <Button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            上一页
-          </Button>
-          <Button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            下一页
-          </Button>
-        </div>
+        <CommonTable
+          manualPagination={false}
+          data={roleList || []}
+          columns={columns}
+          allCounts={roleList?.length || 0}
+          getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+        />
       </div>
     </div>
   );

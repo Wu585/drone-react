@@ -83,8 +83,7 @@ export const CommonDateRangePicker = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        // bg-[#182640]
-        className="w-auto p-0 border-[#2D5FAC]"
+        className="w-auto p-0"
         align="start"
       >
         <Calendar
@@ -95,17 +94,6 @@ export const CommonDateRangePicker = ({
           onSelect={handleSelect}
           numberOfMonths={2}
           locale={zhCN}
-          // classNames={{
-          //   day: "hover:bg-[#2D5FAC] hover:text-white",
-          //   day_selected: "bg-[#2D5FAC] text-white",
-          //   day_range_start: "bg-[#2D5FAC] text-white",
-          //   day_range_end: "bg-[#2D5FAC] text-white",
-          //   day_range_middle: "bg-[#2D5FAC]/[.3] text-white",
-          //   day_today: "text-[#2D5FAC] font-bold",
-          //   head_cell: "text-white",
-          //   nav_button: "text-white hover:bg-[#2D5FAC]",
-          //   caption_label: "text-white",
-          // }}
         />
       </PopoverContent>
     </Popover>

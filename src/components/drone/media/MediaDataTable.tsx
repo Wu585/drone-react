@@ -50,6 +50,11 @@ import {useNavigate, useSearchParams} from "react-router-dom";
 import {useMapLoadMedia} from "@/hooks/drone/map-photo";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {MediaPreview} from "@/components/drone/MediaPreview.tsx";
+import {CommonDateRange} from "@/components/drone/public/CommonDateRange.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import {CommonTable, ReactTableInstance} from "@/components/drone/public/CommonTable.tsx";
 
 const InfiniteGridView = ({
                             data,
@@ -96,7 +101,7 @@ const InfiniteGridView = ({
   }, [hasMore, onLoadMore]);
 
   return (
-    <div ref={containerRef} className="h-[calc(100vh-300px)] overflow-y-auto">
+    <div ref={containerRef} className="h-[calc(100vh-300px)] overflow-y-auto bg-[#1E3762]/70 rounded">
       <div className="grid grid-cols-8 gap-2 p-4">
         {data?.map((file) => (
           <div
@@ -206,10 +211,9 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   const {post} = useAjax();
   const navigate = useNavigate();
   const [displayType, setDisplayType] = useState<0 | 1>(0);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
-  const [date, setDate] = useState<Date[] | undefined>(undefined);
+  const tableRef = useRef<ReactTableInstance<FileItem>>(null);
+
+  const [selectedRows, setSelectedRows] = useState<FileItem[]>([]);
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -224,20 +228,12 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     search: "",
     wayline_name: "",
     parent: 0,
-    page: pagination.pageIndex + 1,
-    page_size: pagination.pageSize,
+    page: 1,
+    page_size: 10,
     organ: departId ? departId : undefined,
   };
 
   const [queryParams, setQueryParams] = useState(defaultParams);
-
-  useEffect(() => {
-    setQueryParams(prev => ({
-      ...prev,
-      page: pagination.pageIndex + 1,
-      page_size: pagination.pageSize
-    }));
-  }, [pagination]);
 
   const updateQuery = useCallback((updates: Partial<typeof queryParams>) => {
     setQueryParams(prev => ({
@@ -245,11 +241,16 @@ const MediaDataTable = ({onChangeDir}: Props) => {
       ...updates,
       page: 1
     }));
-    setPagination(prev => ({
-      ...prev,
-      pageIndex: 0
-    }));
   }, []);
+
+  // 处理分页变化
+  const handlePaginationChange = (pagination: PaginationState) => {
+    setQueryParams(prev => ({
+      ...prev,
+      page: pagination.pageIndex + 1,
+      page_size: pagination.pageSize
+    }));
+  };
 
   const {data, mutate} = useMediaList(workspaceId, queryParams);
 
@@ -291,7 +292,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   const [createOrderVisible, setCreateOrderVisible] = useState(false);
 
   const onClickCreateOrder = () => {
-    const selections = table.getSelectedRowModel().rows.map(item => item.original.type);
+    const selections = selectedRows.map(item => item.type);
     if (selections.includes(MediaFileType.DIR)) {
       return toast({
         description: "请选择正确的文件类型",
@@ -349,8 +350,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   const onDeleteFile = async (file: FileItem) => {
     try {
       await removeFile({ids: [file.id]});
-      const files = table.getSelectedRowModel().rows.map(row => row.original);
-      const canLoad = !files.find(file => [MediaFileType.DIR, MediaFileType.ZIP, MediaFileType.VIDEO, MediaFileType.MANUAL].includes(file.type));
+      const canLoad = !selectedRows.find(file => [MediaFileType.DIR, MediaFileType.ZIP, MediaFileType.VIDEO, MediaFileType.MANUAL].includes(file.type));
       if (canLoad) {
         await post(`${MEDIA_HTTP_PREFIX}/files/${workspaceId}/cancelMap`, {
           ids: [file.id]
@@ -394,99 +394,16 @@ const MediaDataTable = ({onChangeDir}: Props) => {
 
   const columns: ColumnDef<FileItem>[] = useMemo(() => [
     {
-      id: "id",
-      header: ({table}) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-          className={cn(
-            "border-[#43ABFF] data-[state=checked]:bg-[#43ABFF]",
-            "h-4 w-4",
-            "transition-colors duration-200"
-          )}
-        />
-      ),
-      cell: ({row}) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-          className={cn(
-            "border-[#43ABFF] data-[state=checked]:bg-[#43ABFF]",
-            "h-4 w-4",
-            "transition-colors duration-200"
-          )}
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
       accessorKey: "file_name",
       header: "文件名",
       cell: ({row}) => {
         const current = row.original;
         const fileType = current.type;
         const isDir = fileType === MediaFileType.DIR;
-        /* const isVideo = fileType === MediaFileType.VIDEO ||
-           (fileType === MediaFileType.MANUAL && getMediaType(current.preview_url) === "video");
-         const isPhoto = fileType !== MediaFileType.ZIP && fileType !== MediaFileType.VIDEO
-           && fileType !== MediaFileType.DIR && getMediaType(current.preview_url) === "image";*/
 
         return (
           <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onClickFolder(current)}>
             {isDir && <FolderClosed className={"w-4 h-4"} fill={"orange"}/>}
-
-            {/*{isVideo && current.thumbnail_url && (
-              <HoverCard>
-                <HoverCardTrigger>
-                  <div className="relative w-4 h-4">
-                    <video
-                      src={current.preview_url}
-                      className="w-full h-full object-cover rounded"
-                      muted
-                      loop
-                      autoPlay
-                      playsInline
-                    />
-                  </div>
-                </HoverCardTrigger>
-                <HoverCardContent side={"right"} className="w-80 p-0">
-                  <video
-                    src={current.preview_url}
-                    className="w-full rounded"
-                    controls
-                    autoPlay
-                    loop
-                    muted
-                  />
-                </HoverCardContent>
-              </HoverCard>
-            )}*/}
-
-            {/*{isPhoto && current.preview_url && (
-              <HoverCard>
-                <HoverCardTrigger>
-                  <img
-                    src={current.preview_url}
-                    alt={current.file_name}
-                    className="w-4 h-4 object-cover rounded border-2"
-                  />
-                </HoverCardTrigger>
-                <HoverCardContent side={"right"} className="w-80 p-0">
-                  <img
-                    src={current.preview_url}
-                    alt={current.file_name}
-                    className="w-full rounded"
-                  />
-                </HoverCardContent>
-              </HoverCard>
-            )}*/}
-
             <span>{row.original.file_name}</span>
           </div>
         );
@@ -596,36 +513,12 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     }
   ], []);
 
-  const table = useReactTable({
-    data: data?.list ?? [],
-    columns,
-    state: {
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination,
-    },
-    pageCount: Math.ceil((data?.pagination.total || 0) / pagination.pageSize),
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    manualPagination: true,
-  });
-
-  const getSelectedFileIds = (): number[] => {
-    return table.getSelectedRowModel().rows.map(row => row.original.id);
-  };
+  const getSelectedFileIds = selectedRows.map(row => row.id);
 
   const [selectMoveDirId, setSelectMoveDirId] = useState(0);
 
   const handleBatchDelete = async () => {
-    const selectedIds = getSelectedFileIds();
-    if (selectedIds.length === 0) {
+    if (getSelectedFileIds.length === 0) {
       toast({
         description: "请选择要删除的文件",
         variant: "destructive"
@@ -634,11 +527,11 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     }
 
     try {
-      await removeFile({ids: selectedIds});
+      await removeFile({ids: getSelectedFileIds});
       toast({
         description: "删除文件成功"
       });
-      table.resetRowSelection();
+      tableRef.current?.resetRowSelection();
       await mutate();
     } catch (err) {
       toast({
@@ -653,8 +546,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
       description: "请选择文件夹",
       variant: "destructive"
     });
-    const selectedIds = getSelectedFileIds();
-    if (selectedIds.length === 0) {
+    if (getSelectedFileIds.length === 0) {
       toast({
         description: "请选择要移动的文件",
         variant: "destructive"
@@ -663,13 +555,13 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     }
     try {
       await moveFile({
-        ids: selectedIds,
+        ids: getSelectedFileIds,
         target_dir_id: selectMoveDirId
       });
       toast({
         description: "移动文件成功"
       });
-      table.resetRowSelection();
+      tableRef.current?.resetRowSelection();
       setSelectMoveDirId(0);
       await mutate();
     } catch (err) {
@@ -711,7 +603,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   }, [data, displayType, pagination]);
 
   const loadMore = useCallback(() => {
-    if (displayType === 1 && data?.pagination.total > allItems.length) {
+    if (displayType === 1 && data?.pagination?.total && data.pagination.total > allItems.length) {
       setPagination(prev => ({
         ...prev,
         pageIndex: prev.pageIndex + 1
@@ -721,20 +613,17 @@ const MediaDataTable = ({onChangeDir}: Props) => {
         page: pagination.pageIndex + 2 // 因为 pageIndex 是从 0 开始的
       }));
     }
-  }, [displayType, data?.pagination.total, allItems.length, pagination.pageIndex]);
+  }, [displayType, data?.pagination?.total, allItems.length, pagination.pageIndex]);
 
   useBatchFinishListener(async () => {
     await mutate();
   });
 
-  const pic_list_origin = useMemo(() =>
-    table.getSelectedRowModel().rows.map(row => row.original.object_key), [rowSelection]);
-  const pic_list = useMemo(() =>
-    table.getSelectedRowModel().rows.map(row => row.original.preview_url), [rowSelection]);
-  const longitude = useMemo(() =>
-    table.getSelectedRowModel().rows[0]?.original.longitude || "0.0", [rowSelection]);
-  const latitude = useMemo(() =>
-    table.getSelectedRowModel().rows[0]?.original.latitude || "0.0", [rowSelection]);
+  const pic_list_origin = selectedRows.map(row => row.object_key);
+  const pic_list = selectedRows.map(row => row.preview_url);
+  const longitude = selectedRows[0]?.longitude || "0.0";
+  const latitude = selectedRows[0]?.latitude || "0.0";
+
   const currentOrder: Partial<WorkOrder> = useMemo(() => ({
     name: "",
     found_time: dayjs().valueOf(),
@@ -753,15 +642,13 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   const {loadMedia} = useMapLoadMedia();
 
   const onLoadMap = useCallback(async () => {
-    const files = table.getSelectedRowModel().rows.map(row => row.original);
-    const canLoad = !files.find(file => [MediaFileType.DIR, MediaFileType.ZIP, MediaFileType.VIDEO, MediaFileType.MANUAL].includes(file.type));
+    const canLoad = !selectedRows.find(file => [MediaFileType.DIR, MediaFileType.ZIP, MediaFileType.VIDEO, MediaFileType.MANUAL].includes(file.type));
     if (!canLoad) return toast({
       description: "请选择正确的文件类型",
       variant: "warning"
     });
-    const ids = getSelectedFileIds();
     try {
-      await loadMedia({ids});
+      await loadMedia({ids: getSelectedFileIds});
       toast({
         description: "地图加载图片成功"
       });
@@ -771,20 +658,32 @@ const MediaDataTable = ({onChangeDir}: Props) => {
         variant: "destructive"
       });
     }
-  }, [rowSelection]);
+  }, [selectedRows]);
+
+  const onReset = () => {
+    setQueryParams(defaultParams);
+    // tableRef.current?.resetRowSelection();
+    tableRef.current?.resetPagination();
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Breadcrumb>
-            <BreadcrumbList>
+      <div className="flex items-center space-x-4 justify-between mb-6">
+        <div
+          className="col-span-4 pr-4 max-w-[50%] overflow-hidden"  // 添加 max-w 限制宽度
+          title={breadcrumbList.map(file => file.file_name).join(" / ")}
+        >
+          <Breadcrumb className="overflow-hidden">
+            <BreadcrumbList className="flex flex-nowrap overflow-hidden">
               {breadcrumbList.map((file, index) => (
-                <BreadcrumbItem key={file.id}>
+                <BreadcrumbItem
+                  key={file.id}
+                  className="flex overflow-hidden flex-shrink min-w-0 max-w-full"  // 添加 max-w-full
+                >
                   <BreadcrumbLink
                     onClick={() => onClickFolder(file)}
                     className={cn(
-                      "text-gray-400 hover:text-gray-300",
+                      "text-gray-400 hover:text-gray-300 truncate whitespace-nowrap",  // 添加 truncate 和 whitespace-nowrap
                       index === breadcrumbList.length - 1
                         ? "cursor-default pointer-events-none"
                         : "cursor-pointer"
@@ -798,68 +697,57 @@ const MediaDataTable = ({onChangeDir}: Props) => {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <div className="flex items-center space-x-2">
-          <div className={"flex items-center space-x-2 whitespace-nowrap"}>
-            <span>日期</span>
-            <NewCommonDateRangePicker date={date} setDate={(date) => {
-              setDate(date);
-              updateQuery({
-                begin_time: date ? dayjs(date[0]).format("YYYY-MM-DD HH:mm:ss") : "",
-                end_time: date ? dayjs(date[1]).format("YYYY-MM-DD 23:59:59") : ""
-              });
-            }} className={"bg-[#0A81E1] border-[#0A81E1] hover:bg-[#0A81E1] h-[36px]"}/>
-          </div>
-          <div className={"flex items-center space-x-2 whitespace-nowrap"}>
-            <span>航线名称</span>
-            <Input
-              className={"bg-transparent w-36 border-[#43ABFF] border-[1px]"}
-              value={queryParams.wayline_name}
-              onChange={e => updateQuery({
-                wayline_name: e.target.value
-              })}
-              placeholder={"请输入航线名称"}
-            />
-          </div>
-          <div className={"flex items-center space-x-2"}>
-            <span>文件类型</span>
-            <Select onValueChange={(value) => updateQuery({
-              types: value === "all" ? [] : [+value]
-            })}>
-              <SelectTrigger className="w-[120px] h-[36px] bg-[#0A81E1]/70 border-[#0A81E1]">
-                <SelectValue placeholder="所有类型"/>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={"all"}>所有类型</SelectItem>
-                {Object.keys(MediaFileMap).map(item =>
-                  <SelectItem value={item} key={item}>{MediaFileMap[item]}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className={"flex items-center space-x-2"}>
-            <span>负载类型</span>
-            <Select onValueChange={(value) => updateQuery({
-              payloads: value === "all" ? [] : [value]
-            })}>
-              <SelectTrigger className="w-[120px] h-[36px] bg-[#0A81E1]/70 border-[#0A81E1]">
-                <SelectValue placeholder="所有类型"/>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={"all"}>所有负载</SelectItem>
-                {Object.values(CameraType).map(item =>
-                  <SelectItem value={item} key={item}>{item}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          {getSelectedFileIds().length > 0 && <>
+        <div className="flex items-center space-x-2 col-span-8">
+          <CommonDateRange
+            value={{
+              start: queryParams.begin_time,
+              end: queryParams.end_time
+            }}
+            onChange={({start, end}) => updateQuery({
+              begin_time: start,
+              end_time: end
+            })}
+          />
+          <CommonInput
+            className={"min-w-24"}
+            placeholder={"请输入航线名称"}
+            value={queryParams.wayline_name}
+            onChange={e => updateQuery({
+              wayline_name: e.target.value
+            })}
+          />
+          <CommonSelect
+            value={queryParams.types[0]?.toString() || ""}
+            placeholder={"请选择文件类型"}
+            options={Object.entries(MediaFileMap).map(([key, value]) => ({
+              value: key,
+              label: value
+            }))}
+            onValueChange={(value) => updateQuery({
+              types: [+value]
+            })}
+          />
+          <CommonSelect
+            value={queryParams.payloads[0]?.toString() || ""}
+            placeholder={"请选择负载类型"}
+            options={Object.values(CameraType).map((value) => ({
+              value: value,
+              label: value
+            }))}
+            onValueChange={(value) => updateQuery({
+              payloads: [value]
+            })}
+          />
+          <CommonButton onClick={onReset}>重置</CommonButton>
+          {getSelectedFileIds.length > 0 && <>
             <Dialog>
-              <DialogTrigger disabled={table.getSelectedRowModel().rows.length === 0}>
-                <PermissionButton
+              <DialogTrigger disabled={selectedRows.length === 0}>
+                <CommonButton
                   permissionKey={"Collection_MediaOperation"}
-                  disabled={table.getSelectedRowModel().rows.length === 0}
-                  className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"
+                  disabled={selectedRows.length === 0}
                 >
                   删除
-                </PermissionButton>
+                </CommonButton>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -876,14 +764,13 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               </DialogContent>
             </Dialog>
             <Dialog>
-              <DialogTrigger disabled={table.getSelectedRowModel().rows.length === 0}>
-                <PermissionButton
+              <DialogTrigger disabled={selectedRows.length === 0}>
+                <CommonButton
                   permissionKey={"Collection_MediaOperation"}
-                  disabled={table.getSelectedRowModel().rows.length === 0}
-                  className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"
+                  disabled={selectedRows.length === 0}
                 >
                   移动
-                </PermissionButton>
+                </CommonButton>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -898,13 +785,12 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               </DialogContent>
             </Dialog>
             <Dialog open={createOrderVisible} onOpenChange={setCreateOrderVisible}>
-              <PermissionButton
+              <CommonButton
                 permissionKey={"Button_CreateTicket"}
                 onClick={onClickCreateOrder}
-                className={"bg-[#43ABFF] w-24 h-[36px]"}
               >
                 创建工单
-              </PermissionButton>
+              </CommonButton>
               <DialogContent className="max-w-screen-lg bg-[#0A4088]/[.7] text-white border-none">
                 <DialogHeader className={""}>
                   <DialogTitle>创建工单</DialogTitle>
@@ -923,26 +809,24 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <PermissionButton
+            <CommonButton
               permissionKey={"Collection_MediaVisual"}
-              className={"bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"}
               onClick={onLoadMap}>
               地图加载
-            </PermissionButton>
+            </CommonButton>
           </>}
-          <PermissionButton permissionKey={"Collection_MediaUpload"} className={"bg-[#43ABFF] h-[36px]"}>
+          <CommonButton permissionKey={"Collection_MediaUpload"}>
             <UploadButton>
               上传文件
             </UploadButton>
-          </PermissionButton>
+          </CommonButton>
           <Dialog>
             <DialogTrigger asChild>
-              <PermissionButton
+              <CommonButton
                 permissionKey={"Collection_MediaOperation"}
-                className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]"
               >
                 创建文件夹
-              </PermissionButton>
+              </CommonButton>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -965,80 +849,31 @@ const MediaDataTable = ({onChangeDir}: Props) => {
             </DialogContent>
           </Dialog>
           {/*<Button className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]">重置</Button>*/}
-          <SquareMenu onClick={() => setDisplayType(0)} size={18} color={displayType === 0 && "#1997e6" || "white"}
-                      className={cn("cursor-pointer")}/>
-          <Grid3X3 onClick={() => setDisplayType(1)} size={18} color={displayType === 1 && "#1997e6" || "white"}
-                   className={"cursor-pointer"}/>
+          <CommonButton className={"bg-transparent px-0"} onClick={() => setDisplayType(0)}>
+            <SquareMenu size={18} color={displayType === 0 && "#1997e6" || "white"}/>
+          </CommonButton>
+          <CommonButton className={"bg-transparent px-0"} onClick={() => setDisplayType(1)}>
+            <Grid3X3 color={displayType === 1 && "#1997e6" || "white"} size={18}/>
+          </CommonButton>
         </div>
       </div>
 
-      <div className="rounded-md border border-[#0A81E1] overflow-hidden bg-[#0A4088]/70">
+      <div className="overflow-hidden">
         {displayType === 0 ? (
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      className="bg-[#0A81E1]/70 text-white h-10 font-medium"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody className="bg-[#0A4088]/70">
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className={cn(
-                      "h-[50px]",
-                      "border-b border-[#0A81E1]/30",
-                      "hover:bg-[#0A4088]/90 transition-colors duration-200",
-                      "data-[state=selected]:bg-transparent"
-                    )}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className={cn(
-                          "py-3",
-                          "text-base",
-                          "align-middle",
-                          "px-4",
-                          "leading-none"
-                        )}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center text-[#43ABFF]"
-                  >
-                    暂无数据
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <CommonTable
+            ref={tableRef}
+            data={data?.list || []}
+            columns={columns}
+            allCounts={data?.pagination.total || 0}
+            onPaginationChange={handlePaginationChange}
+            enableRowSelection={true}
+            onRowSelectionChange={setSelectedRows}
+            getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+          />
         ) : (
           <InfiniteGridView
             data={allItems}
-            hasMore={(data?.pagination.total || 0) > allItems.length}
+            hasMore={(data?.pagination?.total || 0) > allItems.length}
             onLoadMore={loadMore}
             onClickFolder={onClickFolder}
             onUpdateFileName={(file) => {
@@ -1050,30 +885,6 @@ const MediaDataTable = ({onChangeDir}: Props) => {
           />
         )}
       </div>
-
-      {displayType === 0 && (
-        <div className="flex items-center justify-between py-2">
-          <Label className="text-gray-400">
-            共 {data?.pagination.total || 0} 条记录，共 {Math.ceil((data?.pagination.total || 0) / pagination.pageSize)} 页
-          </Label>
-          <div className="space-x-2">
-            <Button
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-            >
-              上一页
-            </Button>
-            <Button
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-            >
-              下一页
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* 重命名对话框 */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

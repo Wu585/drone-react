@@ -16,6 +16,7 @@ import {Edit} from "lucide-react";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {EditDeviceDialog, EditDeviceFormValues} from "./EditDeviceDialog";
+import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
 
 const HTTP_PREFIX = "/manage/api/v1";
 
@@ -191,79 +192,17 @@ const DroneDataTable = () => {
         onSubmit={handleSubmit}
       />
 
-      <div className="flex-1 overflow-hidden border border-[#43ABFF] rounded">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-b border-[#43ABFF]">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="bg-[#0A81E1]/70 text-white font-medium h-12"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody className="bg-[#0A4088]/70">
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className="border-b border-[#43ABFF]/30 hover:bg-[#0A81E1]/10 transition-colors h-14"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="text-white px-4 text-base"
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center text-[#43ABFF]"
-                >
-                  暂无数据
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <div className="flex-1 overflow-hidden">
+        <CommonTable
+          data={data?.list || []}
+          columns={columns}
+          allCounts={data?.list?.length || 0}
+          // onPaginationChange={handlePaginationChange}
+          getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+        />
       </div>
 
-      <div className="flex items-center justify-between py-4 text-white">
-        <Label className="text-left">
-          共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
-        </Label>
-        <div className="space-x-2">
-          <Button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-          >
-            上一页
-          </Button>
-          <Button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-          >
-            下一页
-          </Button>
-        </div>
-      </div>
+
     </div>
   );
 };

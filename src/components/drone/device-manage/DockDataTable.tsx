@@ -21,6 +21,7 @@ import InsuranceSheet from "@/components/drone/device-manage/InsuranceSheet.tsx"
 import MaintainanceSheet from "@/components/drone/device-manage/Maintainance.tsx";
 import {CURRENT_CONFIG} from "@/lib/config.ts";
 import Uploady from "@rpldy/uploady";
+import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
 
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
@@ -235,6 +236,12 @@ const DockDataTable = () => {
         <MaintainanceSheet device={currentDock} open={maintainanceSheetVisible}
                            onOpenChange={setMaintainanceSheetVisible}/>
         <div className="flex-1 overflow-hidden border border-[#43ABFF] rounded">
+          <CommonTable
+            data={data?.list || []}
+            columns={columns}
+            allCounts={data?.list?.length || 0}
+            getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+          />
           <Table> <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="border-b border-[#43ABFF]">
@@ -282,7 +289,7 @@ const DockDataTable = () => {
                             className="text-white px-4"
                           >
                             {index === 0 ? (
-                              <div className="flex items-center">
+                              <div className="flex items-center border-2">
                                 <div className="mr-2 h-4 flex w-4 pb-4 items-center">
                                   <Icon name={"topo-line"} className={"h-2"}/>
                                 </div>

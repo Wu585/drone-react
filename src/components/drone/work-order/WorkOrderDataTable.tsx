@@ -1,12 +1,8 @@
 import {
   ColumnDef,
-  ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel,
   PaginationState,
-  useReactTable,
-  VisibilityState
 } from "@tanstack/react-table";
-import {useEffect, useMemo, useRef, useState} from "react";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
+import {useMemo, useRef, useState} from "react";
 import {
   useCurrentUser, usePermission,
   useWorkOrderById,
@@ -14,8 +10,6 @@ import {
   WorkOrder
 } from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {Button} from "@/components/ui/button.tsx";
-import {Label} from "@/components/ui/label.tsx";
 import {Edit, Eye, Loader2} from "lucide-react";
 import {getAuthToken, useAjax} from "@/lib/http.ts";
 import {
@@ -38,12 +32,14 @@ import Feedback from "@/components/drone/work-order/Feedback.tsx";
 import Audit from "@/components/drone/work-order/Audit.tsx";
 import Complete from "@/components/drone/work-order/Complete.tsx";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
-import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePicker.tsx";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
-import {Input} from "@/components/ui/input.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
-import {Checkbox} from "@/components/ui/checkbox.tsx";
-import {CommonTable, CommonTableHandle, ReactTableInstance} from "@/components/drone/public/CommonTable.tsx";
+import {CommonTable, ReactTableInstance} from "@/components/drone/public/CommonTable.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
+import {Button} from "@/components/drone/public/Button.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import {CommonDateRangePicker} from "@/components/drone/public/CommDateRangePicker.tsx";
+import {CommonDateRange} from "@/components/drone/public/CommonDateRange.tsx";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -117,45 +113,14 @@ const WorkOrderDataTable = () => {
   const {hasPermission} = usePermission();
   const isGly = hasPermission("Collection_TicketAssign");
 
-  console.log("isGly");
-  console.log(isGly);
   const urlFix = isGly ? "page" : "pageByOperator";
   const [currentOrder, setCurrentOrder] = useState<WorkOrder | null>(null);
+  const [selectedRows, setSelectedRows] = useState<WorkOrder[]>([]);
+
+  const tableRef = useRef<ReactTableInstance<WorkOrder>>(null);
 
   const columns: ColumnDef<WorkOrder>[] = useMemo(() => {
     return [
-      /*{
-        id: "id",
-        header: ({table}) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && "indeterminate")
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
-            className={cn(
-              "border-[#43ABFF] data-[state=checked]:bg-[#43ABFF]",
-              "h-4 w-4",
-              "transition-colors duration-200"
-            )}
-          />
-        ),
-        cell: ({row}) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-            className={cn(
-              "border-[#43ABFF] data-[state=checked]:bg-[#43ABFF]",
-              "h-4 w-4",
-              "transition-colors duration-200"
-            )}
-          />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-      },*/
       {
         accessorKey: "name",
         header: "事件名称",
@@ -252,57 +217,35 @@ const WorkOrderDataTable = () => {
       }
     ];
   }, [isGly]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
 
-  const [queryParams, setQueryParams] = useState({
+  const initialQueryParams = {
     page: 1,
     page_size: 10,
     tab: 0,
-    warning_level: undefined as WarnLevel | undefined,
+    warning_level: "",
     name: "",
-    status: undefined as OrderStatus | undefined,
-    order_type: undefined as EventMap | undefined,
+    status: "",
+    order_type: "",
     found_time_begin: "",
     found_time_end: "",
     organs: [departId]
-  });
-
-  // 处理分页变化
-  const handlePaginationChange = (updaterOrValue: PaginationState | ((old: PaginationState) => PaginationState)) => {
-    const newPagination = typeof updaterOrValue === "function"
-      ? updaterOrValue(pagination)
-      : updaterOrValue;
-
-    setPagination(newPagination);
-    setQueryParams(prev => ({
-      ...prev,
-      page: newPagination.pageIndex + 1,
-      page_size: newPagination.pageSize
-    }));
   };
 
-  const onChangeDateRange = (dateRange?: Date[]) => {
-    if (dateRange?.length !== 2) {
-      return handleQueryParamsChange({
-        found_time_begin: "",
-        found_time_end: "",
-      });
-    }
-    const newParams = {
-      found_time_begin: dayjs(dateRange[0]).format("YYYY-MM-DD HH:mm:ss"),
-      found_time_end: dayjs(dateRange[1]).format("YYYY-MM-DD 23:59:59"),
-    };
+  const [queryParams, setQueryParams] = useState(initialQueryParams);
 
-    handleQueryParamsChange(newParams);
+  const handleReset = () => {
+    setQueryParams(initialQueryParams);
+    tableRef.current?.resetPagination();
+  };
+
+  // 处理分页变化
+  const handlePaginationChange = (pagination: PaginationState) => {
+    setQueryParams(prev => ({
+      ...prev,
+      page: pagination.pageIndex + 1,
+      page_size: pagination.pageSize
+    }));
   };
 
   // 处理查询参数变化
@@ -310,35 +253,11 @@ const WorkOrderDataTable = () => {
     setQueryParams(prev => ({
       ...prev,
       ...newParams,
-      page: 1 // 当筛选条件改变时，重置到第一页
-    }));
-    setPagination(prev => ({
-      ...prev,
-      pageIndex: 0 // 重置到第一页
+      page: 1, // 当筛选条件改变时，重置到第一页
     }));
   };
 
   const {data, mutate} = useWorkOrderList(queryParams, urlFix);
-
-  const table = useReactTable({
-    data: data?.list || [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: handlePaginationChange,
-    manualPagination: true,
-    rowCount: data?.pagination.total,
-    state: {
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination: pagination,
-    },
-  });
 
   const stepper = useStepper();
 
@@ -392,12 +311,9 @@ const WorkOrderDataTable = () => {
     }
   };
 
-  const getSelectedFileIds = (): number[] => {
-    return table.getSelectedRowModel().rows.map(row => row.original.id);
-  };
 
   const onLoadOrderToMap = async () => {
-    const ids = getSelectedFileIds();
+    const ids = selectedRows.map(row => row.id);
     try {
       await post(`${OPERATION_HTTP_PREFIX}/order/setVisual`, {
         ids,
@@ -414,22 +330,6 @@ const WorkOrderDataTable = () => {
     }
   };
 
-  useEffect(() => {
-    console.log("rowSelection");
-    console.log(rowSelection);
-  }, [rowSelection]);
-
-  const tableRef = useRef<CommonTableHandle<WorkOrder>>(null);
-
-  const getSelectedFileIds1 = (): number[] => {
-    if (!tableRef.current) return [];
-    const selectedData = tableRef.current.getSelectedData();
-    return selectedData.map(item => item.id);
-  };
-
-  console.log("getSelectedFileIds1");
-  console.log(getSelectedFileIds1());
-
   return (
     <Uploady
       destination={{
@@ -441,94 +341,72 @@ const WorkOrderDataTable = () => {
       accept="image/*,video/*"
       multiple
       autoUpload>
-      <div className="space-y-4">
-        <div className="mb-4 text-right space-x-2 flex justify-end items-center">
-          <div className={"flex items-center whitespace-nowrap w-80"}>
-            <Label>日期范围：</Label>
-            <NewCommonDateRangePicker setDate={onChangeDateRange} className={""}/>
-          </div>
-          <div className={"flex items-center"}>
-            <Label>事件名称：</Label>
-            <Input
-              className={"bg-transparent w-36 border-[#43ABFF] border-[1px]"}
-              onChange={(e) => handleQueryParamsChange({name: e.target.value})}
-              placeholder={"请输入事件名称"}
-              value={queryParams.name}
-            />
-          </div>
-          <div className={"flex items-center whitespace-nowrap"}>
-            <Label>事件状态：</Label>
-            <Select
-              onValueChange={(value) => handleQueryParamsChange({
-                status: value === "all" ? undefined : Number(value) as OrderStatus
-              })}
-              value={queryParams.status?.toString() || "all"}
-            >
-              <SelectTrigger className="w-[120px] bg-transparent border-[#43ABFF] border-[1px]">
-                <SelectValue placeholder="事件状态"/>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部</SelectItem>
-                {Object.entries(OrderStatusMap).map(([key, value]) => (
-                  <SelectItem key={key} value={key}>{value}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className={"flex items-center whitespace-nowrap"}>
-            <Label>事件类型：</Label>
-            <Select
-              onValueChange={(value) => handleQueryParamsChange({
-                order_type: value === "all" ? undefined : Number(value) as EventMap
-              })}
-              value={queryParams.order_type?.toString() || "all"}
-            >
-              <SelectTrigger className="w-[120px] bg-transparent border-[#43ABFF] border-[1px]">
-                <SelectValue placeholder="事件类型"/>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部</SelectItem>
-                {Object.entries(eventMap).map(([key, value]) => (
-                  <SelectItem key={key} value={key}>{value}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className={"flex items-center whitespace-nowrap"}>
-            <Label>告警等级：</Label>
-            <Select
-              onValueChange={(value) => handleQueryParamsChange({
-                warning_level: value === "all" ? undefined : Number(value) as WarnLevel
-              })}
-              value={queryParams.warning_level?.toString() || "all"}
-            >
-              <SelectTrigger className="w-[120px] bg-transparent border-[#43ABFF] border-[1px]">
-                <SelectValue placeholder="告警等级"/>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部</SelectItem>
-                {Object.entries(warnLevelMap).map(([key, value]) => (
-                  <SelectItem key={key} value={key}>{value}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <div className={"grid grid-cols-8 gap-x-6 items-center mt-4 mb-6"}>
+        <div className="col-span-6 text-right space-x-4 flex justify-end items-center">
+          <CommonDateRange
+            placeholder={"请选择日期范围"}
+            value={{
+              start: queryParams.found_time_begin,
+              end: queryParams.found_time_end,
+            }}
+            onChange={({start, end}) => handleQueryParamsChange({
+              found_time_begin: start,
+              found_time_end: end
+            })}
+          />
+          <CommonInput
+            placeholder={"请输入事件名称"}
+            value={queryParams.name}
+            onChange={(e) => handleQueryParamsChange({name: e.target.value})}
+          />
+          <CommonSelect
+            placeholder={"请选择工单状态"}
+            options={Object.entries(OrderStatusMap).map(([key, value]) => ({
+              value: key,
+              label: value
+            }))}
+            value={queryParams.status?.toString()}
+            onValueChange={(value) => handleQueryParamsChange({
+              status: Number(value) as OrderStatus
+            })}
+          />
+          <CommonSelect
+            placeholder={"请选择事件类型"}
+            options={Object.entries(eventMap).map(([key, value]) => ({
+              value: key,
+              label: value
+            }))}
+            value={queryParams.order_type?.toString()}
+            onValueChange={(value) => handleQueryParamsChange({
+              order_type: Number(value) as EventMap
+            })}
+          />
+          <CommonSelect
+            placeholder={"请选择告警等级"}
+            options={Object.entries(warnLevelMap).map(([key, value]) => ({
+              value: key,
+              label: value
+            }))}
+            value={queryParams.warning_level?.toString()}
+            onValueChange={(value) => handleQueryParamsChange({
+              warning_level: Number(value) as WarnLevel
+            })}
+          />
+          <CommonButton onClick={handleReset}>重置</CommonButton>
 
-          {getSelectedFileIds().length > 0 &&
-            <Button className={"bg-[#43ABFF] w-20"} onClick={onLoadOrderToMap}>地图加载</Button>}
-          {/*<Button className={"bg-[#43ABFF] w-24"}>取消地图加载</Button>*/}
-
+        </div>
+        <div className={"col-span-2 flex items-center text-right justify-end space-x-4"}>
+          {selectedRows.length > 0 &&
+            <CommonButton onClick={onLoadOrderToMap}>地图加载</CommonButton>}
           <Dialog open={open} onOpenChange={(value) => {
-            console.log("Dialog onOpenChange:", value);
             if (!value) {
               setCurrentOrder(null);
             }
             setOpen(value);
           }}>
             <DialogTrigger asChild>
-              <PermissionButton
+              <CommonButton
                 permissionKey={"Collection_TicketCreateEdit"}
-                className={"bg-[#43ABFF] w-20"}
                 onClick={() => {
                   setCurrentOrder(null);
                   setOrderType("create");
@@ -536,7 +414,7 @@ const WorkOrderDataTable = () => {
                 }}
               >
                 创建
-              </PermissionButton>
+              </CommonButton>
             </DialogTrigger>
             <DialogContent className="max-w-screen-lg bg-[#20355f]/[.8] text-white border-none">
               <DialogHeader className={""}>
@@ -653,50 +531,27 @@ const WorkOrderDataTable = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <PermissionButton
+          <CommonButton
             permissionKey={"Collection_TicketExport"}
-            className={"bg-[#43ABFF] w-32"}
             disabled={loading}
-            onClick={onExportOrder}>
-            {loading && <Loader2 className="h-4 w-4 animate-spin" size={16}/>}
+            onClick={onExportOrder}
+            isLoading={loading}
+          >
             导出工单报告
-          </PermissionButton>
-        </div>
-
-        <div className="">
-          <CommonTable<WorkOrder>
-            data={data?.list || []}
-            columns={columns}
-            getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
-            enableRowSelection={true}
-            rowSelection={rowSelection}
-            onRowSelectionChange={setRowSelection}
-            ref={tableRef}
-          />
-        </div>
-
-        <div className="flex items-center justify-between py-2">
-          <Label className="text-gray-400">
-            共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
-          </Label>
-          <div className="space-x-2">
-            <Button
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-            >
-              上一页
-            </Button>
-            <Button
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-            >
-              下一页
-            </Button>
-          </div>
+          </CommonButton>
         </div>
       </div>
+
+      <CommonTable<WorkOrder>
+        ref={tableRef}
+        data={data?.list || []}
+        columns={columns}
+        getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+        enableRowSelection={true}
+        onRowSelectionChange={setSelectedRows}
+        allCounts={data?.pagination.total || 0}
+        onPaginationChange={handlePaginationChange}
+      />
     </Uploady>
   );
 };

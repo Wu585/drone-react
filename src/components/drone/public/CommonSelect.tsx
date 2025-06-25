@@ -24,7 +24,7 @@ const CommonSelect = forwardRef<HTMLButtonElement, CommonSelectProps>(
             "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] rounded h-8 text-xs data-[placeholder]:text-[#d0d0d0]"
           )}
         >
-          <SelectValue placeholder={placeholder}  className="placeholder:text-red-500" />
+          <SelectValue placeholder={placeholder}/>
         </SelectTrigger>
         <SelectContent className="bg-[#1E3762] border-[1px] border-[#2D5FAC]/[.85] text-xs text-white">
           {options.map((option) => (

@@ -1,16 +1,8 @@
-import {
-  ColumnDef,
-  ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel,
-  PaginationState,
-  useReactTable,
-  VisibilityState
-} from "@tanstack/react-table";
+import {ColumnDef} from "@tanstack/react-table";
 import {Fragment, useState} from "react";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
-import {useMembers, useMembersPage, UserItem, useRoleList, useWorkspaceList} from "@/hooks/drone";
+import {useMembersPage, UserItem, useRoleList, useWorkspaceList} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
-import {Label} from "@/components/ui/label.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {
   Dialog,
@@ -28,6 +20,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {ChevronDown, ChevronRight, Edit} from "lucide-react";
+import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -88,14 +81,6 @@ const MembersDataTable = () => {
       accessorKey: "workspace_name",
       header: "组织",
     },
-    /*{
-      accessorKey: "mqtt_username",
-      header: "Mqtt 用户名",
-    },
-    {
-      accessorKey: "mqtt_password",
-      header: "Mqtt 密码",
-    },*/
     {
       accessorKey: "create_time",
       header: "创建时间",
@@ -114,24 +99,17 @@ const MembersDataTable = () => {
 
   const {post} = useAjax();
   const [open, setOpen] = useState(false);
-  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
   const [currentUser, setCurrentUser] = useState<UserItem | null>(null);
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
+  const initialQueryParams = {
+    page: 1,
+    page_size: 10
+  };
 
-  const {data, mutate} = useMembersPage({
-    page: pagination.pageIndex + 1,
-    page_size: pagination.pageSize,
-  });
+  const [queryParams, setQueryParams] = useState(initialQueryParams);
+
+  const {data, mutate} = useMembersPage(queryParams);
 
   const {data: workSpaceList} = useWorkspaceList();
 
@@ -252,26 +230,6 @@ const MembersDataTable = () => {
     }
   };
 
-  const table = useReactTable({
-    data: data?.list || [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPagination,
-    manualPagination: true,
-    rowCount: data?.pagination.total,
-    state: {
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination: pagination,
-    },
-  });
-
   return (
     <div>
       <div className={"flex justify-between mb-4"}>
@@ -354,17 +312,17 @@ const MembersDataTable = () => {
                                 // 只允许数字、退格、删除、Tab和箭头键
                                 if (
                                   !/[0-9]/.test(e.key) &&
-                                  e.key !== 'Backspace' &&
-                                  e.key !== 'Delete' &&
-                                  e.key !== 'Tab' &&
-                                  !e.key.startsWith('Arrow')
+                                  e.key !== "Backspace" &&
+                                  e.key !== "Delete" &&
+                                  e.key !== "Tab" &&
+                                  !e.key.startsWith("Arrow")
                                 ) {
                                   e.preventDefault();
                                 }
                               }}
                               onChange={(e) => {
                                 // 确保输入值只包含数字
-                                const value = e.target.value.replace(/[^0-9]/g, '');
+                                const value = e.target.value.replace(/[^0-9]/g, "");
                                 field.onChange(value);
                               }}
                             />
@@ -444,69 +402,18 @@ const MembersDataTable = () => {
         </div>
       </div>
       <div className="">
-        <Table className={"border-[1px] border-[#0A81E1]"}>
-          <TableHeader className={""}>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className={"border-none"}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id} className={"bg-[#0A81E1]/[.7]"}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody className={"bg-[#0A4088]/[.7]"}>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  className={"border-b-[#0A81E1]"}
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-[#43ABFF]">
-                  暂无数据
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+        <CommonTable
+          data={data?.list || []}
+          columns={columns}
+          allCounts={data?.pagination?.total || 0}
+          getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+          onPaginationChange={({pageIndex}) => setQueryParams({
+            ...queryParams,
+            page: pageIndex + 1
+          })}
+        />
       </div>
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <Label className={"text-left"}>
-          共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
-        </Label>
-        <div className={"space-x-2"}>
-          <Button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            上一页
-          </Button>
-          <Button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            下一页
-          </Button>
-        </div>
-      </div>
+
     </div>
   );
 };
