@@ -9,7 +9,7 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {useMemo, useState} from "react";
+import {Fragment, useMemo, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {HTTP_PREFIX_Wayline, Task, useBindingDevice, useWaylinJobs} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
@@ -40,6 +40,7 @@ import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
 import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
 import {CommonDateRangePicker} from "@/components/drone/public/CommDateRangePicker.tsx";
+import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
 
 const TaskDataTable = () => {
   const {delete: deleteClient, put, post} = useAjax();
@@ -539,45 +540,82 @@ const TaskDataTable = () => {
         </div>
       </div>
 
-      <div className="rounded-md border border-[#0A81E1] bg-[#0A4088]/70">
+      <div className="">
         <div className="flex flex-col">
-          <div className="w-full bg-[#0A81E1]/70">
-            <div className="w-full" style={{paddingRight: "8px"}}>  {/* 补偿滚动条宽度 */}
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
-                      {headerGroup.headers.map((header) => (
-                        <TableHead
-                          key={header.id}
-                          style={{
-                            width: header.getSize(),
-                            minWidth: header.getSize(),
-                            maxWidth: header.getSize()
-                          }}
-                          className="text-white h-10 font-medium"
+          {/*style={{maxHeight: "calc(100vh - 430px)"}}*/}
+          <div className="overflow-auto" >
+            <CommonTable
+              data={data?.list || []}
+              columns={columns}
+              allCounts={data?.pagination.total || 0}
+              getRowId={(row) => row.job_id} // 使用 job_id 作为行ID
+              renderCustomRows={(table) => (
+                <>
+                  {groupTasksByDate(data?.list || []).map(([date, tasks]) => (
+                    <Fragment key={`group-${date}`}>
+                      {/* 日期分组行 */}
+                      <TableRow className="bg-[#0A81E1]/20 border-none">
+                        <TableCell
+                          colSpan={columns.length} // 确保跨越所有列
+                          className="py-[8px] px-4 font-medium text-[#43ABFF] border-none"
                         >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
+                          {date}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* 任务数据行 */}
+                      {tasks.map((task) => {
+                        const row = table.getRowModel().rows.find(
+                          r => r.original.job_id === task.job_id
+                        );
+                        if (!row) return null;
+
+                        return (
+                          <TableRow
+                            key={row.id}
+                            className={cn(
+                              "h-[46px]",
+                              "border-none text-base",
+                              "transition-colors duration-200",
+                              "data-[state=selected]:bg-transparent"
                             )}
-                        </TableHead>
-                      ))}
-                    </TableRow>
+                            data-state={row.getIsSelected() && "selected"}
+                          >
+                            {row.getVisibleCells().map((cell) => (
+                              <TableCell
+                                key={cell.id}
+                                style={{
+                                  width: cell.column.getSize(),
+                                  minWidth: cell.column.getSize(),
+                                  maxWidth: cell.column.getSize()
+                                }}
+                                className={cn(
+                                  "py-3",
+                                  "text-base",
+                                  "align-middle",
+                                  "px-4",
+                                  "leading-none"
+                                )}
+                              >
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        );
+                      })}
+                    </Fragment>
                   ))}
-                </TableHeader>
-              </Table>
-            </div>
-          </div>
-          <div className="overflow-auto" style={{maxHeight: "calc(100vh - 430px)"}}>
-            <Table>
+                </>
+              )}
+            />
+
+
+            {/*<Table>
               <TableBody className="bg-[#0A4088]/70">
                 {table.getRowModel().rows?.length ? (
                   groupTasksByDate(data?.list || []).map(([date, tasks]) => (
                     <>
-                      {/* 日期分组行 */}
+                       日期分组行
                       <TableRow key={`date-${date}`} className="bg-[#0A81E1]/20">
                         <TableCell
                           colSpan={columns.length}
@@ -586,7 +624,7 @@ const TaskDataTable = () => {
                           {date}
                         </TableCell>
                       </TableRow>
-                      {/* 任务数据行 */}
+                       任务数据行
                       {tasks.map((task) => {
                         const row = table.getRowModel().rows.find(
                           r => r.original.job_id === task.job_id
@@ -639,7 +677,7 @@ const TaskDataTable = () => {
                   </TableRow>
                 )}
               </TableBody>
-            </Table>
+            </Table>*/}
           </div>
         </div>
       </div>

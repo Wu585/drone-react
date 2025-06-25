@@ -56,6 +56,8 @@ interface CommonTableProps<TData> {
   allCounts?: number;
   getSubRows?: (row: TData) => TData[] | undefined;
   expandedAll?: boolean;
+  renderCustomRows?: (table: ReactTableInstance<TData>) => React.ReactNode; // 新增：自定义行渲染
+  getRowId?: (row: TData) => string; // 新增：自定义行ID
 }
 
 const EmptyState = (
@@ -85,7 +87,9 @@ export const CommonTable = forwardRef(<TData, >({
                                                   enableMultiRowSelection = true, // 默认允许多选,
                                                   allCounts,
                                                   getSubRows,
-                                                  expandedAll = false
+                                                  expandedAll = false,
+                                                  renderCustomRows,
+                                                  getRowId
                                                 }: CommonTableProps<TData>,
                                                 ref: React.Ref<ReactTableInstance<TData>>) => {
   const [uncontrolledPagination, setUncontrolledPagination] =
@@ -241,7 +245,9 @@ export const CommonTable = forwardRef(<TData, >({
           ))}
         </TableHeader>
         <TableBody className={bodyClassName}>
-          {table.getRowModel().rows?.length ? (
+          {renderCustomRows ? (
+            renderCustomRows(table)
+          ) : table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row, index) => (
               <TableRow
                 key={row.id}
