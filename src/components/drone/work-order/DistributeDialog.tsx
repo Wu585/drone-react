@@ -1,11 +1,11 @@
 import {Forward} from "lucide-react";
 import {useState} from "react";
-import {useCurrentDepartList, useUserListByDepartId} from "@/hooks/drone/organ";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
 import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
+import {useCurrentDepartList, useUserListByDepartId} from "@/hooks/drone";
 
 interface Props {
   onOpen?: () => void;
@@ -18,8 +18,9 @@ const OPERATION_HTTP_PREFIX = "operation/api/v1";
 const DistributeDialog = ({onOpen, currentWorkOrderId, onConfirm}: Props) => {
   const [operator, setOperator] = useState<number>(0);
   const {post} = useAjax();
-  const departList = useCurrentDepartList();
-  const {setDepartId, userList} = useUserListByDepartId();
+  const {data: departList} = useCurrentDepartList();
+  const [departId, setDepartId] = useState<number | undefined>();
+  const userList = useUserListByDepartId(departId);
 
   const onDistribute = async () => {
     try {
@@ -46,7 +47,10 @@ const DistributeDialog = ({onOpen, currentWorkOrderId, onConfirm}: Props) => {
   return (
     <CommonDialog
       title="工单分配"
-      onOpenChange={onOpen}
+      onOpenChange={() => {
+        setDepartId(undefined);
+        onOpen?.();
+      }}
       trigger={
         <PermissionButton
           className={"w-4 h-4 bg-transparent px-0"}
@@ -67,18 +71,19 @@ const DistributeDialog = ({onOpen, currentWorkOrderId, onConfirm}: Props) => {
             options={departList?.map(item => ({
               value: item.id.toString(),
               label: item.name
-            }))}
+            })) || []}
           />
         </div>
         <div className={"grid grid-cols-10 items-center gap-4"}>
           <span className={"text-left col-span-2"}>分配人员：</span>
           <CommonSelect
+            onValueChange={(value) => setOperator(+value)}
             placeholder={"请选择分配人员"}
             className={"col-span-8"}
-            options={userList.map((user) => ({
+            options={userList?.map((user) => ({
               value: user.id.toString(),
               label: user.name
-            }))}
+            })) || []}
           />
         </div>
       </div>

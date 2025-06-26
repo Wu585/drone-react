@@ -26,7 +26,7 @@ const formSchema = z.object({
 const Login = () => {
   const OPERATION_HTTP_PREFIX = "/operation/api/v1";
 
-  const {post,get} = useAjax();
+  const {post, get} = useAjax();
   const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -60,9 +60,9 @@ const Login = () => {
       localStorage.setItem(ELocalStorageKey.WorkspacePrimaryKey, workspace_id_primary_key);
       localStorage.setItem(ELocalStorageKey.Flag, EUserType.Web.toString());
 
-      const departList = (await get<Resource<Depart>[]>(`${OPERATION_HTTP_PREFIX}/organ/list`,{
+      const departList = (await get<Resource<Depart>[]>(`${OPERATION_HTTP_PREFIX}/organ/list`, {
         id: workspace_id_primary_key
-      })).data.data
+      })).data.data;
 
       if (departList?.length === 1) {
         navigate("/tsa");

@@ -38,7 +38,6 @@ import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
 import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
 import {Button} from "@/components/drone/public/Button.tsx";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
-import {CommonDateRangePicker} from "@/components/drone/public/CommDateRangePicker.tsx";
 import {CommonDateRange} from "@/components/drone/public/CommonDateRange.tsx";
 
 // 定义告警等级类型
@@ -404,7 +403,6 @@ const WorkOrderDataTable = () => {
             })}
           />
           <CommonButton onClick={handleReset}>重置</CommonButton>
-
         </div>
         <div className={"col-span-2 flex items-center text-right justify-end space-x-4"}>
           {selectedRows.length > 0 &&

@@ -8,7 +8,6 @@ import {TableCell, TableRow} from "@/components/ui/table.tsx";
 import {HTTP_PREFIX_Wayline, Task, useBindingDevice, useWaylinJobs} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {MediaStatus, TaskStatus, TaskStatusMap, TaskType, TaskTypeMap} from "@/types/task.ts";
-import {Button} from "@/components/ui/button.tsx";
 import {cn} from "@/lib/utils.ts";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
@@ -25,7 +24,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog.tsx";
-import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import dayjs from "dayjs";
 import {useNavigate} from "react-router-dom";

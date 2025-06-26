@@ -688,12 +688,28 @@ export interface Depart {
   user_ids: number[];
 }
 
+export const useCurrentDepartList = () => {
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspacePrimaryKey);
+  return useDepartList(workspaceId ? +workspaceId : undefined);
+};
+
 // 获取部门列表
 export const useDepartList = (id?: number) => {
   const {get} = useAjax();
   const url = `${OPERATION_HTTP_PREFIX}/organ/list`;
   const key = id ? [url, id] as const : undefined;
   return useSWR(key, async ([path, id]) => (await get<Resource<Depart[]>>(path, {id})).data.data);
+};
+
+export const useUserListByDepartId = (departId?: number) => {
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId);
+  const {data: _userList} = useMembersPage({
+    page: 1,
+    page_size: 1000,
+    workspace_id: workspaceId || ""
+  });
+  if (!departId) return [];
+  return _userList?.list.filter(user => user.organs.includes(departId));
 };
 
 // 获取当前用户信息
