@@ -36,6 +36,7 @@ import {TaskStatus, TaskType} from "@/types/task.ts";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import dayjs from "dayjs";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -169,6 +170,7 @@ const DronePanel = () => {
 
   const {hasPermission} = usePermission();
   const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
+  const hasVirtualCockpitPermission = hasPermission("Button_EnterVirtualCockpit");
 
   const capacity_percent = deviceInfo && deviceInfo.device &&
     deviceInfo.device.battery.capacity_percent || deviceInfo.dock.work_osd?.drone_battery_maintenance_info?.batteries[0]?.capacity_percent;
@@ -599,38 +601,44 @@ const DronePanel = () => {
           </TooltipProvider>*/}
         </div>
         <div className={"mr-[4px] grid grid-cols-7 py-2"}>
-          {hasFlyControlPermission ?
-            <div className={" h-full content-center col-span-2"}>
-              {isRemoteControl ? <KeyboardControl onMouseUp={onMouseUp} onMouseDown={onMouseDown}/> :
-                <Button
-                  disabled={deviceInfo?.dock?.basic_osd?.mode_code !== EDockModeCode.Idle}
-                  onClick={() => {
-                    show();
-                    setTakeOffType("take-off");
-                    hideDebugPanel();
-                  }}
-                  className={"bg-yjqf flex justify-center items-end w-[87px] h-[97px] cursor-pointer "} style={{
-                  backgroundSize: "100% 100%"
-                }}>
-                  <span className={"mb-4 text-[12px]"}>一键起飞</span>
-                </Button>}
-            </div> : <div className={"h-full content-center text-sm text-[#d0d0d0]"}>无飞控权限</div>}
+          <div className={" h-full content-center col-span-2"}>
+            {isRemoteControl ? <KeyboardControl onMouseUp={onMouseUp} onMouseDown={onMouseDown}/> :
+              <CommonButton
+                disabled={deviceInfo?.dock?.basic_osd?.mode_code !== EDockModeCode.Idle || !hasFlyControlPermission}
+                onClick={() => {
+                  show();
+                  setTakeOffType("take-off");
+                  hideDebugPanel();
+                }}
+                className={"bg-yjqf flex justify-center items-end w-[87px] h-[97px] cursor-pointer "} style={{
+                backgroundSize: "100% 100%"
+              }}>
+                <span className={"mb-4 text-[12px]"}>一键起飞</span>
+              </CommonButton>}
+          </div>
           <div className={"h-full content-center col-span-3"}>
-            <Button style={{
-              backgroundSize: "100% 100%"
-            }} className={"w-[163px] px-0 h-[96px] bg-xnzc flex items-end"} onClick={onClickCockpit}>
+            <CommonButton
+              disabled={!hasVirtualCockpitPermission}
+              style={{
+                backgroundSize: "100% 100%"
+              }}
+              className={"w-[163px] px-0 h-[96px] bg-xnzc flex items-end"} onClick={onClickCockpit}>
               <span className={"mb-4 text-[12px]"}>虚拟座舱</span>
-            </Button>
+            </CommonButton>
           </div>
           <div
             className={"text-[12px] text-[#D0D0D0] h-full content-center col-span-2"}>
-            <Button onClick={onClickReturnButton} className={"w-[87px] h-[97px] bg-yjfh flex items-end"} style={{
-              backgroundSize: "100% 100%"
-            }}>
+            <CommonButton
+              disabled={!hasFlyControlPermission}
+              onClick={onClickReturnButton}
+              className={"w-[87px] h-[97px] bg-yjfh flex items-end"}
+              style={{
+                backgroundSize: "100% 100%"
+              }}>
               <span
                 className={"mb-4 text-[12px]"}>{deviceInfo?.device?.mode_code === EModeCode.Return_To_Home ? "取消返航" : "一键返航"}
               </span>
-            </Button>
+            </CommonButton>
           </div>
         </div>
       </div>
