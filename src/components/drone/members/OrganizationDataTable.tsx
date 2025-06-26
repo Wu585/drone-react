@@ -158,7 +158,7 @@ const OrganizationDataTable = () => {
       cell: ({row}) => (
         <div
           className="truncate flex items-center gap-2"
-          style={{paddingLeft: `${row.depth}rem`}}
+          style={{paddingLeft: `${row.depth * 2}rem`}}
           title={row.getValue("workspace_name")}
         >
           {row.getCanExpand() &&
