@@ -152,11 +152,7 @@ const TaskDataTable = () => {
           <div className={"flex whitespace-nowrap space-x-2"}>
             {row.original.status === TaskStatus.Wait && <AlertDialog>
               <AlertDialogTrigger className={""} asChild>
-                <PermissionButton
-                  permissionKey={"Collection_PlanDelete"}
-                  className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
-                  取消
-                </PermissionButton>
+                <CommonButton permissionKey={"Collection_PlanDelete"} className={"h-6"}>取消</CommonButton>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -174,11 +170,7 @@ const TaskDataTable = () => {
             </AlertDialog>}
             {row.original.status === TaskStatus.Carrying && <AlertDialog>
               <AlertDialogTrigger className={""} asChild>
-                <Button
-                  type={"submit"}
-                  className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
-                  挂起
-                </Button>
+                <CommonButton className={"h-6"}>挂起</CommonButton>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -196,11 +188,7 @@ const TaskDataTable = () => {
             </AlertDialog>}
             {row.original.status === TaskStatus.Paused && <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
-                  type={"submit"}
-                  className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
-                  恢复
-                </Button>
+                <CommonButton className={"h-6"}>恢复</CommonButton>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -219,11 +207,7 @@ const TaskDataTable = () => {
             {/*{formatMediaTaskStatus(row.original).status === MediaStatus.ToUpload && <AlertDialog>*/}
             {formatMediaTaskStatus(row.original).status === MediaStatus.ToUpload && <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
-                  type={"submit"}
-                  className={cn("bg-[#43ABFF] h-6 hover:bg-[#43ABFF] rounded-md cursor-pointer")}>
-                  媒体续传
-                </Button>
+                <CommonButton className={"h-6"}>媒体续传</CommonButton>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>

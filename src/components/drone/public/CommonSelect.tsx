@@ -12,21 +12,29 @@ import {SelectProps} from "@radix-ui/react-select";
 interface CommonSelectProps extends SelectProps {
   options: { value: string; label: string }[];
   placeholder?: string;
+  className?: string;
+  contentClassName?: string;
 }
 
 const CommonSelect = forwardRef<HTMLButtonElement, CommonSelectProps>(
-  ({options, placeholder = "请选择...", ...props}, ref) => {
+  ({options, placeholder = "请选择...", className, contentClassName, ...props}, ref) => {
     return (
       <Select {...props}>
         <SelectTrigger
           ref={ref}
           className={cn(
-            "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] rounded h-8 text-xs data-[placeholder]:text-[#d0d0d0]"
+            "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] rounded h-8 text-xs data-[placeholder]:text-[#d0d0d0]",
+            className
           )}
         >
           <SelectValue placeholder={placeholder}/>
         </SelectTrigger>
-        <SelectContent className="bg-[#1E3762] border-[1px] border-[#2D5FAC]/[.85] text-xs text-white">
+        <SelectContent
+          className={cn(
+            "bg-[#1E3762] border-[1px] border-[#2D5FAC]/[.85] text-xs text-white",
+            contentClassName
+          )}
+        >
           {options.map((option) => (
             <SelectItem
               key={option.value}

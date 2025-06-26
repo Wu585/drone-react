@@ -1,19 +1,11 @@
 import {Forward} from "lucide-react";
-import {
-  Dialog, DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog.tsx";
 import {useState} from "react";
 import {useCurrentDepartList, useUserListByDepartId} from "@/hooks/drone/organ";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
-import {Button} from "@/components/ui/button.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
+import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
+import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
 
 interface Props {
   onOpen?: () => void;
@@ -52,55 +44,45 @@ const DistributeDialog = ({onOpen, currentWorkOrderId, onConfirm}: Props) => {
   };
 
   return (
-    <Dialog>
-      <DialogTrigger>
+    <CommonDialog
+      title="工单分配"
+      onOpenChange={onOpen}
+      trigger={
         <PermissionButton
           className={"w-4 h-4 bg-transparent px-0"}
-          onClick={onOpen}
-          permissionKey={"Collection_TicketAssign"}>
+          permissionKey={"Collection_TicketAssign"}
+        >
           <Forward/>
         </PermissionButton>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>工单分配</DialogTitle>
-        </DialogHeader>
-        <div className={"space-y-4"}>
-          <div className={"grid grid-cols-4 items-center gap-4"}>
-            <span className={"text-right"}>分配部门</span>
-            <Select onValueChange={(value) => {
-              setDepartId(+value);
-            }}>
-              <SelectTrigger className={"col-span-3"}>
-                <SelectValue placeholder="选择分配部门"/>
-              </SelectTrigger>
-              <SelectContent>
-                {departList?.map(item =>
-                  <SelectItem key={item.id} value={item.id.toString()}>{item.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className={"grid grid-cols-4 items-center gap-4"}>
-            <span className={"text-right"}>分配人员</span>
-            <Select onValueChange={(value) => setOperator(+value)}>
-              <SelectTrigger className={"col-span-3"}>
-                <SelectValue placeholder="选择人员"/>
-              </SelectTrigger>
-              <SelectContent>
-                {userList.map(user =>
-                  <SelectItem key={user.id} value={user.id.toString()}>{user.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+      }
+      onConfirm={onDistribute}
+    >
+      <div className={"space-y-6 py-6 px-12"}>
+        <div className={"grid grid-cols-10 items-center gap-4"}>
+          <span className={"text-left col-span-2"}>分配部门：</span>
+          <CommonSelect
+            placeholder={"请选择分配部门"}
+            className={"col-span-8"}
+            onValueChange={(value) => setDepartId(+value)}
+            options={departList?.map(item => ({
+              value: item.id.toString(),
+              label: item.name
+            }))}
+          />
         </div>
-        <DialogFooter>
-          <DialogClose>
-            <Button className={"bg-[#43ABFF] w-24"} onClick={onDistribute}>确认</Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
+        <div className={"grid grid-cols-10 items-center gap-4"}>
+          <span className={"text-left col-span-2"}>分配人员：</span>
+          <CommonSelect
+            placeholder={"请选择分配人员"}
+            className={"col-span-8"}
+            options={userList.map((user) => ({
+              value: user.id.toString(),
+              label: user.name
+            }))}
+          />
+        </div>
+      </div>
+    </CommonDialog>
   );
 };
 
