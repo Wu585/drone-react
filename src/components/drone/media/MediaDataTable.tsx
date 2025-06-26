@@ -1,21 +1,9 @@
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  PaginationState,
-  useReactTable,
-  VisibilityState
-} from "@tanstack/react-table";
+import {ColumnDef, PaginationState,} from "@tanstack/react-table";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {FileItem, MEDIA_HTTP_PREFIX, useMediaList, WorkOrder} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
-import {Label} from "@/components/ui/label.tsx";
-import {Download, Edit, Eye, FolderClosed, Grid3X3, Loader, Play, SquareMenu, Trash} from "lucide-react";
+import {Download, Edit, Eye, FolderClosed, Grid3X3, Loader, SquareMenu, Trash} from "lucide-react";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {
@@ -38,10 +26,7 @@ import {
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb.tsx";
 import {cn} from "@/lib/utils.ts";
-import {Checkbox} from "@/components/ui/checkbox.tsx";
 import DirTree from "@/components/drone/media/DirTree.tsx";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import NewCommonDateRangePicker from "@/components/public/NewCommonDateRangePicker.tsx";
 import dayjs from "dayjs";
 import CreateOrder from "@/components/drone/work-order/CreateOrder.tsx";
 import UploadButton from "@rpldy/upload-button";
@@ -396,7 +381,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     {
       accessorKey: "file_name",
       header: "文件名",
-      size: 180,
+      size: 240,
       cell: ({row}) => {
         const current = row.original;
         const fileType = current.type;
@@ -417,13 +402,15 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     {
       accessorKey: "wayline_name",
       header: "航线名称",
-      cell: ({row}) => <div>
+      size: 180,
+      cell: ({row}) => <div className={"truncate"} title={row.original.wayline_name || "--"}>
         {row.original.wayline_name || "--"}
       </div>
     },
     {
       accessorKey: "drone",
       header: "飞行器",
+      size: 100,
       cell: ({row}) => <div>
         {row.original.drone || "--"}
       </div>
@@ -431,6 +418,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     {
       accessorKey: "payload",
       header: "负载类型",
+      size: 100,
       cell: ({row}) => <div>
         {row.original.payload || "--"}
       </div>
@@ -438,6 +426,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     {
       accessorKey: "size",
       header: "大小",
+      size: 80,
       cell: ({row}) => <div>
         {row.original.size || "--"}
       </div>
@@ -445,6 +434,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     {
       accessorKey: "create_time",
       header: "创建时间",
+      size: 140,
     },
     {
       header: "操作",
