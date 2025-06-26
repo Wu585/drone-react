@@ -96,7 +96,7 @@ const RoleDataTable = () => {
   const {post, delete: deleteClient} = useAjax();
   const [open, setOpen] = useState(false);
 
-  const {data: roleList, mutate: mutateRoleList} = useRoleList();
+  const {data: roleList, mutate: mutateRoleList, isLoading} = useRoleList();
   const {data: _resourceList} = useResourceList();
 
   const resourceList = buildTree(_resourceList?.filter(item => item.type === 1 || item.type === 2) || []);
@@ -223,15 +223,14 @@ const RoleDataTable = () => {
           </Dialog>
         </div>
       </div>
-      <div className="relative">
-        <CommonTable
-          manualPagination={false}
-          data={roleList || []}
-          columns={columns}
-          allCounts={roleList?.length || 0}
-          getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
-        />
-      </div>
+      <CommonTable
+        loading={isLoading}
+        manualPagination={false}
+        data={roleList || []}
+        columns={columns}
+        allCounts={roleList?.length || 0}
+        getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+      />
     </div>
   );
 };

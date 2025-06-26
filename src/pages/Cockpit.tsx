@@ -1158,7 +1158,8 @@ const Cockpit = () => {
                   className={cn("grid grid-cols-2 px-[16px]")}>
                   <span>当前任务：</span>
                   <span
-                    className={cn("font-bold", currentJobList?.list?.length && currentJobList?.list?.length > 0 ? "text-green-500" : "text-yellow-500")}>
+                    title={currentJobList?.list?.[0]?.job_name || "暂无任务"}
+                    className={cn("font-bold truncate", currentJobList?.list?.length && currentJobList?.list?.length > 0 ? "text-green-500" : "text-yellow-500")}>
                         {currentJobList?.list?.[0]?.job_name || "暂无任务"}
                       </span>
                 </div>
@@ -1168,7 +1169,8 @@ const Cockpit = () => {
                   className={cn("grid grid-cols-2 px-[16px]")}>
                   <span>当前航线：</span>
                   <span
-                    className={cn("font-bold", currentJobList?.list?.length && currentJobList?.list?.length > 0 ? "text-green-500" : "text-yellow-500")}>
+                    title={currentJobList?.list?.[0]?.file_name || "暂无航线"}
+                    className={cn("truncate", currentJobList?.list?.length && currentJobList?.list?.length > 0 ? "text-green-500" : "text-yellow-500")}>
                         {currentJobList?.list?.[0]?.file_name || "暂无航线"}
                       </span>
                 </div>

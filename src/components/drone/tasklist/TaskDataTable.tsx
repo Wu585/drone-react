@@ -1,21 +1,14 @@
 import {
   ColumnDef,
-  ColumnFiltersState,
   flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
   PaginationState,
-  useReactTable,
-  VisibilityState
 } from "@tanstack/react-table";
 import {Fragment, useMemo, useState} from "react";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
+import {TableCell, TableRow} from "@/components/ui/table.tsx";
 import {HTTP_PREFIX_Wayline, Task, useBindingDevice, useWaylinJobs} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {MediaStatus, TaskStatus, TaskStatusMap, TaskType, TaskTypeMap} from "@/types/task.ts";
 import {Button} from "@/components/ui/button.tsx";
-import {Label} from "@/components/ui/label.tsx";
 import {cn} from "@/lib/utils.ts";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
@@ -39,8 +32,8 @@ import {useNavigate} from "react-router-dom";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
 import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
-import {CommonDateRangePicker} from "@/components/drone/public/CommDateRangePicker.tsx";
 import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
+import {CommonDateRange} from "@/components/drone/public/CommonDateRange.tsx";
 
 const TaskDataTable = () => {
   const {delete: deleteClient, put, post} = useAjax();
@@ -88,7 +81,7 @@ const TaskDataTable = () => {
         header: "计划名称",
         size: 120,
         cell: ({row}) => (
-          <div className="max-w-[160px] truncate" title={row.original.job_name}>
+          <div className="truncate" title={row.original.job_name}>
             {row.original.job_name}
           </div>
         )
@@ -322,12 +315,6 @@ const TaskDataTable = () => {
     }
   };
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
-
   const {data: dockList} = useBindingDevice(workspaceId, {
     page: 1,
     page_size: 1000,
@@ -335,26 +322,7 @@ const TaskDataTable = () => {
     organ: departId ? +departId : undefined
   });
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-
-  // 处理分页变化
-  const handlePaginationChange = (updaterOrValue: PaginationState | ((old: PaginationState) => PaginationState)) => {
-    const newPagination = typeof updaterOrValue === "function"
-      ? updaterOrValue(pagination)
-      : updaterOrValue;
-
-    setPagination(newPagination);
-    setQueryParams(prev => ({
-      ...prev,
-      page: newPagination.pageIndex + 1,
-      page_size: newPagination.pageSize
-    }));
-  };
-
-  const [queryParams, setQueryParams] = useState({
+  const initialQueryParams = {
     page: 1,
     page_size: 10,
     start_time: "",
@@ -364,24 +332,19 @@ const TaskDataTable = () => {
     keyword: "",
     status: undefined as TaskStatus | undefined,
     organs: [departId]
-  });
-
-  const {data, mutate: mutateWaylineJobs} = useWaylinJobs(workspaceId, queryParams);
-
-  const onChangeDateRange = (dateRange?: Date[]) => {
-    if (dateRange?.length !== 2) {
-      return handleQueryParamsChange({
-        start_time: "",
-        end_time: "",
-      });
-    }
-    const newParams = {
-      start_time: dayjs(dateRange[0]).format("YYYY-MM-DD HH:mm:ss"),
-      end_time: dayjs(dateRange[1]).format("YYYY-MM-DD 23:59:59"),
-    };
-
-    handleQueryParamsChange(newParams);
   };
+
+  const [queryParams, setQueryParams] = useState(initialQueryParams);
+
+  const handlePaginationChange = (pagination: PaginationState) => {
+    setQueryParams(prev => ({
+      ...prev,
+      page: pagination.pageIndex + 1,
+      page_size: pagination.pageSize
+    }));
+  };
+
+  const {data, mutate: mutateWaylineJobs, isLoading} = useWaylinJobs(workspaceId, queryParams);
 
   // 处理查询参数变化
   const handleQueryParamsChange = (newParams: Partial<typeof queryParams>) => {
@@ -390,31 +353,7 @@ const TaskDataTable = () => {
       ...newParams,
       page: 1 // 当筛选条件改变时，重置到第一页
     }));
-    setPagination(prev => ({
-      ...prev,
-      pageIndex: 0 // 重置到第一页
-    }));
   };
-
-  const table = useReactTable({
-    data: data?.list || [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: handlePaginationChange,
-    manualPagination: true,
-    rowCount: data?.pagination.total,
-    state: {
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination
-    },
-  });
 
   const [loading, setLoading] = useState(false);
 
@@ -460,9 +399,18 @@ const TaskDataTable = () => {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-4">
-          <CommonDateRangePicker onChange={onChangeDateRange}/>
+          <CommonDateRange
+            value={{
+              start: queryParams.start_time,
+              end: queryParams.end_time
+            }}
+            onChange={({start, end}) => handleQueryParamsChange({
+              start_time: start,
+              end_time: end
+            })}
+          />
           <CommonInput
             onChange={(e) => handleQueryParamsChange({keyword: e.target.value})}
             placeholder={"请输入任务名称"}
@@ -541,166 +489,74 @@ const TaskDataTable = () => {
       </div>
 
       <div className="">
-        <div className="flex flex-col">
-          {/*style={{maxHeight: "calc(100vh - 430px)"}}*/}
-          <div className="overflow-auto" >
-            <CommonTable
-              data={data?.list || []}
-              columns={columns}
-              allCounts={data?.pagination.total || 0}
-              getRowId={(row) => row.job_id} // 使用 job_id 作为行ID
-              renderCustomRows={(table) => (
-                <>
-                  {groupTasksByDate(data?.list || []).map(([date, tasks]) => (
-                    <Fragment key={`group-${date}`}>
-                      {/* 日期分组行 */}
-                      <TableRow className="bg-[#0A81E1]/20 border-none">
-                        <TableCell
-                          colSpan={columns.length} // 确保跨越所有列
-                          className="py-[8px] px-4 font-medium text-[#43ABFF] border-none"
+        <div>
+          <CommonTable
+            loading={isLoading}
+            data={data?.list || []}
+            columns={columns}
+            allCounts={data?.pagination.total || 0}
+            getRowId={(row) => row.job_id} // 使用 job_id 作为行ID
+            onPaginationChange={handlePaginationChange}
+            maxHeight={"calc(100vh - 400px)"}
+            renderCustomRows={(table) => (
+              <>
+                {groupTasksByDate(data?.list || []).map(([date, tasks]) => (
+                  <Fragment key={`group-${date}`}>
+                    {/* 日期分组行 */}
+                    <TableRow className="bg-[#274778] border-none">
+                      <TableCell
+                        colSpan={columns.length} // 确保跨越所有列
+                        className="py-[8px] px-4 font-medium text-[#43ABFF] border-none"
+                      >
+                        {date}
+                      </TableCell>
+                    </TableRow>
+
+                    {/* 任务数据行 */}
+                    {tasks.map((task) => {
+                      const row = table.getRowModel().rows.find(
+                        r => r.original.job_id === task.job_id
+                      );
+                      if (!row) return null;
+
+                      return (
+                        <TableRow
+                          key={row.id}
+                          className={cn(
+                            "h-[46px]",
+                            "border-b-[1px] border-[#192948] text-base bg-[#203D67]/70",
+                            "transition-colors duration-200",
+                            "data-[state=selected]:bg-transparent"
+                          )}
+                          data-state={row.getIsSelected() && "selected"}
                         >
-                          {date}
-                        </TableCell>
-                      </TableRow>
-
-                      {/* 任务数据行 */}
-                      {tasks.map((task) => {
-                        const row = table.getRowModel().rows.find(
-                          r => r.original.job_id === task.job_id
-                        );
-                        if (!row) return null;
-
-                        return (
-                          <TableRow
-                            key={row.id}
-                            className={cn(
-                              "h-[46px]",
-                              "border-none text-base",
-                              "transition-colors duration-200",
-                              "data-[state=selected]:bg-transparent"
-                            )}
-                            data-state={row.getIsSelected() && "selected"}
-                          >
-                            {row.getVisibleCells().map((cell) => (
-                              <TableCell
-                                key={cell.id}
-                                style={{
-                                  width: cell.column.getSize(),
-                                  minWidth: cell.column.getSize(),
-                                  maxWidth: cell.column.getSize()
-                                }}
-                                className={cn(
-                                  "py-3",
-                                  "text-base",
-                                  "align-middle",
-                                  "px-4",
-                                  "leading-none"
-                                )}
-                              >
-                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        );
-                      })}
-                    </Fragment>
-                  ))}
-                </>
-              )}
-            />
-
-
-            {/*<Table>
-              <TableBody className="bg-[#0A4088]/70">
-                {table.getRowModel().rows?.length ? (
-                  groupTasksByDate(data?.list || []).map(([date, tasks]) => (
-                    <>
-                       日期分组行
-                      <TableRow key={`date-${date}`} className="bg-[#0A81E1]/20">
-                        <TableCell
-                          colSpan={columns.length}
-                          className="py-[4px] px-4 font-medium text-[#43ABFF] border-b border-[#0A81E1]/30"
-                        >
-                          {date}
-                        </TableCell>
-                      </TableRow>
-                       任务数据行
-                      {tasks.map((task) => {
-                        const row = table.getRowModel().rows.find(
-                          r => r.original.job_id === task.job_id
-                        );
-                        if (!row) return null;
-
-                        return (
-                          <TableRow
-                            key={row.id}
-                            className={cn(
-                              "h-[46px]",
-                              "border-b border-[#0A81E1]/30  text-base",
-                              "hover:bg-[#0A4088]/90 transition-colors duration-200",
-                              "data-[state=selected]:bg-transparent"
-                            )}
-                            data-state={row.getIsSelected() && "selected"}
-                          >
-                            {row.getVisibleCells().map((cell) => (
-                              <TableCell
-                                key={cell.id}
-                                style={{
-                                  width: cell.column.getSize(),
-                                  minWidth: cell.column.getSize(),
-                                  maxWidth: cell.column.getSize()
-                                }}
-                                className={cn(
-                                  "py-3",
-                                  "text-base",
-                                  "align-middle",
-                                  "px-4",
-                                  "leading-none"
-                                )}
-                              >
-                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        );
-                      })}
-                    </>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center text-[#43ABFF] text-base"
-                    >
-                      暂无数据
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>*/}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <Label className="text-gray-400">
-          共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
-        </Label>
-        <div className="space-x-4 my-2">
-          <Button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-          >
-            上一页
-          </Button>
-          <Button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-          >
-            下一页
-          </Button>
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell
+                              key={cell.id}
+                              style={{
+                                width: cell.column.getSize(),
+                                minWidth: cell.column.getSize(),
+                                maxWidth: cell.column.getSize()
+                              }}
+                              className={cn(
+                                "py-3",
+                                "text-base",
+                                "align-middle",
+                                "px-4",
+                                "leading-none"
+                              )}
+                            >
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })}
+                  </Fragment>
+                ))}
+              </>
+            )}
+          />
         </div>
       </div>
     </div>

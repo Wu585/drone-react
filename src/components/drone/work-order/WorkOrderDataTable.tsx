@@ -124,14 +124,15 @@ const WorkOrderDataTable = () => {
       {
         accessorKey: "name",
         header: "事件名称",
+        size: 200,
         cell: ({row}) => (
-          <div className={"w-[150px] whitespace-nowrap overflow-hidden text-ellipsis"}
-               title={row.original.name}>{row.original.name}</div>
+          <div className={"truncate"} title={row.original.name}>{row.original.name}</div>
         )
       },
       {
         accessorKey: "warning_level",
         header: "告警等级",
+        size: 100,
         cell: ({row}) => (
           <span>{warnLevelMap[row.original.warning_level as WarnLevel]}</span>
         )
@@ -139,34 +140,44 @@ const WorkOrderDataTable = () => {
       {
         accessorKey: "found_time",
         header: "发现时间",
+        size: 180,
         cell: ({row}) => (
-          <span>{dayjs(row.original.found_time).format("YYYY-MM-DD HH:mm:ss")}</span>
+          <div className={"truncate"}>{dayjs(row.original.found_time).format("YYYY-MM-DD HH:mm:ss")}</div>
         )
       },
       {
         accessorKey: "address",
         header: "发生地址",
+        size: 160,
+        cell: ({row}) => (
+          <div className={"truncate"} title={row.original.address}>{row.original.address}</div>
+        )
       },
       {
         accessorKey: "contact",
         header: "联系人",
+        size: 80
       },
       {
         accessorKey: "contact_phone",
         header: "联系方式",
+        size: 110
       },
       {
         accessorKey: "organ_name",
         header: "部门",
+        size: 100
       },
       {
         accessorKey: "order_type",
         header: "事件类型",
+        size: 110,
         cell: ({row}) => <span>{eventMap[row.original.order_type as keyof typeof eventMap]}</span>
       },
       {
         accessorKey: "status",
         header: "状态",
+        size: 120,
         cell: ({row}) => (
           <span className={cn(
             "px-2 py-1 rounded text-sm",
@@ -257,7 +268,7 @@ const WorkOrderDataTable = () => {
     }));
   };
 
-  const {data, mutate} = useWorkOrderList(queryParams, urlFix);
+  const {data, mutate, isLoading} = useWorkOrderList(queryParams, urlFix);
 
   const stepper = useStepper();
 
@@ -543,6 +554,7 @@ const WorkOrderDataTable = () => {
       </div>
 
       <CommonTable<WorkOrder>
+        loading={isLoading}
         ref={tableRef}
         data={data?.list || []}
         columns={columns}

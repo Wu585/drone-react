@@ -1,16 +1,5 @@
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  PaginationState,
-  useReactTable,
-  VisibilityState
-} from "@tanstack/react-table";
+import {ColumnDef} from "@tanstack/react-table";
 import {useState} from "react";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {ApplyTask, ApplyTaskStatus, applyTaskStatusMap, useApplyWaylinJobs} from "@/hooks/drone";
 import {TaskType, TaskTypeMap} from "@/types/task.ts";
 import {Button} from "@/components/ui/button.tsx";
@@ -35,6 +24,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import dayjs from "dayjs";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {cn} from "@/lib/utils.ts";
+import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
 
 const TaskDataTable = () => {
   const {delete: deleteClient, post} = useAjax();
@@ -250,42 +240,14 @@ const TaskDataTable = () => {
     }
   };
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
+  const defaultParams = {
+    page: 1,
+    page_size: 10,
+  };
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
+  const [queryParams, setQueryParams] = useState(defaultParams);
 
-  const {data, mutate} = useApplyWaylinJobs({
-    page: pagination.pageIndex + 1,
-    page_size: pagination.pageSize,
-    total: 0,
-  });
-
-  const table = useReactTable({
-    data: data?.list || [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPagination,
-    manualPagination: true,
-    rowCount: data?.pagination.total,
-    state: {
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination: pagination,
-    },
-  });
+  const {data, mutate, isLoading} = useApplyWaylinJobs(queryParams);
 
   return (
     <div className="space-y-2">
@@ -324,111 +286,17 @@ const TaskDataTable = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="rounded-md border border-[#0A81E1] bg-[#0A4088]/70">
-        <div className="flex flex-col">
-          <div className="w-full bg-[#0A81E1]/70">
-            <div className="w-full" style={{paddingRight: "8px"}}>  {/* 补偿滚动条宽度 */}
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id} className="border-b border-[#0A81E1]">
-                      {headerGroup.headers.map((header) => (
-                        <TableHead
-                          key={header.id}
-                          style={{
-                            width: header.getSize(),
-                            minWidth: header.getSize(),
-                            maxWidth: header.getSize()
-                          }}
-                          className="text-white h-10 font-medium"
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-              </Table>
-            </div>
-          </div>
-          <div className="overflow-auto" style={{maxHeight: "calc(100vh - 430px)"}}>
-            <Table>
-              <TableBody className="bg-[#0A4088]/70">
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      className={cn(
-                        "h-[46px]",
-                        "border-b border-[#43ABFF]/30",
-                        "hover:bg-[#0A81E1]/10 transition-colors duration-200",
-                        "data-[state=selected]:bg-transparent"
-                      )}
-                      data-state={row.getIsSelected() && "selected"}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          key={cell.id}
-                          style={{
-                            width: cell.column.getSize(),
-                            minWidth: cell.column.getSize(),
-                            maxWidth: cell.column.getSize()
-                          }}
-                          className={cn(
-                            "py-3",
-                            "text-base",
-                            "align-middle",
-                            "px-4",
-                            "leading-none"
-                          )}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center text-[#43ABFF] text-base"
-                    >
-                      暂无数据
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between pt-4">
-        <Label className="text-gray-400">
-          共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
-        </Label>
-        <div className="space-x-4">
-          <Button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-          >
-            上一页
-          </Button>
-          <Button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 disabled:opacity-50"
-          >
-            下一页
-          </Button>
-        </div>
-      </div>
+      <CommonTable
+        data={data?.list || []}
+        columns={columns}
+        loading={isLoading}
+        allCounts={data?.pagination.total}
+        getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+        onPaginationChange={(pagination) => setQueryParams({
+          ...queryParams,
+          page: pagination.pageIndex + 1
+        })}
+      />
     </div>
   );
 };

@@ -396,15 +396,20 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     {
       accessorKey: "file_name",
       header: "文件名",
+      size: 180,
       cell: ({row}) => {
         const current = row.original;
         const fileType = current.type;
         const isDir = fileType === MediaFileType.DIR;
 
         return (
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onClickFolder(current)}>
-            {isDir && <FolderClosed className={"w-4 h-4"} fill={"orange"}/>}
-            <span>{row.original.file_name}</span>
+          <div
+            className="cursor-pointer flex items-center gap-1 min-w-0"
+            onClick={() => onClickFolder(current)}
+            title={row.original.file_name}
+          >
+            {isDir && <FolderClosed size={16} fill={"orange"} className="flex-shrink-0"/>}
+            <span className="truncate">{row.original.file_name}</span>
           </div>
         );
       }

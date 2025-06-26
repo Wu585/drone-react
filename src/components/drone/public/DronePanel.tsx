@@ -198,15 +198,15 @@ const DronePanel = () => {
 
   const taskStaus = useMemo(() => {
     if (!taskList) return "暂无任务";
-    if (taskList.list?.[0].status === TaskStatus.Wait) return "待执行";
-    if (taskList.list?.[0].status === TaskStatus.Carrying) return "执行中";
+    if (taskList.list?.[0]?.status === TaskStatus.Wait) return "待执行";
+    if (taskList.list?.[0]?.status === TaskStatus.Carrying) return "执行中";
 
     return "暂无任务";
   }, [taskList]);
 
   const taskTime = useMemo(() => {
     if (!taskList) return null;
-    if (taskList.list?.[0].status === TaskStatus.Wait) {
+    if (taskList.list?.[0]?.status === TaskStatus.Wait) {
       const task = taskList.list?.[0];
       if (task.begin_time) {
         return dayjs(task.begin_time).format("MM-DD HH:mm");

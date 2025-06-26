@@ -15,6 +15,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   maxVisiblePages?: number;
   className?: string;
+  disabled?: boolean;
 }
 
 export function CommonPagination({
@@ -23,6 +24,7 @@ export function CommonPagination({
                                    onPageChange,
                                    maxVisiblePages = 5,
                                    className = "",
+                                   disabled = false,
                                  }: PaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -53,6 +55,12 @@ export function CommonPagination({
 
   const visiblePages = getVisiblePages();
 
+  const handlePageChange = (page: number) => {
+    if (!disabled) {
+      onPageChange(page);
+    }
+  };
+
   return (
     <Pagination className={className}>
       <PaginationContent>
@@ -61,10 +69,13 @@ export function CommonPagination({
             href="#"
             onClick={(e) => {
               e.preventDefault();
-              if (currentPage > 1) onPageChange(currentPage - 1);
+              if (currentPage > 1 && !disabled) handlePageChange(currentPage - 1);
             }}
-            aria-disabled={currentPage <= 1}
-            className={cn("hover:bg-transparent text-[#d0d0d0] hover:text-[#d0d0d0] border-[1px] border-[#d0d0d0]", currentPage <= 1 ? "opacity-50 cursor-not-allowed" : "")}
+            aria-disabled={currentPage <= 1 || disabled}
+            className={cn(
+              "hover:bg-transparent text-[#d0d0d0] hover:text-[#d0d0d0] border-[1px] border-[#d0d0d0]", 
+              (currentPage <= 1 || disabled) ? "opacity-50 cursor-not-allowed" : ""
+            )}
           />
         </PaginationItem>
 
@@ -76,7 +87,7 @@ export function CommonPagination({
                 className={"hover:bg-transparent text-[#d0d0d0] hover:text-[#d0d0d0]"}
                 onClick={(e) => {
                   e.preventDefault();
-                  onPageChange(1);
+                  handlePageChange(1);
                 }}
                 isActive={currentPage === 1}
               >
@@ -98,7 +109,7 @@ export function CommonPagination({
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                onPageChange(page);
+                handlePageChange(page);
               }}
               isActive={page === currentPage}
             >
@@ -120,7 +131,7 @@ export function CommonPagination({
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  onPageChange(totalPages);
+                  handlePageChange(totalPages);
                 }}
                 isActive={currentPage === totalPages}
               >
@@ -135,10 +146,13 @@ export function CommonPagination({
             href="#"
             onClick={(e) => {
               e.preventDefault();
-              if (currentPage < totalPages) onPageChange(currentPage + 1);
+              if (currentPage < totalPages && !disabled) handlePageChange(currentPage + 1);
             }}
-            aria-disabled={currentPage >= totalPages}
-            className={cn("hover:bg-transparent text-[#d0d0d0] hover:text-[#d0d0d0] border-[1px] border-[#d0d0d0]", currentPage >= totalPages ? "opacity-50 cursor-not-allowed" : "")}
+            aria-disabled={currentPage >= totalPages || disabled}
+            className={cn(
+              "hover:bg-transparent text-[#d0d0d0] hover:text-[#d0d0d0] border-[1px] border-[#d0d0d0]", 
+              (currentPage >= totalPages || disabled) ? "opacity-50 cursor-not-allowed" : ""
+            )}
           />
         </PaginationItem>
       </PaginationContent>

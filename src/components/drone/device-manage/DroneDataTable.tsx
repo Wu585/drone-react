@@ -1,16 +1,10 @@
 import {
   ColumnDef,
-  ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel,
   PaginationState,
-  useReactTable,
-  VisibilityState
 } from "@tanstack/react-table";
 import {useMemo, useState} from "react";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {Device, useBindingDevice} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {Button} from "@/components/ui/button.tsx";
-import {Label} from "@/components/ui/label.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import {Edit} from "lucide-react";
 import {useAjax} from "@/lib/http.ts";
@@ -54,6 +48,7 @@ const DroneDataTable = () => {
       {
         accessorKey: "device_name",
         header: "型号",
+        size: 100,
         cell: ({row}) => (
           <div className="truncate" title={row.getValue("device_name")}>
             {row.getValue("device_name")}
@@ -63,6 +58,7 @@ const DroneDataTable = () => {
       {
         accessorKey: "device_sn",
         header: "设备SN",
+        size: 200,
         cell: ({row}) => (
           <div className="truncate" title={row.getValue("device_sn")}>
             {row.getValue("device_sn")}
@@ -90,6 +86,7 @@ const DroneDataTable = () => {
       {
         accessorKey: "status",
         header: "状态",
+        size: 80,
         cell: ({row}) => (
           <div className="">
           <span className={row.original.status ? "text-green-500" : "text-red-500"}>
@@ -110,6 +107,7 @@ const DroneDataTable = () => {
       {
         accessorKey: "bound_time",
         header: "加入组织时间",
+        size: 180,
         cell: ({row}) => (
           <div className="truncate" title={row.getValue("bound_time")}>
             {row.getValue("bound_time")}
@@ -119,6 +117,7 @@ const DroneDataTable = () => {
       {
         accessorKey: "login_time",
         header: "最后在线时间",
+        size: 180,
         cell: ({row}) => (
           <div className="truncate" title={row.getValue("login_time")}>
             {row.getValue("login_time")}
@@ -142,43 +141,24 @@ const DroneDataTable = () => {
     ];
   }, []);
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
-
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-
-  const {data, mutate} = useBindingDevice(workspaceId, {
-    page: pagination.pageIndex + 1,
-    page_size: pagination.pageSize,
+  const defaultParams = {
+    page: 1,
+    page_size: 10,
     domain: EDeviceTypeName.Aircraft,
     organ: departId ? +departId : undefined,
-  });
+  };
 
-  const table = useReactTable({
-    data: data?.list || [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPagination,
-    manualPagination: true,
-    rowCount: data?.pagination.total,
-    state: {
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination: pagination,
-    },
-  });
+  const [queryParams, setQueryParams] = useState(defaultParams);
+  const {data, mutate, isLoading} = useBindingDevice(workspaceId, queryParams);
+
+  // 处理分页变化
+  const handlePaginationChange = (pagination: PaginationState) => {
+    setQueryParams(prev => ({
+      ...prev,
+      page: pagination.pageIndex + 1,
+      page_size: pagination.pageSize
+    }));
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -194,10 +174,11 @@ const DroneDataTable = () => {
 
       <div className="flex-1 overflow-hidden">
         <CommonTable
+          loading={isLoading}
           data={data?.list || []}
           columns={columns}
           allCounts={data?.list?.length || 0}
-          // onPaginationChange={handlePaginationChange}
+          onPaginationChange={handlePaginationChange}
           getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
         />
       </div>

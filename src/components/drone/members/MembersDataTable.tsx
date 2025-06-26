@@ -20,6 +20,7 @@ import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {ChevronDown, ChevronRight, Edit} from "lucide-react";
 import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -108,7 +109,7 @@ const MembersDataTable = () => {
 
   const [queryParams, setQueryParams] = useState(initialQueryParams);
 
-  const {data, mutate} = useMembersPage(queryParams);
+  const {data, mutate, isLoading} = useMembersPage(queryParams);
 
   const {data: workSpaceList} = useWorkspaceList();
 
@@ -240,7 +241,7 @@ const MembersDataTable = () => {
         <div>
           <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger>
-              <Button className={"bg-[#43ABFF] w-24"}>添加</Button>
+              <CommonButton>添加</CommonButton>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
@@ -402,6 +403,7 @@ const MembersDataTable = () => {
       </div>
       <div className="">
         <CommonTable
+          loading={isLoading}
           data={data?.list || []}
           columns={columns}
           allCounts={data?.pagination?.total || 0}

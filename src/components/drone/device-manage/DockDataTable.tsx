@@ -85,6 +85,7 @@ const DockDataTable = () => {
       {
         accessorKey: "device_sn",
         header: "设备SN",
+        size: 200,
         cell: ({row}) => (
           <div className=" truncate" title={row.getValue("device_sn")}>
             {row.getValue("device_sn")}
@@ -94,6 +95,7 @@ const DockDataTable = () => {
       {
         accessorKey: "nickname",
         header: "名称",
+        size: 160,
         cell: ({row}) => (
           <div className=" truncate" title={row.getValue("nickname")}>
             {row.getValue("nickname")}
@@ -112,6 +114,7 @@ const DockDataTable = () => {
       {
         accessorKey: "status",
         header: "状态",
+        size: 80,
         cell: ({row}) => (
           <div className="">
           <span className={row.original.status ? "text-green-500" : "text-red-500"}>
@@ -123,8 +126,9 @@ const DockDataTable = () => {
       {
         accessorKey: "workspace_name",
         header: "组织",
+        size: 100,
         cell: ({row}) => (
-          <div className=" truncate" title={row.getValue("workspace_name")}>
+          <div className="truncate" title={row.getValue("workspace_name")}>
             {row.getValue("workspace_name")}
           </div>
         )
@@ -132,6 +136,7 @@ const DockDataTable = () => {
       {
         accessorKey: "bound_time",
         header: "加入组织时间",
+        size: 180,
         cell: ({row}) => (
           <div className="truncate" title={row.getValue("bound_time")}>
             {row.getValue("bound_time")}
@@ -141,6 +146,7 @@ const DockDataTable = () => {
       {
         accessorKey: "login_time",
         header: "最后在线时间",
+        size: 180,
         cell: ({row}) => (
           <div className=" truncate" title={row.getValue("login_time")}>
             {row.getValue("login_time")}
@@ -227,19 +233,17 @@ const DockDataTable = () => {
         />
         <MaintainanceSheet device={currentDock} open={maintainanceSheetVisible}
                            onOpenChange={setMaintainanceSheetVisible}/>
-        <div className="overflow-hidden">
-          <CommonTable
-            data={renderData || []}
-            columns={columns}
-            allCounts={data?.pagination.total || 0}
-            getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
-            expandedAll
-            onPaginationChange={({pageIndex}) => setQueryParams({
-              ...queryParams,
-              page: pageIndex + 1
-            })}
-          />
-        </div>
+        <CommonTable
+          data={renderData || []}
+          columns={columns}
+          allCounts={data?.pagination.total || 0}
+          getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+          expandedAll
+          onPaginationChange={({pageIndex}) => setQueryParams({
+            ...queryParams,
+            page: pageIndex + 1
+          })}
+        />
       </div>
     </Uploady>
   );

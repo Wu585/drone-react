@@ -5,7 +5,7 @@ import {
   useReactTable,
   VisibilityState
 } from "@tanstack/react-table";
-import {Fragment, useCallback, useState} from "react";
+import {Fragment, useState} from "react";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
 import {useCurrentUser, useWorkspaceList, WorkSpace} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
@@ -44,6 +44,9 @@ import Uploady, {useItemFinishListener} from "@rpldy/uploady";
 import UploadButton from "@rpldy/upload-button";
 import {UploadPreview} from "@rpldy/upload-preview";
 import UploadAvatar from "@/components/drone/public/UploadAvatar.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
+import {Icon} from "@/components/public/Icon.tsx";
 
 const formSchema = z.object({
   workspace_id: z.string(),
@@ -67,37 +70,77 @@ const formSchema = z.object({
 
 const MANAGE_HTTP_PREFIX = "/manage/api/v1";
 
+interface Workspace {
+  id: number;
+  workspace_id: string;
+  workspace_name: string;
+  workspace_desc: string;
+  platform_name: string;
+  bind_code: string;
+  parent: number;
+  lead_user: number;
+  lead_user_name: string;
+  workspace_code: string;
+  logo: string;
+  create_time: number;
+}
+
+interface NestedWorkspace {
+  id: number;
+  workspace_id: string;
+  workspace_name: string;
+  workspace_desc: string;
+  platform_name: string;
+  bind_code: string;
+  lead_user: number;
+  lead_user_name: string;
+  workspace_code: string;
+  logo: string;
+  create_time: number;
+  children: NestedWorkspace[];
+}
+
+function nestWorkspaces(workspaces: Workspace[]): NestedWorkspace[] {
+  const workspaceMap: { [key: number]: NestedWorkspace } = {};
+  const nestedWorkspaces: NestedWorkspace[] = [];
+
+  // 初始化每个工作区
+  workspaces.forEach(workspace => {
+    workspaceMap[workspace.id] = {
+      ...workspace,
+      children: []
+    };
+  });
+
+  // 构建嵌套结构
+  workspaces.forEach(workspace => {
+    if (workspace.parent === 0) {
+      // 如果没有父级，添加到根级别
+      nestedWorkspaces.push(workspaceMap[workspace.id]);
+    } else {
+      // 否则，将其添加到父级的 children 中
+      const parentWorkspace = workspaceMap[workspace.parent];
+      if (parentWorkspace) {
+        parentWorkspace.children.push(workspaceMap[workspace.id]);
+      } else {
+        // 如果找不到父级，将其视为一级组织
+        nestedWorkspaces.push(workspaceMap[workspace.id]);
+      }
+    }
+  });
+
+  return nestedWorkspaces;
+}
+
 const OrganizationDataTable = () => {
   const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
-  const [expandedRows, setExpandedRows] = useState<number[]>([]);
   const [open, setOpen] = useState(false);
   const {post, delete: deleteClient} = useAjax();
   const [currentOrg, setCurrentOrg] = useState<WorkSpace | null>(null);
 
   // 下拉树专用展开收缩状态
   const [treeExpandedIds, setTreeExpandedIds] = useState<number[]>([]);
-
-  const toggleRow = (id: number) => {
-    setExpandedRows(prev =>
-      prev.includes(id)
-        ? prev.filter(rowId => rowId !== id)
-        : [...prev, id]
-    );
-  };
-
-  const getRowLevel = (row: WorkSpace) => {
-    if (row.parent === 0) return 0;
-    let level = 1;
-    let currentParentId = row.parent;
-    while (currentParentId) {
-      const parent = workSpaceList?.find(item => item.id === currentParentId);
-      if (!parent || parent.parent === null) break;
-      level++;
-      currentParentId = parent.parent;
-    }
-    return level;
-  };
 
   const navigate = useNavigate();
 
@@ -111,40 +154,31 @@ const OrganizationDataTable = () => {
     {
       accessorKey: "workspace_name",
       header: () => <div className="text-left pl-4">组织名</div>,
-      cell: ({row}) => {
-        const level = getRowLevel(row.original);
-        const hasChildren = workSpaceList?.some(item => item.parent === row.original.id);
-        const isExpanded = expandedRows.includes(row.original.id);
-
-        return (
-          <div
-            className="flex items-center"
-            style={{paddingLeft: `${level * 16 + 16}px`}}
-          >
-            {hasChildren && (
-              <button
-                onClick={() => toggleRow(row.original.id)}
-                className="mr-1 p-1 hover:bg-gray-100/10 rounded"
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4"/>
-                ) : (
-                  <ChevronRight className="h-4 w-4"/>
-                )}
-              </button>
-            )}
-            {!hasChildren && <span className="w-6"/>}
-            <span
-              className="truncate cursor-pointer hover:underline"
-              style={{cursor: "pointer"}}
-              onClick={() => onClickWorkspaceName(row.original)}
-            >
-              {row.original.workspace_name}
-            </span>
-          </div>
-        );
-      },
       size: 120,
+      cell: ({row}) => (
+        <div
+          className="truncate flex items-center gap-2"
+          style={{paddingLeft: `${row.depth}rem`}}
+          title={row.getValue("workspace_name")}
+        >
+          {row.getCanExpand() &&
+            <button
+              {...{
+                onClick: row.getToggleExpandedHandler(),
+                style: {cursor: "pointer"},
+              }}
+              className="w-4 h-4 flex items-center justify-center"
+            >
+              {row.getIsExpanded() ? "▼" : "▶"}
+            </button>
+          }
+          <CommonButton
+            variant={"link"}
+            onClick={() => onClickWorkspaceName(row.original)}
+            className="truncate px-0 h-6 bg-transparent">{row.getValue("workspace_name")}
+          </CommonButton>
+        </div>
+      ),
     },
     {
       accessorKey: "lead_user_name",
@@ -232,16 +266,9 @@ const OrganizationDataTable = () => {
 
   const {data: currentUser} = useCurrentUser();
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
-
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 1000,
-  });
-
   const {data: workSpaceList, mutate: mutateWorkSpaceList} = useWorkspaceList();
+
+  const nestedData = nestWorkspaces(workSpaceList || []);
 
   const defaultValues = {
     workspace_id: "",
@@ -326,34 +353,6 @@ const OrganizationDataTable = () => {
     console.log("Form errors:", errors);
   };
 
-  const formatTableData = (data: WorkSpace[]) => {
-    const result: WorkSpace[] = [];
-
-    // Find all root items (where parent is 0 or parent doesn't exist in the data)
-    const topLevel = data.filter(item =>
-      item.parent === 0 || !data.some(parent => parent.id === item.parent)
-    );
-
-    const addChildren = (parentId: number) => {
-      const children = data.filter(item => item.parent === parentId);
-      children.forEach(child => {
-        result.push(child);
-        if (expandedRows.includes(child.id)) {
-          addChildren(child.id);
-        }
-      });
-    };
-
-    topLevel.forEach(item => {
-      result.push(item);
-      if (expandedRows.includes(item.id)) {
-        addChildren(item.id);
-      }
-    });
-
-    return result;
-  };
-
   // 下拉树切换展开收缩
   const toggleTreeRow = (id: number) => {
     setTreeExpandedIds(prev =>
@@ -408,26 +407,6 @@ const OrganizationDataTable = () => {
     });
   };
 
-  const table = useReactTable({
-    data: formatTableData(workSpaceList || []),
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPagination,
-    manualPagination: true,
-    rowCount: workSpaceList?.length || 0,
-    state: {
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination: pagination,
-    },
-  });
-
   return (
     <Uploady
       destination={{
@@ -449,7 +428,7 @@ const OrganizationDataTable = () => {
           <div>
             <Dialog open={open} onOpenChange={handleOpenChange}>
               <DialogTrigger>
-                <Button className={"bg-[#43ABFF] w-24"}>创建</Button>
+                <CommonButton>创建</CommonButton>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
@@ -546,80 +525,14 @@ const OrganizationDataTable = () => {
             </Dialog>
           </div>
         </div>
-        <div className="relative">
-          <Table className={"border-[1px] border-[#0A81E1] w-full table-fixed"}>
-            <TableHeader className={"bg-[#0A81E1]/[.7]"}>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className={"border-none"}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      style={{width: header.getSize()}}
-                      className="p-0 h-10"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-          </Table>
-          <div className="h-[calc(100vh-460px)] overflow-auto">
-            <Table className={"border-[1px] border-[#0A81E1] border-t-0 w-full table-fixed"}>
-              <TableBody className={"bg-[#0A4088]/[.7]"}>
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      className={"border-b-[#0A81E1]"}
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          key={cell.id}
-                          style={{width: cell.column.getSize()}}
-                          className="p-0 h-10"
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center text-[#43ABFF]">
-                      暂无数据
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-        {/*<div className="flex items-center justify-between space-x-2 py-4">
-        <Label className={"text-left"}>
-          共 {data?.pagination.total || 0} 条记录，共 {table.getPageCount()} 页
-        </Label>
-        <div className={"space-x-2"}>
-          <Button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            上一页
-          </Button>
-          <Button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            下一页
-          </Button>
-        </div>
-      </div>*/}
+        <CommonTable
+          data={nestedData}
+          columns={columns}
+          getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+          expandedAll
+          allCounts={workSpaceList?.length || 0}
+          maxHeight={"calc(100vh - 400px)"}
+        />
       </div>
     </Uploady>
   );
