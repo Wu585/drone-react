@@ -230,6 +230,10 @@ const RoleDataTable = () => {
         columns={columns}
         allCounts={roleList?.length || 0}
         getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+        pagination={{
+          pageIndex: 0,
+          pageSize: roleList?.length || 10
+        }}
       />
     </div>
   );

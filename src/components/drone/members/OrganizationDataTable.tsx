@@ -532,6 +532,11 @@ const OrganizationDataTable = () => {
           expandedAll
           allCounts={workSpaceList?.length || 0}
           maxHeight={"calc(100vh - 400px)"}
+          manualPagination={false}
+          pagination={{
+            pageIndex: 0,
+            pageSize: workSpaceList?.length || 10
+          }}
         />
       </div>
     </Uploady>

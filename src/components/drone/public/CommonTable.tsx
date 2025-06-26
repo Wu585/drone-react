@@ -337,15 +337,15 @@ export const CommonTable = forwardRef(<TData, >({
         </Table>
       </div>
       <div className="flex items-center py-6 relative">
-        <CommonPagination
+        {manualPagination && <CommonPagination
           currentPage={table.getState().pagination.pageIndex + 1}
           totalPages={table.getPageCount()}
           onPageChange={(page) => table.setPageIndex(page - 1)}
           disabled={loading} // 新增：加载时禁用分页
-        />
+        />}
         <div className={"absolute right-0"}>
           <Label className="text-[#c0c0c0] whitespace-nowrap">
-            {loading ? "加载中..." : `共 ${allCounts || 0} 条记录，共 ${table.getPageCount()} 页`}
+            {loading ? "加载中..." : `共 ${manualPagination ? (allCounts || 0) : table.getRowModel().rows.length} 条记录，共 ${table.getPageCount()} 页`}
           </Label>
         </div>
       </div>
