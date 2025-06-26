@@ -261,7 +261,7 @@ export const CommonTable = forwardRef(<TData, >({
   };
 
   return (
-    <div className={""}>
+    <div>
       <div className={"overflow-hidden"}>
         <Table className={className}>
           {renderColGroup()}
