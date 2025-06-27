@@ -10,7 +10,7 @@ import {cn} from "@/lib/utils";
 import {SelectProps} from "@radix-ui/react-select";
 
 interface CommonSelectProps extends SelectProps {
-  options: { value: string; label: string }[];
+  options?: { value: string; label: string }[];
   placeholder?: string;
   className?: string;
   contentClassName?: string;
@@ -23,7 +23,7 @@ const CommonSelect = forwardRef<HTMLButtonElement, CommonSelectProps>(
         <SelectTrigger
           ref={ref}
           className={cn(
-            "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] h-8 text-xs data-[placeholder]:text-[#d0d0d0] rounded-[2px]",
+            "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] h-8 text-xs data-[placeholder]:text-[#d0d0d0] rounded-[2px] justify-between",
             className
           )}
         >
@@ -35,7 +35,7 @@ const CommonSelect = forwardRef<HTMLButtonElement, CommonSelectProps>(
             contentClassName
           )}
         >
-          {options.map((option) => (
+          {options?.map((option) => (
             <SelectItem
               key={option.value}
               value={option.value}
@@ -43,7 +43,7 @@ const CommonSelect = forwardRef<HTMLButtonElement, CommonSelectProps>(
             >
               {option.label}
             </SelectItem>
-          ))}
+          )) || []}
         </SelectContent>
       </Select>
     );

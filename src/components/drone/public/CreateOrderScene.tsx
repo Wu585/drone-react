@@ -63,6 +63,9 @@ const Scene = ({currentOrder}: Props) => {
     const yx = findMapLayer("影像");
     yx && (yx.show = false);
 
+    return () => {
+      viewer.destroy();
+    };
   }, []);
 
   // 机场图标的集合

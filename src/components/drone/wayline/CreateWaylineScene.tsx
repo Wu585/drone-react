@@ -63,6 +63,7 @@ const CreateWaylineScene = () => {
 
     return () => {
       setViewerInitialized(false);
+      viewer.destroy();
     };
   }, [setViewerInitialized]);
 

@@ -60,6 +60,9 @@ const DepartScene = () => {
     const yx = findMapLayer("影像");
     yx && (yx.show = false);
 
+    return () => {
+      viewer.destroy();
+    };
   }, []);
 
   useEntityCustomSource("dock");

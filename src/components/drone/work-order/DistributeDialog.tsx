@@ -61,7 +61,7 @@ const DistributeDialog = ({onOpen, currentWorkOrderId, onConfirm}: Props) => {
       }
       onConfirm={onDistribute}
     >
-      <div className={"space-y-6 py-6 px-12"}>
+      <div className={"space-y-6 py-2 px-4"}>
         <div className={"grid grid-cols-10 items-center gap-4"}>
           <span className={"text-left col-span-2"}>分配部门：</span>
           <CommonSelect

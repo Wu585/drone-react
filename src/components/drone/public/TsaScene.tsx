@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef} from "react";
 import {findMapLayer, resetView} from "@/lib/view.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
@@ -61,6 +61,7 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
       infoBox: false,
       navigation: true, //指南针
       selectionIndicator: false, //绿色选择框
+      requestRenderMode: false
     });
 
     const {scene} = viewer;
@@ -86,6 +87,7 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
 
     return () => {
       setViewerInitialized(false);
+      viewer.destroy();
     };
   }, []);
 

@@ -67,6 +67,7 @@ const CockpitScene = () => {
       infoBox: false,
       navigation: false, //指南针
       selectionIndicator: false, //绿色选择框
+      requestRenderMode: false
     });
 
     const {scene} = viewer;
@@ -91,7 +92,6 @@ const CockpitScene = () => {
       setViewerInitialized(true);
     }, 100);
 
-    console.log("set true");
   }, [setViewerInitialized]);
 
   // 机场坐标字符串
@@ -168,6 +168,7 @@ const CockpitScene = () => {
     return () => {
       setViewerInitialized(false);
       console.log("set false");
+      viewer.destroy();
     };
   }, [setViewerInitialized]);
 

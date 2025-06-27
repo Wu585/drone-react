@@ -183,7 +183,7 @@ interface BindingDevice {
   pagination: Pagination;
 }
 
-// 获取绑定设备列表
+// 获取绑定设备列表 不论组织 还是按部门查询的
 export const useBindingDevice = (workspace_id: string, body: Pagination & {
   domain: number,
   organ?: number

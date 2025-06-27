@@ -7,7 +7,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog.tsx";
-import {Button} from "@/components/ui/button.tsx";
 import {ReactNode} from "react";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 import {cn} from "@/lib/utils.ts";
@@ -16,7 +15,7 @@ interface CommonDialogProps {
   /** 对话框标题 */
   title: string;
   /** 对话框触发元素 */
-  trigger: ReactNode;
+  trigger?: ReactNode;
   /** 对话框内容 */
   children: ReactNode;
   /** 确认按钮文本，默认为"确认" */
@@ -78,7 +77,9 @@ const CommonDialog = ({
           className={"h-[45px] bg-dialog-title flex justify-center pl-8"}>
           <DialogTitle className={"text-sm font-medium"}>{title}</DialogTitle>
         </DialogHeader>
-        {children}
+        <div className={"px-8 py-4"}>
+          {children}
+        </div>
         <DialogFooter className={"pr-4 pb-4"}>
           {customFooter ? (
             customFooter
@@ -91,15 +92,25 @@ const CommonDialog = ({
                   </CommonButton>
                 </DialogClose>
               )}
-              {onConfirm && (
-                <CommonButton
-                  onClick={onConfirm}
-                  isLoading={confirmLoading}
-                  disabled={confirmDisabled}
-                >
-                  {confirmText}
-                </CommonButton>
-              )}
+              {onConfirm &&
+                (onOpenChange ? <CommonButton
+                      onClick={onConfirm}
+                      isLoading={confirmLoading}
+                      disabled={confirmDisabled}
+                    >
+                      {confirmText}
+                    </CommonButton>
+                    : <DialogClose asChild>
+                      <CommonButton
+                        onClick={onConfirm}
+                        isLoading={confirmLoading}
+                        disabled={confirmDisabled}
+                      >
+                        {confirmText}
+                      </CommonButton>
+                    </DialogClose>
+                )
+              }
             </div>
           )}
         </DialogFooter>

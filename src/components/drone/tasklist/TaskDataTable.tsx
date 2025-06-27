@@ -13,17 +13,6 @@ import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {formatMediaTaskStatus, formatTaskStatus, groupTasksByDate, UpdateTaskStatus} from "@/hooks/drone/task";
 import {Circle} from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import dayjs from "dayjs";
 import {useNavigate} from "react-router-dom";
@@ -32,6 +21,7 @@ import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
 import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
 import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
 import {CommonDateRange} from "@/components/drone/public/CommonDateRange.tsx";
+import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
 
 const TaskDataTable = () => {
   const {delete: deleteClient, put, post} = useAjax();
@@ -148,78 +138,33 @@ const TaskDataTable = () => {
         size: 140,
         cell: ({row}) =>
           <div className={"flex whitespace-nowrap space-x-2"}>
-            {row.original.status === TaskStatus.Wait && <AlertDialog>
-              <AlertDialogTrigger className={""} asChild>
+            {row.original.status === TaskStatus.Wait && <CommonAlertDialog
+              title={"取消任务"}
+              trigger={
                 <CommonButton permissionKey={"Collection_PlanDelete"} className={"h-6"}>取消</CommonButton>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>取消任务</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    确认取消任务吗？
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => onDeleteTask(row.original.job_id, row.original.workspace_id)}>确认</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>}
-            {row.original.status === TaskStatus.Carrying && <AlertDialog>
-              <AlertDialogTrigger className={""} asChild>
-                <CommonButton className={"h-6"}>挂起</CommonButton>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>挂起任务</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    确认挂起任务吗？
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => onSuspandTask(row.original.job_id, row.original.workspace_id)}>确认</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>}
-            {row.original.status === TaskStatus.Paused && <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <CommonButton className={"h-6"}>恢复</CommonButton>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>恢复任务</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    确认恢复任务吗？
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => onResumeTask(row.original.job_id, row.original.workspace_id)}>确认</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>}
-            {/*{formatMediaTaskStatus(row.original).status === MediaStatus.ToUpload && <AlertDialog>*/}
-            {formatMediaTaskStatus(row.original).status === MediaStatus.ToUpload && <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <CommonButton className={"h-6"}>媒体续传</CommonButton>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>媒体续传</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    确认媒体续传吗？
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onUploadMediaFile(row.original.job_id)}>确认</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>}
+              }
+              description={"确认取消任务吗？"}
+              onConfirm={() => onDeleteTask(row.original.job_id, row.original.workspace_id)}
+            />}
+            {row.original.status === TaskStatus.Carrying && <CommonAlertDialog
+              title={"挂起任务"}
+              trigger={<CommonButton className={"h-6"}>挂起</CommonButton>}
+              description={"确认挂起任务吗？"}
+              onConfirm={() => onSuspandTask(row.original.job_id, row.original.workspace_id)}
+            />
+            }
+            {row.original.status === TaskStatus.Paused && <CommonAlertDialog
+              title={"恢复任务"}
+              trigger={<CommonButton className={"h-6"}>恢复</CommonButton>}
+              description={"确认恢复任务吗？"}
+              onConfirm={() => onResumeTask(row.original.job_id, row.original.workspace_id)}
+            />}
+            {formatMediaTaskStatus(row.original).status === MediaStatus.ToUpload && <CommonAlertDialog
+              title={"媒体续传"}
+              trigger={<CommonButton className={"h-6"}>媒体续传</CommonButton>}
+              description={"确认媒体续传吗？"}
+              onConfirm={() => onUploadMediaFile(row.original.job_id)}
+            />}
           </div>
       }
     ];
@@ -469,78 +414,73 @@ const TaskDataTable = () => {
           </CommonButton>
         </div>
       </div>
+      <CommonTable
+        loading={isLoading}
+        data={data?.list || []}
+        columns={columns}
+        allCounts={data?.pagination.total || 0}
+        getRowId={(row) => row.job_id} // 使用 job_id 作为行ID
+        onPaginationChange={handlePaginationChange}
+        maxHeight={"calc(100vh - 400px)"}
+        renderCustomRows={(table) => (
+          <>
+            {groupTasksByDate(data?.list || []).map(([date, tasks]) => (
+              <Fragment key={`group-${date}`}>
+                {/* 日期分组行 */}
+                <TableRow className="bg-[#274778] border-none">
+                  <TableCell
+                    colSpan={columns.length} // 确保跨越所有列
+                    className="py-[8px] px-4 font-medium text-[#43ABFF] border-none"
+                  >
+                    {date}
+                  </TableCell>
+                </TableRow>
 
-      <div className="">
-        <div>
-          <CommonTable
-            loading={isLoading}
-            data={data?.list || []}
-            columns={columns}
-            allCounts={data?.pagination.total || 0}
-            getRowId={(row) => row.job_id} // 使用 job_id 作为行ID
-            onPaginationChange={handlePaginationChange}
-            maxHeight={"calc(100vh - 400px)"}
-            renderCustomRows={(table) => (
-              <>
-                {groupTasksByDate(data?.list || []).map(([date, tasks]) => (
-                  <Fragment key={`group-${date}`}>
-                    {/* 日期分组行 */}
-                    <TableRow className="bg-[#274778] border-none">
-                      <TableCell
-                        colSpan={columns.length} // 确保跨越所有列
-                        className="py-[8px] px-4 font-medium text-[#43ABFF] border-none"
-                      >
-                        {date}
-                      </TableCell>
-                    </TableRow>
+                {/* 任务数据行 */}
+                {tasks.map((task) => {
+                  const row = table.getRowModel().rows.find(
+                    r => r.original.job_id === task.job_id
+                  );
+                  if (!row) return null;
 
-                    {/* 任务数据行 */}
-                    {tasks.map((task) => {
-                      const row = table.getRowModel().rows.find(
-                        r => r.original.job_id === task.job_id
-                      );
-                      if (!row) return null;
-
-                      return (
-                        <TableRow
-                          key={row.id}
+                  return (
+                    <TableRow
+                      key={row.id}
+                      className={cn(
+                        "h-[46px]",
+                        "border-b-[1px] border-[#192948] text-base bg-[#203D67]/70",
+                        "transition-colors duration-200",
+                        "data-[state=selected]:bg-transparent"
+                      )}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          style={{
+                            width: cell.column.getSize(),
+                            minWidth: cell.column.getSize(),
+                            maxWidth: cell.column.getSize()
+                          }}
                           className={cn(
-                            "h-[46px]",
-                            "border-b-[1px] border-[#192948] text-base bg-[#203D67]/70",
-                            "transition-colors duration-200",
-                            "data-[state=selected]:bg-transparent"
+                            "py-3",
+                            "text-base",
+                            "align-middle",
+                            "px-4",
+                            "leading-none"
                           )}
-                          data-state={row.getIsSelected() && "selected"}
                         >
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell
-                              key={cell.id}
-                              style={{
-                                width: cell.column.getSize(),
-                                minWidth: cell.column.getSize(),
-                                maxWidth: cell.column.getSize()
-                              }}
-                              className={cn(
-                                "py-3",
-                                "text-base",
-                                "align-middle",
-                                "px-4",
-                                "leading-none"
-                              )}
-                            >
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      );
-                    })}
-                  </Fragment>
-                ))}
-              </>
-            )}
-          />
-        </div>
-      </div>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })}
+              </Fragment>
+            ))}
+          </>
+        )}
+      />
     </div>
   );
 };

@@ -40,6 +40,9 @@ import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
 import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 import {CommonTable, ReactTableInstance} from "@/components/drone/public/CommonTable.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
+import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
 
 const InfiniteGridView = ({
                             data,
@@ -237,9 +240,10 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     }));
   };
 
-  const {data, mutate} = useMediaList(workspaceId, queryParams);
+  const {data, mutate, isLoading} = useMediaList(workspaceId, queryParams);
 
-  const {data: defaultData} = useMediaList(workspaceId, job_id ? {
+  // 从任务页面过来的
+  const {data: defaultData, isLoading: defaultIsLoading} = useMediaList(workspaceId, job_id ? {
     page: 1,
     page_size: 10,
     job_id
@@ -448,7 +452,11 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                             alt="Example Image"
                             modalWidth="900px"
                             modalHeight="600px"
-                            triggerElement={<Eye size={18}/>}
+                            triggerElement={
+                              <IconButton>
+                                <Eye size={18}/>
+                              </IconButton>
+                            }
               />}
             {!isDir && getMediaType(row.original.preview_url) === "video" &&
               <MediaPreview src={row.original.preview_url}
@@ -456,52 +464,39 @@ const MediaDataTable = ({onChangeDir}: Props) => {
                             alt="Example Video"
                             modalWidth="70vw"
                             modalHeight="70vh"
-                            triggerElement={<Eye size={18}/>}
+                            triggerElement={
+                              <IconButton>
+                                <Eye size={18}/>
+                              </IconButton>}
               />}
-            {row.original.type !== MediaFileType.DIR && <PermissionButton
+            {row.original.type !== MediaFileType.DIR && <IconButton
               permissionKey={"Collection_MediaDownload"}
-              className={`flex items-center px-0 bg-transparent h-4`}
             >
               <a href={row.original.preview_url} download>
                 <Download size={18}/>
               </a>
-            </PermissionButton>}
-            <PermissionButton
+            </IconButton>}
+            <IconButton
               permissionKey={"Collection_MediaOperation"}
-              className={"bg-transparent h-4 px-0"}
               onClick={() => {
                 setEditingFile(row.original);
                 setInputName(row.original.file_name);
                 setIsEditDialogOpen(true);
               }}
             >
-              <Edit
-                className="hover:opacity-80"
-                size={18}
-              />
-            </PermissionButton>
+              <Edit size={18}/>
+            </IconButton>
 
-            <Dialog>
-              <DialogTrigger asChild>
-                <PermissionButton
-                  className={"bg-transparent h-4 px-0"}
-                  permissionKey={"Collection_MediaOperation"}
-                >
-                  <Trash className={"hover:opacity-80"} size={18}/>
-                </PermissionButton>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>删除文件</DialogTitle>
-                </DialogHeader>
-                <div>删除后地图加载图片也会同步删除，确认删除吗？</div>
-                <DialogFooter>
-                  <DialogClose>
-                    <Button onClick={() => onDeleteFile(row.original)}>确认</Button>
-                  </DialogClose>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <CommonAlertDialog
+              title={"删除文件"}
+              trigger={
+                <IconButton permissionKey={"Collection_MediaOperation"}>
+                  <Trash size={18}/>
+                </IconButton>
+              }
+              description={"删除后地图加载图片也会同步删除，确认删除吗？"}
+              onConfirm={() => onDeleteFile(row.original)}
+            />
           </div>
         );
       }
@@ -659,6 +654,13 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     setQueryParams(defaultParams);
     // tableRef.current?.resetRowSelection();
     tableRef.current?.resetPagination();
+    setBreadcrumbList([
+      {
+        id: 0,
+        file_name: "全部文件夹",
+        type: MediaFileType.DIR
+      }
+    ]);
   };
 
   return (
@@ -856,6 +858,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
       <div className="overflow-hidden">
         {displayType === 0 ? (
           <CommonTable
+            loading={job_id ? defaultIsLoading : isLoading}
             ref={tableRef}
             data={data?.list || []}
             columns={columns}

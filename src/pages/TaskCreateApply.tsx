@@ -108,8 +108,6 @@ const TaskCreateApply = () => {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
   const {data: currentApplyWaylineJob} = useApplyWaylinJobById(id);
-  console.log("currentApplyWaylineJob");
-  console.log(currentApplyWaylineJob);
 
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const departId = localStorage.getItem("departId");

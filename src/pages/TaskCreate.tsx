@@ -116,7 +116,6 @@ const TaskCreate = () => {
 
   const {data: bindingDevices} = useBindingDevice(workspaceId, {
     page: 1,
-    total: -1,
     page_size: 100,
     domain: EDeviceTypeName.Dock,
     organ: departId ? +departId : undefined,

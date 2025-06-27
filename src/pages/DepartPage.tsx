@@ -1,4 +1,3 @@
-import {Button} from "@/components/ui/button.tsx";
 import {useMemo, useState, useEffect} from "react";
 import {LogInIcon, Pencil, Plus, Trash2, X} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
@@ -16,21 +15,17 @@ import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
-import {Input} from "@/components/ui/input.tsx";
 import {Checkbox} from "@/components/ui/checkbox.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import {useAjax} from "@/lib/http.ts";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
 import dayjs from "dayjs";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog.tsx";
 import DepartScene from "@/components/drone/public/DepartScene.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
 
 const OPERATION_HTTP_PREFIX = "/operation/api/v1";
 
@@ -75,7 +70,6 @@ const DepartPage = () => {
   const {data: _droneList} = useBindingDevice(currentWorkSpaceId, {
     page: 1,
     page_size: 1000,
-    total: 0,
     domain: EDeviceTypeName.Dock
   });
 
@@ -197,41 +191,35 @@ const DepartPage = () => {
                 </div>
                 <div className={"flex space-x-2 items-center"}>
                   {permission && <>
-                    <Pencil
-                      size={16}
-                      className={"cursor-pointer"}
-                      onClick={() => {
-                        setVisible(true);
-                        setDepartId(item.id);
+                    <IconButton onClick={() => {
+                      setVisible(true);
+                      setDepartId(item.id);
+                    }}>
+                      <Pencil size={16}/>
+                    </IconButton>
+                    <CommonAlertDialog
+                      title={"删除部门"}
+                      trigger={
+                        <IconButton>
+                          <Trash2 size={16}/>
+                        </IconButton>
+                      }
+                      description={<div>确认删除部门吗？</div>}
+                      onConfirm={() => {
+                        onDeleteDepart(item.id);
+                        form.reset();
+                        setVisible(false);
                       }}
                     />
-                    <AlertDialog>
-                      <AlertDialogTrigger>
-                        <Trash2 size={16} className={"cursor-pointer"}/>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>删除部门</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            确认删除部门吗？
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>取消</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => onDeleteDepart(item.id)}>确认</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   </>}
-                  {(permission || hasPermission(item)) && <LogInIcon
-                    size={16}
-                    // className={`${!permission ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                    className={"cursor-pointer"}
-                    onClick={() => {
-                      navigate(`/tsa?workspace=${item?.workspace_id}`);
-                      localStorage.setItem("departId", item.id.toString());
-                    }}
-                  />}
+                  {(permission || hasPermission(item)) &&
+                    <IconButton
+                      onClick={() => {
+                        navigate(`/tsa?workspace=${item?.workspace_id}`);
+                        localStorage.setItem("departId", item.id.toString());
+                      }}>
+                      <LogInIcon size={16}/>
+                    </IconButton>}
                 </div>
               </div>
             </div>)}
@@ -253,8 +241,7 @@ const DepartPage = () => {
                 <FormItem className={"space-y-4"}>
                   <FormLabel>部门名称：</FormLabel>
                   <FormControl>
-                    <Input  {...field} placeholder={"请输入部门名称"}
-                            className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                    <CommonInput className={"bg-custom-input"}  {...field} placeholder={"请输入部门名称"}/>
                   </FormControl>
                   <FormMessage/>
                 </FormItem>
@@ -266,26 +253,19 @@ const DepartPage = () => {
               render={({field: {value, onChange, ...field}}) => (
                 <FormItem className={"space-y-4"}>
                   <FormLabel>负责人：</FormLabel>
-                  <Select
-                    {...field}
-                    value={String(value)}
-                    onValueChange={onChange}
-                  >
-                    <FormControl>
-                      <SelectTrigger className={"text-white h-[28px] rounded-none bg-[#072E62]/[.7] border-[#43ABFF]"}>
-                        <SelectValue placeholder="选择负责人"/>
-                      </SelectTrigger>
-                    </FormControl>
-                    {/*<FormMessage/>*/}
-                    <SelectContent>
-                      <SelectItem value="0">无</SelectItem>
-                      {userList?.list.map(item => (
-                        <SelectItem key={item.id} value={String(item.id)}>
-                          {item.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <CommonSelect
+                      className={"bg-custom-input"}
+                      placeholder={"请选择负责人"}
+                      {...field}
+                      value={value.toString()}
+                      onValueChange={onChange}
+                      options={userList?.list.map(user => ({
+                        value: user.id.toString(),
+                        label: user.name
+                      }))}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
               name={"lead_user"}
@@ -396,8 +376,8 @@ const DepartPage = () => {
                 </FormItem>
               )}
             />
-            <div className={"text-right"}>
-              <Button className={"bg-[#43ABFF] px-4 my-4"} type={"submit"}>确定</Button>
+            <div className={"text-right py-4"}>
+              <CommonButton type={"submit"}>确定</CommonButton>
             </div>
           </form>
         </Form>

@@ -1,30 +1,21 @@
 import {ColumnDef} from "@tanstack/react-table";
 import {useState} from "react";
-import {ApplyTask, ApplyTaskStatus, applyTaskStatusMap, useApplyWaylinJobs} from "@/hooks/drone";
+import {ApplyTask, ApplyTaskStatus, applyTaskStatusMap, useApplyWaylinJobs, useBindingDevice} from "@/hooks/drone";
 import {TaskType, TaskTypeMap} from "@/types/task.ts";
-import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {Edit, ReceiptText, Trash} from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog.tsx";
 import {useNavigate} from "react-router-dom";
-import {Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog.tsx";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import dayjs from "dayjs";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {cn} from "@/lib/utils.ts";
 import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
+import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
+import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
+import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 
 const TaskDataTable = () => {
   const {delete: deleteClient, post} = useAjax();
@@ -35,13 +26,28 @@ const TaskDataTable = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const departId = localStorage.getItem("departId");
 
+  const defaultParams = {
+    page: 1,
+    page_size: 10,
+  };
+
+  const [queryParams, setQueryParams] = useState(defaultParams);
+  const {data, mutate, isLoading} = useApplyWaylinJobs(queryParams);
+
+  const {data: bindingDevices} = useBindingDevice(workspaceId, {
+    page: 1,
+    page_size: 100,
+    domain: EDeviceTypeName.Dock,
+    organ: departId ? +departId : undefined,
+  });
+
   const columns: ColumnDef<ApplyTask>[] = [
     {
       accessorKey: "name",
       header: "计划名称",
       size: 140,
       cell: ({row}) => (
-        <div className="max-w-[160px] truncate" title={row.original.name}>
+        <div className="truncate" title={row.original.name}>
           {row.original.name}
         </div>
       )
@@ -50,7 +56,7 @@ const TaskDataTable = () => {
       accessorKey: "create_time",
       header: "申请时间",
       size: 180,
-      cell: ({row}) => <span className="whitespace-nowrap truncate"
+      cell: ({row}) => <span className="truncate"
                              title={dayjs(row.original.create_time).format("YYYY-MM-DD HH:mm:ss")}>
         {dayjs(row.original.create_time).format("YYYY-MM-DD HH:mm:ss")}
       </span>
@@ -60,7 +66,7 @@ const TaskDataTable = () => {
       header: "执行日期",
       size: 160,
       cell: ({row}) => (
-        <div className="max-w-[160px] truncate" title={row.original.task_days?.length > 0 ?
+        <div className="truncate" title={row.original.task_days?.length > 0 ?
           `${dayjs.unix(row.original.task_days[0]).format("YYYY-MM-DD")}~${dayjs.unix(row.original.task_days[row.original.task_days.length - 1]).format("YYYY-MM-DD")}` : ""}>
           {row.original.task_days?.length > 0 &&
             dayjs.unix(row.original.task_days[0]).format("YYYY-MM-DD") + "~" + dayjs.unix(row.original.task_days[row.original.task_days.length - 1]).format("YYYY-MM-DD")}
@@ -80,7 +86,7 @@ const TaskDataTable = () => {
           time = task_periods.map(item => dayjs.unix(item[0]).format("HH:mm:ss") + "-" + dayjs.unix(item[1]).format("HH:mm:ss")).join(",");
         }
         return (
-          <div className="max-w-[160px] truncate" title={time}>
+          <div className="truncate" title={time}>
             {time}
           </div>
         );
@@ -97,7 +103,7 @@ const TaskDataTable = () => {
       header: "航线名称",
       size: 160,
       cell: ({row}) => (
-        <div className="max-w-[160px] truncate" title={row.original.wayline_name}>
+        <div className="truncate" title={row.original.wayline_name}>
           {row.original.wayline_name ?? "--"}
         </div>
       )
@@ -105,9 +111,9 @@ const TaskDataTable = () => {
     {
       accessorKey: "dock_name",
       header: "机场",
-      size: 140,
+      size: 120,
       cell: ({row}) => (
-        <div className="max-w-[140px] truncate" title={row.original.dock_name}>
+        <div className="truncate" title={row.original.dock_name}>
           {row.original.dock_name}
         </div>
       )
@@ -117,7 +123,7 @@ const TaskDataTable = () => {
       header: "创建人",
       size: 100,
       cell: ({row}) => (
-        <div className="max-w-[100px] truncate" title={row.original.username}>
+        <div className="truncate" title={row.original.username}>
           {row.original.username}
         </div>
       )
@@ -125,7 +131,7 @@ const TaskDataTable = () => {
     {
       accessorKey: "organ_name",
       header: "部门",
-      size: 100,
+      size: 120,
       cell: ({row}) => (
         <div className="max-w-[100px] truncate" title={row.original.organ_name}>
           {row.original.organ_name}
@@ -144,42 +150,29 @@ const TaskDataTable = () => {
       size: 120,
       cell: ({row}) =>
         <div className={"flex whitespace-nowrap space-x-2"}>
-          <Button className={"p-0 h-4 bg-transparent"}
-                  onClick={() => navigate(`/task-create-apply?id=${row.original.id}`)}>
+          <IconButton onClick={() => navigate(`/task-create-apply?id=${row.original.id}`)}>
             <Edit size={16}/>
-          </Button>
-          <Button className={"p-0 h-4 bg-transparent"} onClick={() => {
+          </IconButton>
+          {row.original.status === ApplyTaskStatus.PENDING_REVIEW && <IconButton onClick={() => {
             setOpen(true);
             setCurrentId(row.original.id);
           }}>
             <ReceiptText size={16}/>
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger className={""} asChild>
-              <Button
-                className={"p-0 h-4 bg-transparent"}>
-                <Trash size={16}/>
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>删除申请任务</AlertDialogTitle>
-                <AlertDialogDescription>
-                  确认删除这条申请任务吗？
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction onClick={async () => {
-                  await onDeleteTask(row.original.id);
-                  toast({
-                    description: "删除成功！"
-                  });
-                  await mutate();
-                }}>确认</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          </IconButton>}
+          <CommonAlertDialog
+            title={"删除申请任务"}
+            trigger={<IconButton>
+              <Trash size={16}/>
+            </IconButton>}
+            description={<span>确认删除这条申请任务吗？</span>}
+            onConfirm={async () => {
+              await onDeleteTask(row.original.id);
+              toast({
+                description: "删除成功！"
+              });
+              await mutate();
+            }}
+          />
         </div>
     }
   ];
@@ -208,7 +201,10 @@ const TaskDataTable = () => {
       variant: "destructive"
     });
     const selectedTask = data?.list.find(item => item.id === currentId);
-    if (!selectedTask) return;
+    if (!selectedTask) return toast({
+      description: "找不到任务！",
+      variant: "destructive"
+    });
     if (!selectedTask.file_id && taskStatus === ApplyTaskStatus.APPROVED) return toast({
       description: "还未绑定航线！",
       variant: "destructive"
@@ -219,7 +215,14 @@ const TaskDataTable = () => {
         status: taskStatus
       });
       if (taskStatus === ApplyTaskStatus.APPROVED) {
-        await post(`${HTTP_PREFIX}/workspaces/${workspaceId}/flight-tasks`, selectedTask as any);
+        const device = bindingDevices?.list.find(item => item.device_sn === selectedTask.dock_sn);
+
+        if (!device) return toast({
+          description: "该部门下找不到该设备！",
+          variant: "destructive"
+        });
+
+        await post(`${HTTP_PREFIX}/workspaces/${device.workspace_id}/flight-tasks`, selectedTask as any);
         toast({
           description: "审核成功，任务创建成功！"
         });
@@ -240,15 +243,6 @@ const TaskDataTable = () => {
     }
   };
 
-  const defaultParams = {
-    page: 1,
-    page_size: 10,
-  };
-
-  const [queryParams, setQueryParams] = useState(defaultParams);
-
-  const {data, mutate, isLoading} = useApplyWaylinJobs(queryParams);
-
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -257,34 +251,36 @@ const TaskDataTable = () => {
         </div>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>飞行任务审核</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                审核结果
-              </Label>
-              <Select value={taskStatus?.toString() || ""} onValueChange={(value) => setTaskStatus(+value)}>
-                <SelectTrigger className={"col-span-3"}>
-                  <SelectValue placeholder="选择审核结果"/>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ApplyTaskStatus.APPROVED.toString()}>通过</SelectItem>
-                  <SelectItem value={ApplyTaskStatus.REJECTED.toString()}>驳回</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose>
-              <Button type="submit" onClick={() => onAuditTask(currentId!)}>确认</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CommonDialog
+        open={open} onOpenChange={setOpen}
+        title={"飞行任务审核"}
+        onConfirm={async () => {
+          await onAuditTask(currentId!);
+          setOpen(false);
+        }}
+      >
+        <div className="grid grid-cols-10 items-center px-2">
+          <Label className="col-span-2">
+            审核结果：
+          </Label>
+          <CommonSelect
+            value={taskStatus?.toString() || ""}
+            onValueChange={(value) => setTaskStatus(+value)}
+            className={"col-span-8"}
+            placeholder={"请选择审核结果"}
+            options={[
+              {
+                value: ApplyTaskStatus.APPROVED.toString(),
+                label: "通过"
+              },
+              {
+                value: ApplyTaskStatus.REJECTED.toString(),
+                label: "驳回"
+              }
+            ]}
+          />
+        </div>
+      </CommonDialog>
 
       <CommonTable
         data={data?.list || []}

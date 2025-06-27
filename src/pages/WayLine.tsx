@@ -1,30 +1,21 @@
-import {ArrowDownToLine, Camera, Drone, Edit, Plus, Rocket, Trash, Upload, User} from "lucide-react";
+import {ArrowDownToLine, Camera, Drone, Edit, Plus, Trash, Upload, User} from "lucide-react";
 import UploadButton from "@rpldy/upload-button";
 import Uploady from "@rpldy/uploady";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {useDeleteWalineFile, useDownloadWayline, useWaylineById, useWaylines, WaylineItem} from "@/hooks/drone";
 import {useEffect, useState} from "react";
 import {DEVICE_NAME} from "@/types/device.ts";
-import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
 import {CURRENT_CONFIG} from "@/lib/config.ts";
 import {getAuthToken} from "@/lib/http.ts";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog.tsx";
 import {useNavigate} from "react-router-dom";
 import Scene from "@/components/drone/public/Scene.tsx";
 import {calculateHaversineDistance, cn} from "@/lib/utils.ts";
 import MapChange from "@/components/drone/public/MapChange.tsx";
-import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {useAddWaylineEntityById} from "@/hooks/drone/useAddWaylineEntityById.ts";
 import {useSetViewByWaylineData} from "@/hooks/drone/wayline/useSetViewByWaylineData.ts";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
 
 const HTTP_PREFIX_Wayline = "wayline/api/v1";
 
@@ -81,14 +72,7 @@ const WayLine = () => {
       length += calculateHaversineDistance([posArr[i].longitude, posArr[i].latitude],
         [posArr[i + 1].longitude, posArr[i + 1].latitude]);
     }
-    console.log("length==");
-    console.log(length);
   }, [currentWaylineData]);
-
-  /*viewer.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(deviceInfo.dock.basic_osd.longitude, deviceInfo.dock.basic_osd.latitude, 100),
-    duration: 1
-  });*/
 
   useSetViewByWaylineData(currentWayline);
 
@@ -105,14 +89,13 @@ const WayLine = () => {
           className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 justify-between"}>
           <span className={"text-base h-8 "}>航线列表</span>
           <div className={"flex space-x-4 h-8 items-center"}>
-            <PermissionButton
+            <IconButton
               permissionKey={"Collection_WaylineCreateEdit"}
               onClick={() => navigate("/create-wayline")}
-              className={"bg-transparent px-0"}
             >
               <Plus size={16}/>
-            </PermissionButton>
-            <PermissionButton permissionKey={"Collection_WaylineImport"} className={"bg-transparent px-0"}>
+            </IconButton>
+            <IconButton permissionKey={"Collection_WaylineImport"}>
               <Uploady
                 isSuccessfulCall={(x) => onComplete(x)}
                 destination={{
@@ -125,7 +108,7 @@ const WayLine = () => {
                   <Upload size={16}/>
                 </UploadButton>
               </Uploady>
-            </PermissionButton>
+            </IconButton>
           </div>
         </div>
         <div className={"px-[12px] py-4 space-y-2 h-[calc(100vh-180px)] overflow-y-auto"}>
@@ -136,57 +119,49 @@ const WayLine = () => {
               style={{
                 backgroundSize: "100% 100%"
               }}
-              className={cn("text-base px-4 py-3 cursor-pointer whitespace-nowrap",
+              className={cn("text-base px-4 py-3 cursor-pointer whitespace-nowrap space-y-2",
                 line.id === currentWayline ? "bg-panel-item-active" : "bg-panel-item")}
               key={line.id}
               onClick={() => onClickWayline(line)}
             >
-              <div className={"flex items-center justify-between"}>
+              <div className={"flex items-center justify-between "}>
                 <span className={"col-span-2 w-28 truncate"} title={line.name}>{line.name}</span>
                 <div className={"space-x-4 text-[#d0d0d0]"}>
-                  <PermissionButton
-                    className={"px-0 hover:bg-transparent hover:text-white"}
+                  <IconButton
+                    className={"text-[#d0d0d0] hover:bg-transparent hover:text-white"}
                     permissionKey={"Collection_WaylineCreateEdit"}
-                    variant={"ghost"}
                     onClick={() => navigate(`/create-wayline?id=${line.id}`)}
                   >
                     <Edit size={16}/>
-                  </PermissionButton>
-                  <PermissionButton
-                    className={"px-0 hover:bg-transparent hover:text-white"}
+                  </IconButton>
+                  <IconButton
+                    className={"text-[#d0d0d0] hover:bg-transparent hover:text-white"}
                     permissionKey={"Collection_WaylineDownload"}
                     variant={"ghost"}
                     onClick={() => downloadWayline(line.id, line.name)}>
                     <ArrowDownToLine size={16}/>
-                  </PermissionButton>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <PermissionButton
-                        className={"px-0 hover:bg-transparent hover:text-white"}
+                  </IconButton>
+                  <CommonAlertDialog
+                    title={"删除航线"}
+                    trigger={
+                      <IconButton
+                        className={"text-[#d0d0d0] hover:bg-transparent hover:text-white"}
                         permissionKey={"Collection_WaylineDelete"}
                         variant={"ghost"}>
                         <Trash size={16}/>
-                      </PermissionButton>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>删除航线</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          确认删除航线吗？
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
-                        <AlertDialogAction onClick={async () => {
-                          await deleteWaylineFile(line.id);
-                          await mutate();
-                        }}>确定</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                      </IconButton>
+                    }
+                    description={<div>
+                      确认删除航线吗？
+                    </div>}
+                    onConfirm={async () => {
+                      await deleteWaylineFile(line.id);
+                      await mutate();
+                    }}
+                  />
                 </div>
               </div>
-              <div className={"grid grid-cols-6 space-x-4 text-[12px] text-[#d0d0d0] text-sm"}>
+              <div className={"grid grid-cols-6 text-[12px] text-[#d0d0d0] text-sm"}>
                 <div className={"col-span-2 space-x-2 grid grid-cols-6 items-center"}>
                   <Drone className={"col-span-1"} size={16}/>
                   <span className={""}>{DEVICE_NAME[line.drone_model_key]}</span>

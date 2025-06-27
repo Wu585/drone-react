@@ -21,16 +21,7 @@ import {
 } from "@/hooks/drone/elements";
 import {cn} from "@/lib/utils";
 import {useState} from "react";
-import {
-  Dialog, DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog.tsx";
 import {Label} from "@/components/ui/label.tsx";
-import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
 import DrawPanel from "@/components/drone/elements/DrawPanel.tsx";
@@ -46,6 +37,10 @@ import ElementInfo, {Element} from "@/components/drone/elements/ElementInfo.tsx"
 import {MapElementEnum} from "@/types/map.ts";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {usePermission} from "@/hooks/drone";
+import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
 
 const GroupItem = ({
                      group,
@@ -109,86 +104,46 @@ const GroupItem = ({
 
         {/* 操作按钮组 */}
         <div
-          className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 absolute right-2">
-          <Dialog open={showEdit} onOpenChange={setShowEdit}>
-            <DialogTrigger asChild>
-              <PermissionButton
+          className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-2 absolute right-2">
+          <CommonDialog
+            open={showEdit} onOpenChange={setShowEdit}
+            title={"编辑文件夹"}
+            trigger={
+              <IconButton
                 size={"sm"}
                 permissionKey={"Collection_AnnotationEdit"}
                 onClick={(e) => {
                   e.stopPropagation();
                   setEditName(group.name);
                 }}
-                className="p-1 hover:bg-[#43ABFF]/20 rounded bg-transparent w-8 h-8"
               >
-                <Pencil className="h-4 w-4 text-white"/>
-              </PermissionButton>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>编辑文件夹</DialogTitle>
-              </DialogHeader>
-              <div className="flex space-x-2 items-center">
-                <Label className="mr-4 whitespace-nowrap">文件夹名称</Label>
-                <Input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                />
-              </div>
-              <DialogFooter>
-                <DialogClose>
-                  <Button
-                    onClick={async () => {
-                      await onUpdate(group.id, editName);
-                    }}
-                  >
-                    确认
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <Pencil size={16}/>
+              </IconButton>}
+            onConfirm={async () => {
+              await onUpdate(group.id, editName);
+              setShowEdit(false);
+            }}
+          >
+            <div className={"grid grid-cols-10 items-center"}>
+              <Label className="mr-4 whitespace-nowrap col-span-2">文件夹名称：</Label>
+              <CommonInput
+                className={"col-span-8"}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
+          </CommonDialog>
 
-          {/* 删除按钮 */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <PermissionButton
-                size={"sm"}
-                permissionKey={"Collection_AnnotationEdit"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-                className="p-1 hover:bg-red-500/20 rounded w-8 h-8 bg-transparent"
-              >
-                <Trash2 className="h-4 w-4 text-red-500"/>
-              </PermissionButton>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>删除文件夹</DialogTitle>
-              </DialogHeader>
-              <div className="py-4">
-                <p className="text-sm text-gray-500">
-                  确定要删除文件夹 "{group.name}" 吗？此操作不可恢复。
-                </p>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">取消</Button>
-                </DialogClose>
-                <DialogClose>
-                  <Button
-                    variant="destructive"
-                    onClick={async () => {
-                      await onDelete(group.id);
-                    }}
-                  >
-                    删除
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <CommonAlertDialog
+            title={"删除文件夹"}
+            trigger={
+              <IconButton permissionKey={"Collection_AnnotationEdit"}>
+                <Trash2 size={16}/>
+              </IconButton>
+            }
+            description={<div>确定要删除文件夹 "{group.name}" 吗？此操作不可恢复。</div>}
+            onConfirm={() => onDelete(group.id)}
+          />
         </div>
       </div>
 
@@ -473,31 +428,24 @@ const Elements = () => {
         <div
           className="flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between">
           <div className={"h-8 text-base"}>地图标注</div>
-          <div className="flex space-x-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <PermissionButton permissionKey={"Collection_AnnotationEdit"} className={"py-0 h-8 bg-transparent"}>
-                  <FolderPlus size={18} className="cursor-pointer text-orange-400"/>
-                </PermissionButton>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>新建文件夹</DialogTitle>
-                </DialogHeader>
-                <div className={"flex space-x-2 items-center"}>
-                  <Label className={"mr-4 whitespace-nowrap"}>文件夹名称</Label>
-                  <Input value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
-                </div>
-                <DialogFooter>
-                  <DialogFooter>
-                    <DialogClose>
-                      <Button onClick={onCreateGroup}>确认</Button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+          <CommonDialog
+            title={"新建文件夹"}
+            trigger={
+              <IconButton>
+                <FolderPlus size={18} className="cursor-pointer text-orange-400"/>
+              </IconButton>
+            }
+            onConfirm={onCreateGroup}
+          >
+            <div className={"grid grid-cols-10 items-center"}>
+              <Label className="mr-4 whitespace-nowrap col-span-2">文件夹名称：</Label>
+              <CommonInput
+                className={"col-span-8"}
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+              />
+            </div>
+          </CommonDialog>
         </div>
         <div className="flex-1 px-[12px] py-4 space-y-2 overflow-y-auto">
           {(!groups || groups?.length === 0) && <div className={"content-center py-8 text-[#d0d0d0]"}>暂无数据</div>}

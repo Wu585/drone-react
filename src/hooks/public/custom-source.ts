@@ -5,9 +5,9 @@ export const useEntityCustomSource = (sourceName: string) => {
     const dataSource = new Cesium.CustomDataSource(sourceName);
     viewer.dataSources.add(dataSource);
 
-    return () => {
-      viewer.dataSources.remove(dataSource);
-    };
+    // return () => {
+    //   viewer.dataSources.remove(dataSource);
+    // };
   }, [sourceName]);
 };
 
@@ -21,4 +21,4 @@ export const getCustomSource = (sourceName: string): {
     values: any[]
   }
   show: boolean
-} | undefined => viewer.dataSources.getByName(sourceName)?.[0];
+} | undefined => viewer?.dataSources?.getByName(sourceName)?.[0];

@@ -2,7 +2,7 @@ import { forwardRef } from "react"
 import { cn } from "@/lib/utils"
 import {Input, InputProps} from "@/components/ui/input.tsx";
 
-interface CommonInputProps extends InputProps {
+export interface CommonInputProps extends InputProps {
   // 可以添加自定义props
 }
 
