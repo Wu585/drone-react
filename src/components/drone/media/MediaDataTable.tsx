@@ -410,8 +410,8 @@ const MediaDataTable = ({onChangeDir}: Props) => {
     {
       accessorKey: "drone",
       header: "飞行器",
-      size: 100,
-      cell: ({row}) => <div>
+      size: 160,
+      cell: ({row}) => <div className={"truncate"} title={row.original.drone || "--"}>
         {row.original.drone || "--"}
       </div>
     },
@@ -419,7 +419,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
       accessorKey: "payload",
       header: "负载类型",
       size: 100,
-      cell: ({row}) => <div>
+      cell: ({row}) => <div className={"truncate"} title={row.original.payload || "--"}>
         {row.original.payload || "--"}
       </div>
     },
