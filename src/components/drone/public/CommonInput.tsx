@@ -12,7 +12,7 @@ const CommonInput = forwardRef<HTMLInputElement, CommonInputProps>(
       <Input
         ref={ref}
         className={cn(
-          "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] rounded h-8 placeholder:text-[#d0d0d0] text-xs",
+          "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] h-8 placeholder:text-[#d0d0d0] text-xs rounded-[2px]",
           className
         )}
         {...props}

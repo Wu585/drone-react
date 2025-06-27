@@ -12,7 +12,7 @@ const CommonButton = forwardRef<HTMLButtonElement, CommonButtonProps>(
         ref={ref}
         {...props}
         variant={variant}
-        className={`bg-[#3084E4] rounded-1 text-white h-8 ${className}`}
+        className={`bg-[#3084E4] rounded text-white h-8 ${className}`}
       />
     );
   }

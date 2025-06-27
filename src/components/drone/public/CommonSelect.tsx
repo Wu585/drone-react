@@ -23,7 +23,7 @@ const CommonSelect = forwardRef<HTMLButtonElement, CommonSelectProps>(
         <SelectTrigger
           ref={ref}
           className={cn(
-            "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] rounded h-8 text-xs data-[placeholder]:text-[#d0d0d0]",
+            "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] h-8 text-xs data-[placeholder]:text-[#d0d0d0] rounded-[2px]",
             className
           )}
         >

@@ -76,7 +76,7 @@ export function CommonDateRange({
           variant="outline"
           className={cn(
             "w-full justify-start text-left font-normal",
-            "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] rounded h-8 text-xs",
+            "bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] rounded-[2px] h-8 text-xs",
             "hover:bg-[#2D5FAC]/[.3] hover:text-white",
             "text-white",
             !dateRange?.from && "text-muted-foreground",
