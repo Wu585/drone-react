@@ -702,7 +702,7 @@ export const useDepartList = (id?: number) => {
 };
 
 export const useUserListByDepartId = (departId?: number) => {
-  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId);
+  const workspaceId = localStorage.getItem(ELocalStorageKey.SelectedWorkspaceId) || localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const {data: _userList} = useMembersPage({
     page: 1,
     page_size: 1000,
