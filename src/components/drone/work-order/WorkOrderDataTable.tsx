@@ -10,7 +10,7 @@ import {
   WorkOrder
 } from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {Edit, Eye, Loader2} from "lucide-react";
+import {Edit, Eye} from "lucide-react";
 import {getAuthToken, useAjax} from "@/lib/http.ts";
 import {
   Dialog,
@@ -39,6 +39,7 @@ import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
 import {Button} from "@/components/drone/public/Button.tsx";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 import {CommonDateRange} from "@/components/drone/public/CommonDateRange.tsx";
+import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -407,12 +408,127 @@ const WorkOrderDataTable = () => {
         <div className={"col-span-2 flex items-center text-right justify-end space-x-4"}>
           {selectedRows.length > 0 &&
             <CommonButton onClick={onLoadOrderToMap}>地图加载</CommonButton>}
-          <Dialog open={open} onOpenChange={(value) => {
-            if (!value) {
-              setCurrentOrder(null);
-            }
-            setOpen(value);
-          }}>
+
+          <CommonDialog
+            contentClassName={"max-w-screen-lg"}
+            open={open}
+            onOpenChange={(value) => {
+              if (!value) {
+                setCurrentOrder(null);
+              }
+              setOpen(value);
+            }}
+            title={"工单管理"}
+            trigger={<CommonButton
+              permissionKey={"Collection_TicketCreateEdit"}
+              onClick={() => {
+                setCurrentOrder(null);
+                setOrderType("create");
+                stepper.goTo("1");
+              }}
+            >创建</CommonButton>}
+          >
+            <div className={"border-[#43ABFF] flex p-8 rounded-md bg-[#1b233c] opacity-80"}>
+              <ol className="flex flex-col gap-2" aria-orientation="vertical">
+                {stepper.all.map((step, index, array) => (
+                  <div key={step.id} className={""}>
+                    <li className="flex items-center gap-4 flex-shrink-0">
+                      <Button
+                        type="button"
+                        role="tab"
+                        variant={index <= currentIndex ? "default" : "secondary"}
+                        aria-current={stepper.current.id === step.id ? "step" : undefined}
+                        aria-posinset={index + 1}
+                        aria-setsize={steps.length}
+                        aria-selected={stepper.current.id === step.id}
+                        className={cn(
+                          "flex size-10 items-center justify-center rounded-full",
+                          index <= currentIndex ? "bg-[#43ABFF]" : "",
+                          (!currentOrder && step.id !== "1") ||
+                          (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status)))
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
+                        )}
+                        onClick={() => {
+                          if (!currentOrder && step.id !== "1") return;
+                          if (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status))) return;
+                          stepper.goTo(step.id);
+                        }}
+                      >
+                        {index + 1}
+                      </Button>
+                      <span className={cn(
+                        "text-sm font-medium",
+                        (!currentOrder && step.id !== "1") ||
+                        (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status)))
+                          ? "opacity-50"
+                          : ""
+                      )}>
+                          {step.title}
+                        </span>
+                    </li>
+                    <div className="flex gap-4">
+                      {index < array.length - 1 && (
+                        <div
+                          className="flex justify-center"
+                          style={{
+                            paddingInlineStart: "1.25rem",
+                          }}
+                        >
+                          <Separator
+                            orientation="vertical"
+                            className={`w-[2px] h-24`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </ol>
+              <div className={"px-4 flex-1"}>
+                {stepper.switch({
+                  "1": () =>
+                    <CreateOrder
+                      type={orderType}
+                      onSuccess={() => {
+                        setOpen(false);
+                        mutate();
+                        mutateCurrentOrder();
+                      }}
+                      currentOrder={currentOrderData}/>,
+                  "2": () => isGly && (currentOrder?.status === 1 || currentOrder?.status === 4) ?
+                    <div
+                      className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
+                      <span className={"text-[32px]"}>待处理...</span>
+                    </div> :
+                    <Feedback
+                      type={orderHandleType}
+                      onSuccess={() => {
+                        setOpen(false);
+                        mutate();
+                        mutateCurrentOrder();
+                      }}
+                      currentOrder={currentOrderData}
+                    />,
+                  "3": () => isGly || currentOrderData?.status === 3 ?
+                    <Audit
+                      currentOrder={currentOrderData}
+                      onSuccess={() => {
+                        setOpen(false);
+                        mutate();
+                        mutateCurrentOrder();
+                      }}
+                    /> : <div
+                      className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
+                      <span className={"text-[32px]"}>审核中...</span>
+                    </div>,
+                  "4": () => <Complete/>
+                })}
+              </div>
+            </div>
+          </CommonDialog>
+
+          <Dialog>
             <DialogTrigger asChild>
               <CommonButton
                 permissionKey={"Collection_TicketCreateEdit"}

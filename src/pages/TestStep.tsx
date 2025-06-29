@@ -29,21 +29,21 @@ const downloadKmz = () => {
   for (let i = 0; i < a.length; i++) {
     byteNumbers[i] = a.charCodeAt(i);
   }
-  
+
   // 创建 Blob
   const byteArray = new Uint8Array(byteNumbers);
   const blob = new Blob([byteArray], { type: 'application/vnd.google-earth.kmz' });
-  
+
   // 创建下载链接
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
   link.download = 'template.kmz';
-  
+
   // 触发下载
   document.body.appendChild(link);
   link.click();
-  
+
   // 清理
   window.URL.revokeObjectURL(url);
   document.body.removeChild(link);
@@ -57,7 +57,7 @@ function TestStep() {
     <div className="flex h-full">
       {/* 添加下载按钮 */}
       <div className="absolute top-4 right-4">
-        <Button 
+        <Button
           onClick={downloadKmz}
           className="bg-[#43ABFF] hover:bg-[#43ABFF]/90"
         >
@@ -85,10 +85,10 @@ function TestStep() {
                 </Button>
                 {/* 连接线 */}
                 {index < stepper.all.length - 1 && (
-                  <div 
+                  <div
                     className={`absolute left-1/2 h-[40px] w-[2px] -translate-x-1/2 ${
                       index < currentIndex ? 'bg-[#43ABFF]' : 'bg-gray-200'
-                    }`} 
+                    }`}
                     style={{top: '40px'}}
                   />
                 )}
@@ -104,7 +104,7 @@ function TestStep() {
       </div>
 
       {/* 中间内容区 */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 border-2">
         <div className="mb-6">
           <h2 className="text-lg font-medium">{stepper.current.title}</h2>
           <p className="text-sm text-gray-500">{stepper.current.description}</p>
