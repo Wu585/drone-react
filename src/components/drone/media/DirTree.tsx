@@ -93,7 +93,7 @@ const TreeItem = ({
                 setExpanded(!expanded);
               }}
               className={cn(
-                "h-4 w-4 transition-transform text-gray-500",
+                "h-4 w-4 transition-transform text-white",
                 expanded && "rotate-90"
               )}
             />
@@ -110,7 +110,7 @@ const TreeItem = ({
           )}
         </div>
 
-        <span className="text-sm text-gray-500 truncate">{node.name}</span>
+        <span className="text-sm text-white truncate">{node.name}</span>
       </div>
 
       {expanded && node.children && (
@@ -132,13 +132,15 @@ const TreeItem = ({
 
 const DirTree = ({onSelect}: { onSelect?: (id: number) => void }) => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const departId = localStorage.getItem("departId");
   const [selectedId, setSelectedId] = useState<number>(0);
 
   const [searchParams] = useState({
     page: 1,
     page_size: 1000,
     parent: -1,
-    types: [MediaFileType.DIR]
+    types: [MediaFileType.DIR],
+    organ: departId ? departId : undefined,
   });
 
   const {data: mediaData} = useMediaList(workspaceId, searchParams);

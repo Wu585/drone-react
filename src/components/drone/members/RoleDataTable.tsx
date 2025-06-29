@@ -3,35 +3,21 @@ import {
 } from "@tanstack/react-table";
 import {useState} from "react";
 import {buildTree, Role, useResourceList, useRoleList} from "@/hooks/drone";
-import {ELocalStorageKey} from "@/types/enum.ts";
-import {Button} from "@/components/ui/button.tsx";
-import {Input} from "@/components/ui/input.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog.tsx";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
 import {useAjax} from "@/lib/http.ts";
 import dayjs from "dayjs";
 import {Edit, Trash2} from "lucide-react";
 import {TreeSelect} from "@/components/ui/tree-select.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog.tsx";
 import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
+import {IconButton} from "../public/IconButton";
 
 const formSchema = z.object({
   name: z.string().min(3, {
@@ -70,29 +56,21 @@ const RoleDataTable = () => {
             className="cursor-pointer hover:text-[#43ABFF] transition-colors"
             onClick={() => handleEdit(row.original)}
           />
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Trash2 size={16} className="cursor-pointer hover:text-[#43ABFF] transition-colors"/>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>删除角色</AlertDialogTitle>
-                <AlertDialogDescription>
-                  确认删除该角色吗？
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction onClick={() => onDeleteRole(row.original.id)}>确认</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <CommonAlertDialog
+            title={"删除角色"}
+            trigger={
+              <IconButton>
+                <Trash2 size={16}/>
+              </IconButton>
+            }
+            description={"确认删除该角色吗？"}
+            onConfirm={() => onDeleteRole(row.original.id)}
+          />
         </div>
       ),
     },
   ];
 
-  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const {post, delete: deleteClient} = useAjax();
   const [open, setOpen] = useState(false);
 
@@ -161,67 +139,61 @@ const RoleDataTable = () => {
   };
 
   return (
-    <div>
-      <div className={"flex justify-between mb-4"}>
-        <div className={"flex space-x-4"}>
-          {/*<Input placeholder={"请输入组织名称"} className={"rounded-none bg-[#072E62]/[.7] border-[#43ABFF]"}/>*/}
-          {/*<Button className={"bg-[#43ABFF]"}>查询</Button>*/}
-          {/*<Button className={"bg-[#43ABFF]"}>重置</Button>*/}
-        </div>
-        <div>
-          <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>
-              <CommonButton>添加</CommonButton>
-              {/*<Button className={"bg-[#43ABFF] w-24"} onClick={createRole}>创建</Button>*/}
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px]">
-              <DialogHeader>
-                <DialogTitle>{currentRole ? "编辑" : "新增"}角色</DialogTitle>
-              </DialogHeader>
-              <Form {...form} >
-                <form className="grid gap-4 py-4" onSubmit={form.handleSubmit(onSubmit)}>
-                  <FormField
-                    control={form.control}
-                    render={({field}) => (
-                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
-                        <FormLabel className={"text-right"}>角色名：</FormLabel>
-                        <div className={"col-span-3 space-y-2"}>
-                          <FormControl>
-                            <Input {...field} placeholder={"输入角色名"} className={"col-span-3"}/>
-                          </FormControl>
-                          <FormMessage/>
-                        </div>
-                      </FormItem>
-                    )}
-                    name={"name"}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="resource_ids"
-                    render={({field}) => (
-                      <FormItem className={"grid grid-cols-4 items-start gap-4"}>
-                        <FormLabel className={"text-right pt-2"}>资源权限：</FormLabel>
-                        <div className="col-span-3 border border-black/[.5] rounded-md">
-                          <FormControl>
-                            <TreeSelect
-                              value={field.value}
-                              onChange={field.onChange}
-                              treeData={resourceList}
-                            />
-                          </FormControl>
-                          <FormMessage/>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <DialogFooter>
-                    <Button type="submit">确定</Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        </div>
+    <>
+      <CommonDialog
+        open={open}
+        onOpenChange={handleOpenChange}
+        title={`${currentRole ? "编辑" : "新增"}角色`}
+        showCancel={false}
+        customFooter={<div className="flex">
+          <CommonButton type="submit" form="role-form" className={"ml-auto"}>确认</CommonButton>
+        </div>}
+      >
+        <Form {...form} >
+          <form id="role-form" className="grid gap-4 py-4" onSubmit={form.handleSubmit(onSubmit)}>
+            <FormField
+              control={form.control}
+              render={({field}) => (
+                <FormItem className={"grid grid-cols-10 items-center gap-x-4 space-y-0"}>
+                  <FormLabel className={"col-span-2 text-right"}>角色名：</FormLabel>
+                  <div className={"col-span-8"}>
+                    <FormControl>
+                      <CommonInput {...field} placeholder={"输入角色名"} className={"col-span-3"}/>
+                    </FormControl>
+                    <FormMessage/>
+                  </div>
+                </FormItem>
+              )}
+              name={"name"}
+            />
+            <FormField
+              control={form.control}
+              name="resource_ids"
+              render={({field}) => (
+                <FormItem className={"grid grid-cols-10 space-y-0 gap-x-4"}>
+                  <FormLabel className={"col-span-2 text-right"}>资源权限：</FormLabel>
+                  <div className="col-span-8 rounded-[2px]">
+                    <FormControl>
+                      <TreeSelect
+                        value={field.value}
+                        onChange={field.onChange}
+                        treeData={resourceList}
+                      />
+                    </FormControl>
+                    <FormMessage/>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
+      </CommonDialog>
+      <div className={"flex justify-end mb-4"}>
+        <CommonButton
+          onClick={() => {
+            setOpen(true);
+            form.reset();
+          }}>添加</CommonButton>
       </div>
       <CommonTable
         loading={isLoading}
@@ -235,7 +207,7 @@ const RoleDataTable = () => {
           pageSize: roleList?.length || 10
         }}
       />
-    </div>
+    </>
   );
 };
 

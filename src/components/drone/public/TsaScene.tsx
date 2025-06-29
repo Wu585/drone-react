@@ -224,7 +224,7 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
     getCustomSource("waylines-preview")?.entities.removeAll();
   }
 
-  useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id, viewerInitialized);
+  useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id, viewerInitialized, dockSn, deviceSn);
 
   useEffect(() => {
     return () => {

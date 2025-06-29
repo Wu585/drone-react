@@ -1,12 +1,12 @@
 import {Device} from "@/hooks/drone";
-import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
-import {Button} from "@/components/ui/button";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";
 import {useEffect} from "react";
+import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
 
 export interface EditDeviceFormValues {
   nickname: string;
@@ -49,47 +49,43 @@ export const EditDeviceDialog = ({
   }, [device, form]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#072E62] border border-[#43ABFF] text-white">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-medium">{title}</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="nickname"
-              render={({field}) => (
-                <FormItem>
-                  <div className="grid grid-cols-[100px_1fr] items-start gap-4">
-                    <FormLabel className="text-right leading-[32px] text-[#D0D0D0]">
-                      {label}
-                    </FormLabel>
-                    <div className="space-y-2">
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder={placeholder}
-                          className="bg-transparent border-[#43ABFF] text-white placeholder:text-gray-400 h-8"
-                        />
-                      </FormControl>
-                      <FormMessage className="text-[#ff4d4f] text-sm"/>
-                    </div>
+    <CommonDialog
+      title={title}
+      open={open}
+      onOpenChange={onOpenChange}
+      showCancel={false}
+      customFooter={
+        <div className="flex">
+          <CommonButton type="submit" form="edit-device-form" className={"ml-auto"}>确认</CommonButton>
+        </div>}
+    >
+      <Form {...form}>
+        <form id="edit-device-form"
+              onSubmit={form.handleSubmit(onSubmit)}>
+          <FormField
+            control={form.control}
+            name="nickname"
+            render={({field}) => (
+              <FormItem>
+                <div className="grid grid-cols-10 items-center">
+                  <FormLabel className="col-span-2">
+                    {label}
+                  </FormLabel>
+                  <div className="col-span-8">
+                    <FormControl>
+                      <CommonInput
+                        {...field}
+                        placeholder={placeholder}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-[#ff4d4f] text-sm"/>
                   </div>
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button
-                type="submit"
-                className="bg-[#0A81E1] hover:bg-[#0A81E1]/80 text-white h-8 px-4"
-              >
-                确认
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+                </div>
+              </FormItem>
+            )}
+          />
+        </form>
+      </Form>
+    </CommonDialog>
   );
 };

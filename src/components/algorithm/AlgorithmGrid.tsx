@@ -1,17 +1,10 @@
 import {ALGORITHM_CONFIG_API_PREFIX, useAlgorithmConfigList} from "@/hooks/drone/algorithm";
-import {Button} from "@/components/ui/button.tsx";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import AlgorithmDialog from "@/components/algorithm/AlgorithmDialog.tsx";
 import {useState} from "react";
+import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -84,17 +77,17 @@ const AlgorithmGrid = () => {
   return (
     <div className="relative ">
       <div className="flex justify-end mb-4">
-        <Button className={" w-20 bg-[#43ABFF] "}
-                onClick={() => {
-                  setOpen(true);
-                  setConfigId(undefined);
-                }}>添加</Button>
+        <CommonButton
+          onClick={() => {
+            setOpen(true);
+            setConfigId(undefined);
+          }}>添加</CommonButton>
       </div>
       <div className={"grid grid-cols-6 gap-4 h-[calc(100vh-250px)] overflow-auto"}>
         <AlgorithmDialog open={open} onOpenChange={setOpen} onSuccess={onSuccess} id={configId}/>
         {algorithmConfigList?.records.map((record) => (
           <div
-            className={"bg-algorithm-panel bg-full-size flex flex-col justify-between items-center py-4 relative space-y-8"}
+            className={"bg-algorithm-panel bg-full-size flex flex-col justify-between items-center py-4 relative space-y-8 overflow-hidden"}
             key={record.id}>
             <div style={{
               background: `${warnLevelColorMap[record.warning_level]}`,
@@ -115,25 +108,13 @@ const AlgorithmGrid = () => {
               </div>
             </div>
             <div className={"grid grid-cols-2 gap-4"}>
-              <AlertDialog>
-                <AlertDialogTrigger>
-                  <Button className={"bg-[#646876] px-6"}>删除</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>删除配置</AlertDialogTitle>
-                  </AlertDialogHeader>
-                  <AlertDialogDescription>确认删除配置吗?</AlertDialogDescription>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel
-                      className={"bg-primary text-primary-foreground"}>取消</AlertDialogCancel>
-                    <AlertDialogCancel
-                      className={"bg-primary text-primary-foreground"}
-                      onClick={() => onDeleteConfig(record.id)}>确认</AlertDialogCancel>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button className={"bg-[#43ABFF] px-6"} onClick={() => handleEdit(record.id)}>编辑</Button>
+              <CommonAlertDialog
+                title={"删除配置"}
+                trigger={<CommonButton className={"bg-[#646876] px-6"}>删除</CommonButton>}
+                description={"确认删除配置吗?"}
+                onConfirm={() => onDeleteConfig(record.id)}
+              />
+              <CommonButton onClick={() => handleEdit(record.id)}>编辑</CommonButton>
             </div>
           </div>
         ))}

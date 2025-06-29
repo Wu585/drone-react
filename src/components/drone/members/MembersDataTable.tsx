@@ -1,26 +1,21 @@
 import {ColumnDef} from "@tanstack/react-table";
-import {Fragment, useState} from "react";
+import {useState} from "react";
 import {useMembersPage, UserItem, useRoleList, useWorkspaceList} from "@/hooks/drone";
-import {Button} from "@/components/ui/button.tsx";
-import {Input} from "@/components/ui/input.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog.tsx";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
-import {ChevronDown, ChevronRight, Edit} from "lucide-react";
+import {Edit} from "lucide-react";
 import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import {TreeSelect} from "@/components/drone/public/TreeSelect.tsx";
+import {NestedWorkspace, Workspace} from "./OrganizationDataTable";
+import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -50,6 +45,50 @@ const formSchema = z.object({
 });
 
 const MANAGE_HTTP_PREFIX = "/manage/api/v1";
+
+function nestWorkspaces(workspaces: Workspace[]): NestedWorkspace[] {
+  const workspaceMap: { [key: number]: NestedWorkspace } = {};
+  const nestedWorkspaces: NestedWorkspace[] = [];
+
+  // 初始化每个工作区
+  workspaces.forEach(workspace => {
+    workspaceMap[workspace.id] = {
+      ...workspace,
+      id: workspace.workspace_id, // Replace id with workspace_id here
+      children: []
+    };
+  });
+
+  // 构建嵌套结构
+  workspaces.forEach(workspace => {
+    if (workspace.parent === 0) {
+      // 如果没有父级，添加到根级别
+      nestedWorkspaces.push(workspaceMap[workspace.id]);
+    } else {
+      // 否则，将其添加到父级的 children 中
+      const parentWorkspace = workspaceMap[workspace.parent];
+      if (parentWorkspace) {
+        parentWorkspace.children.push(workspaceMap[workspace.id]);
+      } else {
+        // 如果找不到父级，将其视为一级组织
+        nestedWorkspaces.push(workspaceMap[workspace.id]);
+      }
+    }
+  });
+
+  // 递归处理所有子项的id
+  const processNested = (items: NestedWorkspace[]): NestedWorkspace[] => {
+    return items.map(item => ({
+      ...item,
+      id: item.workspace_id,
+      children: processNested(item.children)
+    }));
+  };
+
+  const result = processNested(nestedWorkspaces);
+  console.log("nestedWorkspaces", result);
+  return result;
+}
 
 const MembersDataTable = () => {
   const {data: roleList} = useRoleList();
@@ -88,11 +127,9 @@ const MembersDataTable = () => {
     {
       header: "操作",
       cell: ({row}) => <div className={"flex"}>
-        <Edit
-          size={16}
-          className="cursor-pointer hover:text-[#43ABFF] transition-colors"
-          onClick={() => handleEdit(row.original)}
-        />
+        <IconButton onClick={() => handleEdit(row.original)}>
+          <Edit size={16}/>
+        </IconButton>
       </div>
     }
   ];
@@ -112,63 +149,7 @@ const MembersDataTable = () => {
   const {data, mutate, isLoading} = useMembersPage(queryParams);
 
   const {data: workSpaceList} = useWorkspaceList();
-
-  // 下拉树专用展开收缩状态
-  const [treeExpandedIds, setTreeExpandedIds] = useState<number[]>([]);
-
-  // 下拉树切换展开收缩
-  const toggleTreeRow = (id: number) => {
-    setTreeExpandedIds(prev =>
-      prev.includes(id)
-        ? prev.filter(rowId => rowId !== id)
-        : [...prev, id]
-    );
-  };
-
-  // 递归渲染组织树选项
-  const renderTreeOptions = (parentId: number | null = null, level: number = 0): JSX.Element[] | undefined => {
-    // 找出顶级节点（parentId 为 null 时，返回没有父节点的项）
-    const items = workSpaceList?.filter(item =>
-      parentId === null
-        ? !workSpaceList.some(parent => parent.id === item.parent)  // 没有父节点
-        : item.parent === parentId                                 // 匹配 parentId
-    );
-
-    if (!items?.length) return undefined;
-
-    return items.map(item => {
-      const hasChildren = workSpaceList?.some(child => child.parent === item.id);
-      const isExpanded = treeExpandedIds.includes(item.id);
-      return (
-        <Fragment key={item.id}>
-          <div className="flex items-center">
-            {hasChildren ? (
-              <span
-                className="p-0 cursor-pointer flex items-center"
-                style={{marginLeft: `${level * 16}px`}}
-                onClick={e => {
-                  e.stopPropagation();
-                  toggleTreeRow(item.id);
-                }}
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 inline-block align-middle"/>
-                ) : (
-                  <ChevronRight className="h-4 w-4 inline-block align-middle"/>
-                )}
-              </span>
-            ) : (
-              <span className="w-4" style={{marginLeft: `${level * 16}px`}}/>
-            )}
-            <SelectItem value={item.workspace_id} className="pl-6 ml-0">
-              {item.workspace_name}
-            </SelectItem>
-          </div>
-          {hasChildren && isExpanded && renderTreeOptions(item.id, level + 1)}
-        </Fragment>
-      );
-    });
-  };
+  const nestedData = nestWorkspaces(workSpaceList || []);
 
   const defaultValues = {
     name: "",
@@ -179,21 +160,18 @@ const MembersDataTable = () => {
     mqtt_username: "admin",
     mqtt_password: "admin",
     role: 0,
-    organ: []
+    organ: [],
+    phone: ""
   };
 
   const handleOpenChange = (open: boolean) => {
     setOpen(open);
-    if (!open) {
-      setCurrentUser(null);
-      form.reset(defaultValues);
-    }
+    setCurrentUser(null);
+    form.reset(defaultValues);
   };
 
   const handleEdit = (user: UserItem) => {
     setCurrentUser(user);
-    console.log("user");
-    console.log(user);
     form.reset({
       ...user,
       user_type: user.user_type === "Web" ? 1 : 2,
@@ -231,191 +209,164 @@ const MembersDataTable = () => {
   };
 
   return (
-    <div>
-      <div className={"flex justify-between mb-4"}>
-        <div className={"flex space-x-4"}>
-          {/*<Input placeholder={"请输入用户名"} className={"rounded-none bg-[#072E62]/[.7] border-[#43ABFF]"}/>*/}
-          {/*<Button className={"bg-[#43ABFF]"}>查询</Button>*/}
-          {/*<Button className={"bg-[#43ABFF]"}>重置</Button>*/}
-        </div>
-        <div>
-          <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger>
-              <CommonButton>添加</CommonButton>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>新增用户</DialogTitle>
-              </DialogHeader>
-              <Form {...form} >
-                <form className="grid gap-4 py-4" onSubmit={form.handleSubmit(onSubmit, onError)}>
-                  <FormField
-                    control={form.control}
-                    render={({field}) => (
-                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
-                        <FormLabel className={"text-right"}>姓名：</FormLabel>
-                        <FormControl>
-                          <div className="col-span-3 space-y-1">
-                            <Input {...field} placeholder={"输入人员姓名"} className={"col-span-3"}/>
-                            <FormMessage/>
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                    name={"name"}
-                  />
-                  {!currentUser && <FormField
-                    control={form.control}
-                    render={({field}) => (
-                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
-                        <FormLabel className={"text-right"}>账号：</FormLabel>
-                        <FormControl>
-                          <div className="col-span-3 space-y-1">
-                            <Input {...field} placeholder={"输入账号"} className={"col-span-3"}/>
-                            <FormMessage/>
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                    name={"username"}
-                  />}
-                  {!currentUser && <FormField
-                    control={form.control}
-                    render={({field}) => (
-                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
-                        <FormLabel className={"text-right"}>密码：</FormLabel>
-                        <FormControl>
-                          <div className="col-span-3 space-y-1">
-                            <Input {...field} placeholder={"输入密码"} className={"col-span-3"}/>
-                            <FormMessage/>
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                    name={"password"}
-                  />}
-                  <FormField
-                    control={form.control}
-                    render={({field}) => (
-                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
-                        <FormLabel className={"text-right"}>手机号：</FormLabel>
-                        <FormControl>
-                          <div className="col-span-3 space-y-1">
-                            <Input
-                              {...field}
-                              type="tel"
-                              pattern="[0-9]*"
-                              placeholder={"输入人员手机号"}
-                              className={"w-full"}
-                              maxLength={11}
-                              onKeyDown={(e) => {
-                                // 只允许数字、退格、删除、Tab和箭头键
-                                if (
-                                  !/[0-9]/.test(e.key) &&
-                                  e.key !== "Backspace" &&
-                                  e.key !== "Delete" &&
-                                  e.key !== "Tab" &&
-                                  !e.key.startsWith("Arrow")
-                                ) {
-                                  e.preventDefault();
-                                }
-                              }}
-                              onChange={(e) => {
-                                // 确保输入值只包含数字
-                                const value = e.target.value.replace(/[^0-9]/g, "");
-                                field.onChange(value);
-                              }}
-                            />
-                            <FormMessage/>
-                            {/*{form.formState.errors.phone && (
+    <>
+      <div className={"flex mb-4"}>
+        <CommonDialog
+          open={open}
+          onOpenChange={handleOpenChange}
+          title={"新增用户"}
+          trigger={<CommonButton className={"ml-auto"}>添加</CommonButton>}
+          showCancel={false}
+          customFooter={<div className="flex">
+            <CommonButton type="submit" form="user-form" className={"ml-auto"}>确认</CommonButton>
+          </div>}
+        >
+          <Form {...form} >
+            <form id={"user-form"} className="grid gap-4 py-4" onSubmit={form.handleSubmit(onSubmit, onError)}>
+              <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                    <FormLabel className={"text-right"}>姓名：</FormLabel>
+                    <FormControl>
+                      <div className="col-span-3 space-y-1">
+                        <CommonInput {...field} placeholder={"输入人员姓名"} className={"col-span-3"}/>
+                        <FormMessage/>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+                name={"name"}
+              />
+              {!currentUser && <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                    <FormLabel className={"text-right"}>账号：</FormLabel>
+                    <FormControl>
+                      <div className="col-span-3 space-y-1">
+                        <CommonInput {...field} placeholder={"输入账号"} className={"col-span-3"}/>
+                        <FormMessage/>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+                name={"username"}
+              />}
+              {!currentUser && <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                    <FormLabel className={"text-right"}>密码：</FormLabel>
+                    <FormControl>
+                      <div className="col-span-3 space-y-1">
+                        <CommonInput type={"password"} {...field} placeholder={"输入密码"} className={"col-span-3"}/>
+                        <FormMessage/>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+                name={"password"}
+              />}
+              <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                    <FormLabel className={"text-right"}>手机号：</FormLabel>
+                    <FormControl>
+                      <div className="col-span-3 space-y-1">
+                        <CommonInput
+                          {...field}
+                          type="tel"
+                          pattern="[0-9]*"
+                          placeholder={"输入人员手机号"}
+                          maxLength={11}
+                          onKeyDown={(e) => {
+                            // 只允许数字、退格、删除、Tab和箭头键
+                            if (
+                              !/[0-9]/.test(e.key) &&
+                              e.key !== "Backspace" &&
+                              e.key !== "Delete" &&
+                              e.key !== "Tab" &&
+                              !e.key.startsWith("Arrow")
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
+                          onChange={(e) => {
+                            // 确保输入值只包含数字
+                            const value = e.target.value.replace(/[^0-9]/g, "");
+                            field.onChange(value);
+                          }}
+                        />
+                        <FormMessage/>
+                        {/*{form.formState.errors.phone && (
                               <FormMessage className="text-sm text-red-500">
                                 {form.formState.errors.phone.message}
                               </FormMessage>
                             )}*/}
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                    name={"phone"}
-                  />
-                  <FormField
-                    control={form.control}
-                    render={({field: {value, onChange, ...field}}) => (
-                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
-                        <FormLabel className={"text-right"}>组织：</FormLabel>
-                        <Select
-                          {...field}
-                          value={String(value)}
-                          onValueChange={onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger className={"col-span-3"}>
-                              <SelectValue placeholder="选择所属组织"/>
-                            </SelectTrigger>
-                          </FormControl>
-                          {/*<FormMessage/>*/}
-                          <SelectContent>
-                            <SelectItem value="0">无</SelectItem>
-                            {renderTreeOptions()}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                    name={"workspace_id"}
-                  />
-                  <FormField
-                    control={form.control}
-                    render={({field: {value, onChange, ...field}}) => (
-                      <FormItem className={"grid grid-cols-4 items-center gap-4"}>
-                        <FormLabel className={"text-right"}>角色：</FormLabel>
-                        <Select
-                          {...field}
-                          value={String(value)}
-                          onValueChange={onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger className={"col-span-3"}>
-                              <SelectValue placeholder="分配角色"/>
-                            </SelectTrigger>
-                          </FormControl>
-                          {/*<FormMessage/>*/}
-                          <SelectContent>
-                            <SelectItem value="0">无</SelectItem>
-                            {roleList?.map(item => (
-                              <SelectItem key={item.id} value={String(item.id)}>
-                                {item.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                    name={"role"}
-                  />
-                  <DialogFooter>
-                    <Button type="submit">确认</Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        </div>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+                name={"phone"}
+              />
+              <FormField
+                control={form.control}
+                render={({field}) => (
+                  <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                    <FormLabel className={"text-right"}>组织：</FormLabel>
+                    <FormControl>
+                      <TreeSelect
+                        value={field.value}
+                        onChange={(workspace_id) => field.onChange(workspace_id)}
+                        treeData={nestedData}
+                        placeholder="请选择所属组织"
+                        className="col-span-3"
+                        renderItem={(node) => <span>{node.workspace_name}</span>}
+                        renderSelected={(node) => node?.workspace_name}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+                name={"workspace_id"}
+              />
+              <FormField
+                control={form.control}
+                render={({field: {value, onChange}}) => (
+                  <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                    <FormLabel className={"text-right"}>角色：</FormLabel>
+                    <FormControl>
+                      <CommonSelect
+                        className={"col-span-3"}
+                        value={String(value)}
+                        onValueChange={onChange}
+                        options={roleList?.map(role => ({
+                          value: role.id.toString(),
+                          label: role.name
+                        }))}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+                name={"role"}
+              />
+            </form>
+          </Form>
+        </CommonDialog>
       </div>
-      <div className="">
-        <CommonTable
-          loading={isLoading}
-          data={data?.list || []}
-          columns={columns}
-          allCounts={data?.pagination?.total || 0}
-          getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
-          onPaginationChange={({pageIndex}) => setQueryParams({
-            ...queryParams,
-            page: pageIndex + 1
-          })}
-        />
-      </div>
-
-    </div>
+      <CommonTable
+        loading={isLoading}
+        data={data?.list || []}
+        columns={columns}
+        allCounts={data?.pagination?.total || 0}
+        getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+        onPaginationChange={({pageIndex}) => setQueryParams({
+          ...queryParams,
+          page: pageIndex + 1
+        })}
+      />
+    </>
   );
 };
 

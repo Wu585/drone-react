@@ -1,5 +1,17 @@
 import {useState, useEffect, createRef, RefObject} from "react";
-import {Drone, Grid2x2, Grid3x3, Logs, Package2, Square, Undo2, Video, X} from "lucide-react";
+import {
+  ArrowLeftToLine,
+  ArrowRightFromLine,
+  Drone,
+  Grid2x2,
+  Grid3x3,
+  Logs,
+  Package2,
+  Square,
+  Undo2,
+  Video,
+  X
+} from "lucide-react";
 import {Button} from "@/components/ui/button.tsx";
 import {useDeviceTopo} from "@/hooks/drone";
 import {Link} from "react-router-dom";
@@ -7,6 +19,7 @@ import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {cn} from "@/lib/utils.ts";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
 
 enum MultiGrid {
   "1*1" = 1,
@@ -83,9 +96,10 @@ const MultiLivePage = () => {
     clearDeviceState
   } = useSceneStore();
 
+  const [isMenuExpanded, setIsMenuExpanded] = useState(true);
   const [grid, setGrid] = useState<MultiGrid>(MultiGrid["2*2"]);
   // gridStreams: 每个格子一个流或null
-  const [gridStreams, setGridStreams] = useState<(LiveStream|null)[]>(Array(MultiGrid["2*2"]*MultiGrid["2*2"]).fill(null));
+  const [gridStreams, setGridStreams] = useState<(LiveStream | null)[]>(Array(MultiGrid["2*2"] * MultiGrid["2*2"]).fill(null));
   const {data: dockList} = useDeviceTopo();
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
@@ -219,21 +233,33 @@ const MultiLivePage = () => {
 
   return (
     <div className="w-full h-full flex space-x-[16px]">
-      <div className="w-[360px] bg-gradient-to-l from-[#2C4372] to-[#35537F] flex rounded-lg">
-        <div className="flex-1 py-4 px-2 flex flex-col pb-8">
-          <h1 className={"pb-4 pl-2"}>机场</h1>
+      <div className="bg-gradient-to-l from-[#2C4372] to-[#35537F] flex rounded-lg">
+        {/* 修改了这部分动画相关的className */}
+        <div
+          className={cn(
+            "py-4 flex flex-col pb-8 overflow-hidden transition-all duration-300 ease-in-out",
+            isMenuExpanded ? "w-[315px] px-2" : "w-0 opacity-0 md:opacity-100"
+          )}
+        >
+          <h1 className={"pb-4 px-2 flex items-center justify-between whitespace-nowrap"}>
+            <span>机场</span>
+            <Link to={"/tsa"}>
+              <Undo2/>
+            </Link>
+          </h1>
           <div className={"flex-1 overflow-auto space-y-2"}>
             {(!dockList || dockList.length === 0) && (
               <div className={"text-center py-4 text-[#c0c0c0]"}>暂无数据</div>
             )}
             {dockList?.map(dock => (
-              <div key={dock.id} className={"w-[296px] bg-multi-live-panel bg-full-size py-4 pl-8 pr-6 text-[#c0c0c0]"}>
+              <div key={dock.id} className={"w-[296px] bg-multi-live-panel bg-full-size py-4 pl-7 pr-6 text-[#c0c0c0]"}>
                 <div className={"flex items-center justify-between pb-2 border-b border-dashed border-gray-400"}>
                   <div className={"flex items-center"}>
                     <div
                       className={cn("w-2 h-2 rounded mr-2", deviceState.dockInfo[dock.device_sn || ""] ? "bg-[#2BE7FF]" : "bg-[#BABABA]")}></div>
                     <Package2 size={16}/>
-                    <div className={"pl-2 text-sm truncate w-42"} title={dock.nickname}>{dock.device_name} | {dock.nickname}</div>
+                    <div className={"px-2 text-sm truncate w-40"}
+                         title={dock.nickname}>{dock.device_name} | {dock.nickname}</div>
                   </div>
                   <Button
                     className={cn("px-2 h-6", gridStreams.some(s => s && s.isDock && s.dockSn === dock.device_sn) ? "bg-blue-500" : "bg-[#2A3145]/[.88]")}
@@ -247,7 +273,8 @@ const MultiLivePage = () => {
                     <div
                       className={cn("w-2 h-2 rounded mr-2", deviceState.deviceInfo[dock.children?.device_sn || ""] ? "bg-[#2BE7FF]" : "bg-[#BABABA]")}></div>
                     <Drone size={16}/>
-                    <div className={"pl-2 text-sm w-42 truncate"} title={dock.children?.nickname}>{dock.children?.device_name} | {dock.children?.nickname}</div>
+                    <div className={"pl-2 text-sm w-42 truncate"}
+                         title={dock.children?.nickname}>{dock.children?.device_name} | {dock.children?.nickname}</div>
                   </div>
                   <Button
                     className={cn("bg-[#52607D]/[.88] content-center rounded-[1px] h-[24px] relative",
@@ -262,7 +289,8 @@ const MultiLivePage = () => {
             ))}
           </div>
         </div>
-        <div className="w-[43px] border-l-[1px] border-[#364E76] flex flex-col justify-between items-center pb-2">
+        <div
+          className={cn("w-[43px] flex flex-col justify-between items-center pb-2", isMenuExpanded ? "border-l-[1px] border-[#364E76]" : "border-none")}>
           <div className="py-2 flex-1 flex flex-col items-center space-y-4">
             <Button
               onClick={() => changeGrid(MultiGrid["1*1"])}
@@ -286,9 +314,9 @@ const MultiLivePage = () => {
               <Grid3x3 size={20}/>
             </Button>
           </div>
-          <Link to={"/tsa"}>
-            <Undo2/>
-          </Link>
+          <IconButton onClick={() => setIsMenuExpanded(!isMenuExpanded)}>
+            {isMenuExpanded ? <ArrowLeftToLine/> : <ArrowRightFromLine/>}
+          </IconButton>
         </div>
       </div>
       <div className="flex-1 min-h-0 overflow-hidden">

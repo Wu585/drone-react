@@ -1,52 +1,28 @@
-import {
-  ColumnDef,
-  ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel,
-  PaginationState,
-  useReactTable,
-  VisibilityState
-} from "@tanstack/react-table";
-import {Fragment, useState} from "react";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table.tsx";
+import {ColumnDef} from "@tanstack/react-table";
+import {useState} from "react";
 import {useCurrentUser, useWorkspaceList, WorkSpace} from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {Button} from "@/components/ui/button.tsx";
-import {Input} from "@/components/ui/input.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog.tsx";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
-import {ChevronRight, ChevronDown, Edit, Trash, UploadCloud, X, Plus} from "lucide-react";
-import {cn, generateRandomString} from "@/lib/utils.ts";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
+import {Edit, Trash} from "lucide-react";
+import {generateRandomString} from "@/lib/utils.ts";
 import {getAuthToken, useAjax} from "@/lib/http.ts";
 import {v4 as uuidv4} from "uuid";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useNavigate} from "react-router-dom";
 import dayjs from "dayjs";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog.tsx";
 import {CURRENT_CONFIG} from "@/lib/config.ts";
-import Uploady, {useItemFinishListener} from "@rpldy/uploady";
-import UploadButton from "@rpldy/upload-button";
-import {UploadPreview} from "@rpldy/upload-preview";
-import UploadAvatar from "@/components/drone/public/UploadAvatar.tsx";
+import Uploady from "@rpldy/uploady";
+import UploadSingle from "@/components/drone/public/UploadSingle.tsx";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
-import {Icon} from "@/components/public/Icon.tsx";
+import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
+import {TreeSelect} from "@/components/drone/public/TreeSelect.tsx";
 
 const formSchema = z.object({
   workspace_id: z.string(),
@@ -70,7 +46,7 @@ const formSchema = z.object({
 
 const MANAGE_HTTP_PREFIX = "/manage/api/v1";
 
-interface Workspace {
+export interface Workspace {
   id: number;
   workspace_id: string;
   workspace_name: string;
@@ -85,7 +61,7 @@ interface Workspace {
   create_time: number;
 }
 
-interface NestedWorkspace {
+export interface NestedWorkspace {
   id: number;
   workspace_id: string;
   workspace_name: string;
@@ -138,9 +114,6 @@ const OrganizationDataTable = () => {
   const [open, setOpen] = useState(false);
   const {post, delete: deleteClient} = useAjax();
   const [currentOrg, setCurrentOrg] = useState<WorkSpace | null>(null);
-
-  // 下拉树专用展开收缩状态
-  const [treeExpandedIds, setTreeExpandedIds] = useState<number[]>([]);
 
   const navigate = useNavigate();
 
@@ -222,27 +195,15 @@ const OrganizationDataTable = () => {
             className="cursor-pointer hover:text-[#43ABFF] transition-colors inline-block"
             onClick={() => handleEdit(row.original)}
           />
-          <AlertDialog>
-            <AlertDialogTrigger>
-              <Trash
-                size={16}
-                className="cursor-pointer hover:text-[#43ABFF] transition-colors inline-block"
-              />
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>删除组织</AlertDialogTitle>
-              </AlertDialogHeader>
-              <AlertDialogDescription>确认删除组织吗?</AlertDialogDescription>
-              <AlertDialogFooter>
-                <AlertDialogCancel
-                  className={"text-primary-foreground text-black"}>取消</AlertDialogCancel>
-                <AlertDialogCancel
-                  className={"bg-primary text-primary-foreground"}
-                  onClick={() => onDeleteWorkspace(row.original.id)}>确认</AlertDialogCancel>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <CommonAlertDialog
+            title={"删除组织"}
+            trigger={
+              <IconButton>
+                <Trash size={16}/>
+              </IconButton>}
+            description={"确认删除组织吗?"}
+            onConfirm={() => onDeleteWorkspace(row.original.id)}
+          />
         </div>
       ),
       size: 80,
@@ -291,12 +252,15 @@ const OrganizationDataTable = () => {
     if (!open) {
       setCurrentOrg(null);
       form.reset(defaultValues);
+      setLogoUrl("");
     }
   };
 
   const [logoUrl, setLogoUrl] = useState("");
 
   const handleEdit = async (org: WorkSpace) => {
+    console.log("org");
+    console.log(org);
     setCurrentOrg(org);
     form.reset({
       workspace_id: org.workspace_id,
@@ -314,6 +278,8 @@ const OrganizationDataTable = () => {
         console.log("res");
         console.log(res.data);
         setLogoUrl(res.data.data);
+      } else {
+        setLogoUrl("");
       }
     } catch (err) {
       setLogoUrl("");
@@ -353,60 +319,6 @@ const OrganizationDataTable = () => {
     console.log("Form errors:", errors);
   };
 
-  // 下拉树切换展开收缩
-  const toggleTreeRow = (id: number) => {
-    setTreeExpandedIds(prev =>
-      prev.includes(id)
-        ? prev.filter(rowId => rowId !== id)
-        : [...prev, id]
-    );
-  };
-
-  // 递归渲染组织树选项
-  const renderTreeOptions = (parentId: number | null = null, level: number = 0): JSX.Element[] | undefined => {
-    // 找出顶级节点（parentId 为 null 时，返回没有父节点的项）
-    const items = workSpaceList?.filter(item =>
-      parentId === null
-        ? !workSpaceList.some(parent => parent.id === item.parent)  // 没有父节点
-        : item.parent === parentId                                 // 匹配 parentId
-    );
-
-    if (!items?.length) return undefined;
-
-    return items.map(item => {
-      const hasChildren = workSpaceList?.some(child => child.parent === item.id);
-      const isExpanded = treeExpandedIds.includes(item.id);
-      return (
-        <Fragment key={item.id}>
-          <div className="flex items-center">
-            {hasChildren ? (
-              <span
-                className="p-0 cursor-pointer flex items-center"
-                style={{marginLeft: `${level * 16}px`}}
-                onClick={e => {
-                  e.stopPropagation();
-                  toggleTreeRow(item.id);
-                }}
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 inline-block align-middle"/>
-                ) : (
-                  <ChevronRight className="h-4 w-4 inline-block align-middle"/>
-                )}
-              </span>
-            ) : (
-              <span className="w-4" style={{marginLeft: `${level * 16}px`}}/>
-            )}
-            <SelectItem value={String(item.id)} className="pl-6 ml-0">
-              {item.workspace_name}
-            </SelectItem>
-          </div>
-          {hasChildren && isExpanded && renderTreeOptions(item.id, level + 1)}
-        </Fragment>
-      );
-    });
-  };
-
   return (
     <Uploady
       destination={{
@@ -418,127 +330,81 @@ const OrganizationDataTable = () => {
       accept="image/*"
       multiple={false}
       autoUpload>
-      <div>
-        <div className={"flex justify-between mb-4"}>
-          <div className={"flex space-x-4"}>
-            {/*<Input placeholder={"请输入组织名称"} className={"rounded-none bg-[#072E62]/[.7] border-[#43ABFF]"}/>*/}
-            {/*<Button className={"bg-[#43ABFF]"}>查询</Button>*/}
-            {/*<Button className={"bg-[#43ABFF]"}>重置</Button>*/}
-          </div>
-          <div>
-            <Dialog open={open} onOpenChange={handleOpenChange}>
-              <DialogTrigger>
-                <CommonButton>创建</CommonButton>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>{currentOrg ? "编辑" : "新增"}组织</DialogTitle>
-                </DialogHeader>
-                <Form {...form} >
-                  <form className="grid gap-4 py-4" onSubmit={form.handleSubmit(onSubmit, onError)}>
-                    <FormField
-                      control={form.control}
-                      render={({field}) => (
-                        <FormItem className={"grid grid-cols-4 items-center gap-4"}>
-                          <FormLabel className={"text-right"}>组织名称：</FormLabel>
-                          <div className={"col-span-3"}>
-                            <FormControl>
-                              <Input {...field} placeholder={"输入组织名称"} className={""}/>
-                            </FormControl>
-                            <FormMessage/>
-                          </div>
-                        </FormItem>
-                      )}
-                      name={"workspace_name"}
+      <CommonDialog
+        open={open}
+        onOpenChange={handleOpenChange}
+        title={`${currentOrg ? "编辑" : "新增"}组织`}
+        showCancel={false}
+        customFooter={<div className="flex">
+          <CommonButton type="submit" form="organ-form" className={"ml-auto"}>确认</CommonButton>
+        </div>}
+      >
+        <Form {...form}>
+          <form id="organ-form" className="grid gap-4 py-4" onSubmit={form.handleSubmit(onSubmit, onError)}>
+            <FormField
+              control={form.control}
+              render={({field}) => (
+                <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                  <FormLabel className={"text-right"}>组织名称：</FormLabel>
+                  <div className={"col-span-3"}>
+                    <FormControl>
+                      <CommonInput {...field} placeholder={"输入组织名称"}/>
+                    </FormControl>
+                    <FormMessage/>
+                  </div>
+                </FormItem>
+              )}
+              name={"workspace_name"}
+            />
+            <FormField
+              control={form.control}
+              render={({field}) => (
+                <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                  <FormLabel className={"text-right"}>上级组织：</FormLabel>
+                  <FormControl>
+                    <TreeSelect
+                      value={+field.value}
+                      onChange={(id) => field.onChange(+id)}
+                      treeData={nestedData}
+                      placeholder="请选择上级组织"
+                      className="col-span-3"
+                      renderItem={(node) => <span>{node.workspace_name}</span>}
+                      renderSelected={(node) => node?.workspace_name}
                     />
-                    <FormField
-                      control={form.control}
-                      render={({field}) => (
-                        <FormItem className={"grid grid-cols-4 items-center gap-4"}>
-                          <FormLabel className={"text-right"}>上级组织：</FormLabel>
-                          <div className={"col-span-3"}>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value.toString()}
-                            >
-                              <FormControl>
-                                <SelectTrigger className={"col-span-3"}>
-                                  <SelectValue placeholder="选择上级组织"/>
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="0">无</SelectItem>
-                                {renderTreeOptions()}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage/>
-                          </div>
-                        </FormItem>
-                      )}
-                      name={"parent"}
-                    />
-                    <FormField
-                      control={form.control}
-                      render={({field}) => (
-                        <FormItem className={"grid grid-cols-4 items-center gap-4"}>
-                          <FormLabel className={"text-right"}>Logo：</FormLabel>
-                          <UploadAvatar picOrigin={logoUrl} onSuccess={field.onChange}/>
-                        </FormItem>
-                      )}
-                      name={"logo"}
-                    />
-                    {/*<FormField*/}
-                    {/*  control={form.control}*/}
-                    {/*  render={({field: {value, onChange, ...field}}) => (*/}
-                    {/*    <FormItem className={"grid grid-cols-4 items-center gap-4"}>*/}
-                    {/*      <FormLabel className={"text-right"}>负责人：</FormLabel>*/}
-                    {/*      <Select*/}
-                    {/*        {...field}*/}
-                    {/*        value={String(value)}*/}
-                    {/*        onValueChange={onChange}*/}
-                    {/*      >*/}
-                    {/*        <FormControl>*/}
-                    {/*          <SelectTrigger className={"col-span-3"}>*/}
-                    {/*            <SelectValue placeholder="选择负责人"/>*/}
-                    {/*          </SelectTrigger>*/}
-                    {/*        </FormControl>*/}
-                    {/*        /!*<FormMessage/>*!/*/}
-                    {/*        <SelectContent>*/}
-                    {/*          <SelectItem value="0">无</SelectItem>*/}
-                    {/*          {data?.list.map(item => (*/}
-                    {/*            <SelectItem key={item.id} value={String(item.id)}>*/}
-                    {/*              {item.name}*/}
-                    {/*            </SelectItem>*/}
-                    {/*          ))}*/}
-                    {/*        </SelectContent>*/}
-                    {/*      </Select>*/}
-                    {/*    </FormItem>*/}
-                    {/*  )}*/}
-                    {/*  name={"lead_user"}*/}
-                    {/*/>*/}
-                    <DialogFooter>
-                      <Button type="submit">确认</Button>
-                    </DialogFooter>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-        <CommonTable
-          data={nestedData}
-          columns={columns}
-          getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
-          expandedAll
-          allCounts={workSpaceList?.length || 0}
-          maxHeight={"calc(100vh - 400px)"}
-          manualPagination={false}
-          pagination={{
-            pageIndex: 0,
-            pageSize: workSpaceList?.length || 10
-          }}
-        />
+                  </FormControl>
+                </FormItem>
+              )}
+              name={"parent"}
+            />
+            <FormField
+              control={form.control}
+              render={({field}) => (
+                <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                  <FormLabel className={"text-right"}>Logo：</FormLabel>
+                  <UploadSingle picOrigin={logoUrl} onSuccess={field.onChange}/>
+                </FormItem>
+              )}
+              name={"logo"}
+            />
+          </form>
+        </Form>
+      </CommonDialog>
+      <div className={"flex justify-end mb-4"}>
+        <CommonButton onClick={() => handleOpenChange(true)}>创建</CommonButton>
       </div>
+      <CommonTable
+        data={nestedData}
+        columns={columns}
+        getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+        expandedAll
+        allCounts={workSpaceList?.length || 0}
+        maxHeight={"calc(100vh - 400px)"}
+        manualPagination={false}
+        pagination={{
+          pageIndex: 0,
+          pageSize: workSpaceList?.length || 10
+        }}
+      />
     </Uploady>
   );
 };

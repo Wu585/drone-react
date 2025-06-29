@@ -4,11 +4,15 @@ import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import takeOffPng from "@/assets/images/drone/wayline/takeoff.svg";
 import {waylinePointConfig} from "@/lib/wayline.ts";
 import * as egm96 from "egm96-universal";
+import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 
-export const useAddWaylineEntityById = (waylineId?: string, viewerInitialized?: boolean) => {
+export const useAddWaylineEntityById = (waylineId?: string, viewerInitialized?: boolean, dockSn?: string, deviceSn?: string) => {
   // console.log("waylineId");
   // console.log(waylineId);
   const {data: currentWaylineData} = useWaylineById(waylineId);
+  // const realTimeDeviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
+
+  // const dockHeight = +realTimeDeviceInfo?.dock?.basic_osd?.height || 0;
 
   useEffect(() => {
     if (!waylineId && viewerInitialized)

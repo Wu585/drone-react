@@ -22,8 +22,8 @@ export const TreeSelect = React.forwardRef<HTMLDivElement, TreeSelectProps>(
     const [expandedNodes, setExpandedNodes] = React.useState<number[]>([]);
 
     const toggleNode = (nodeId: number) => {
-      setExpandedNodes(prev => 
-        prev.includes(nodeId) 
+      setExpandedNodes(prev =>
+        prev.includes(nodeId)
           ? prev.filter(id => id !== nodeId)
           : [...prev, nodeId]
       );
@@ -68,12 +68,12 @@ export const TreeSelect = React.forwardRef<HTMLDivElement, TreeSelectProps>(
 
       return (
         <div key={node.id} className={cn("pl-6", level === 0 && "pl-0")}>
-          <div className="flex items-center space-x-2 py-1">
+          <div className="flex items-center space-x-2 py-1 hover:bg-[#2D5FAC]/[0.2] rounded-[2px] px-1">
             {hasChildren ? (
               <ChevronRight
                 size={16}
                 className={cn(
-                  "cursor-pointer transition-transform",
+                  "cursor-pointer transition-transform text-[#d0d0d0]",
                   isExpanded && "transform rotate-90"
                 )}
                 onClick={() => toggleNode(node.id)}
@@ -84,12 +84,13 @@ export const TreeSelect = React.forwardRef<HTMLDivElement, TreeSelectProps>(
             <Checkbox
               checked={nodeState === "checked"}
               className={cn(
-                nodeState === "indeterminate" && "data-[state=checked]:bg-gray-400"
+                "data-[state=checked]:bg-[#2D5FAC] data-[state=checked]:border-[#2D5FAC]  bg-transparent border-[#2D5FAC]",
+                nodeState === "indeterminate" && "data-[state=checked]:bg-[#2D5FAC]/[0.5] border-[#2D5FAC]/[0.5]"
               )}
               data-state={nodeState === "indeterminate" ? "checked" : undefined}
               onCheckedChange={handleChange}
             />
-            <span className="text-sm">{node.name}</span>
+            <span className="text-sm text-[#d0d0d0]">{node.name}</span>
           </div>
           {hasChildren && isExpanded && (
             <div className="ml-4">
@@ -114,7 +115,13 @@ export const TreeSelect = React.forwardRef<HTMLDivElement, TreeSelectProps>(
     };
 
     return (
-      <div ref={ref} className={cn("max-h-[300px] overflow-auto p-2", className)}>
+      <div
+        ref={ref}
+        className={cn(
+          "max-h-[300px] overflow-auto p-2 bg-[#1E3762]/[.7] border-[1px] border-[#2D5FAC]/[.85] rounded-[2px]",
+          className
+        )}
+      >
         {treeData.map(node => renderTreeNode(node))}
       </div>
     );

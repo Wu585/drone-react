@@ -11,6 +11,7 @@ import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {EditDeviceDialog, EditDeviceFormValues} from "./EditDeviceDialog";
 import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
 
 const HTTP_PREFIX = "/manage/api/v1";
 
@@ -105,6 +106,15 @@ const DroneDataTable = () => {
         )
       },
       {
+        accessorKey: "organ_name",
+        header: "部门",
+        cell: ({row}) => (
+          <div className="truncate" title={row.getValue("organ_name")}>
+            {row.getValue("organ_name")}
+          </div>
+        )
+      },
+      {
         accessorKey: "bound_time",
         header: "加入组织时间",
         size: 180,
@@ -128,13 +138,9 @@ const DroneDataTable = () => {
         header: "操作",
         cell: ({row}) => {
           return (
-            <div className="">
-              <Edit
-                size={16}
-                className="cursor-pointer hover:text-[#43ABFF] transition-colors"
-                onClick={() => handleEdit(row.original)}
-              />
-            </div>
+            <IconButton onClick={() => handleEdit(row.original)}>
+              <Edit size={16}/>
+            </IconButton>
           );
         }
       },

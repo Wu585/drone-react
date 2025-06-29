@@ -166,7 +166,7 @@ export const CommonTable = forwardRef(<TData, >({
     if (enableRowSelection) {
       const selectionColumn: ColumnDef<TData> = {
         id: "select",
-        size: 60, // Fixed width for selection column
+        size: 30, // Fixed width for selection column
         header: ({table}) =>
           enableMultiRowSelection ? (
             <Checkbox

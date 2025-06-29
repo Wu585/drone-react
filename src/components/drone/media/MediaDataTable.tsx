@@ -8,14 +8,11 @@ import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
 } from "@/components/ui/dialog.tsx";
-import {Input} from "@/components/ui/input.tsx";
 import {CameraType, MediaFileMap, MediaFileType, useDirectory} from "@/hooks/drone/media";
 import {useBatchFinishListener} from "@rpldy/uploady";
 import {
@@ -33,7 +30,6 @@ import UploadButton from "@rpldy/upload-button";
 import {getMediaType} from "@/hooks/drone/order";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {useMapLoadMedia} from "@/hooks/drone/map-photo";
-import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {MediaPreview} from "@/components/drone/MediaPreview.tsx";
 import {CommonDateRange} from "@/components/drone/public/CommonDateRange.tsx";
 import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
@@ -298,6 +294,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
 
   // 修改 onClickFolder 函数，添加面包屑处理
   const onClickFolder = (file: Partial<FileItem>) => {
+    tableRef.current?.resetRowSelection();
     if (file.type === MediaFileType.DIR) {
       // 重置数据
       setAllItems([]);
@@ -439,6 +436,9 @@ const MediaDataTable = ({onChangeDir}: Props) => {
       accessorKey: "create_time",
       header: "创建时间",
       size: 140,
+      cell: ({row}) => <div className={"truncate"} title={row.original.create_time || "--"}>
+        {row.original.create_time || "--"}
+      </div>
     },
     {
       header: "操作",
@@ -737,50 +737,30 @@ const MediaDataTable = ({onChangeDir}: Props) => {
           />
           <CommonButton onClick={onReset}>重置</CommonButton>
           {getSelectedFileIds.length > 0 && <>
-            <Dialog>
-              <DialogTrigger disabled={selectedRows.length === 0}>
-                <CommonButton
-                  permissionKey={"Collection_MediaOperation"}
-                  disabled={selectedRows.length === 0}
-                >
-                  删除
-                </CommonButton>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>删除文件</DialogTitle>
-                </DialogHeader>
-                <div>
-                  确认删除文件吗？
-                </div>
-                <DialogFooter>
-                  <DialogClose>
-                    <Button type={"button"} onClick={handleBatchDelete}>确认</Button>
-                  </DialogClose>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            <Dialog>
-              <DialogTrigger disabled={selectedRows.length === 0}>
-                <CommonButton
-                  permissionKey={"Collection_MediaOperation"}
-                  disabled={selectedRows.length === 0}
-                >
-                  移动
-                </CommonButton>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>移动文件</DialogTitle>
-                </DialogHeader>
-                <DirTree onSelect={(id) => setSelectMoveDirId(id)}/>
-                <DialogFooter>
-                  <DialogClose>
-                    <Button onClick={handleBatchMove} type={"button"}>确认</Button>
-                  </DialogClose>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <CommonAlertDialog
+              title={"删除文件"}
+              description={"确认删除文件吗？"}
+              trigger={<CommonButton
+                permissionKey={"Collection_MediaOperation"}
+                disabled={selectedRows.length === 0}
+              >
+                删除
+              </CommonButton>}
+              onConfirm={handleBatchDelete}
+            />
+            <CommonDialog
+              title={"移动文件"}
+              trigger={<CommonButton
+                permissionKey={"Collection_MediaOperation"}
+                disabled={selectedRows.length === 0}
+              >
+                移动
+              </CommonButton>}
+              onConfirm={handleBatchMove}
+            >
+              <DirTree onSelect={(id) => setSelectMoveDirId(id)}/>
+            </CommonDialog>
+
             <Dialog open={createOrderVisible} onOpenChange={setCreateOrderVisible}>
               <CommonButton
                 permissionKey={"Button_CreateTicket"}
@@ -817,35 +797,29 @@ const MediaDataTable = ({onChangeDir}: Props) => {
               上传文件
             </UploadButton>
           </CommonButton>
-          <Dialog>
-            <DialogTrigger asChild>
-              <CommonButton
-                permissionKey={"Collection_MediaOperation"}
-              >
+
+          <CommonDialog
+            title={"创建文件夹"}
+            trigger={
+              <CommonButton permissionKey={"Collection_MediaOperation"}>
                 创建文件夹
-              </CommonButton>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>创建文件夹</DialogTitle>
-              </DialogHeader>
-              <div className={"grid grid-cols-6 items-center gap-4"}>
-                <span className={"text-right"}>名称</span>
-                <Input defaultValue={name}
-                       onChange={(e) => setName(e.target.value)} className={"col-span-5"}/>
-              </div>
-              <DialogFooter>
-                <DialogClose>
-                  <Button onClick={() => createDir({
-                    name,
-                    parent: breadcrumbList[breadcrumbList.length - 1].id || 0,
-                    organ: departId ? +departId : undefined
-                  })}>确认</Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          {/*<Button className="bg-[#43ABFF] hover:bg-[#43ABFF]/90 h-[36px]">重置</Button>*/}
+              </CommonButton>}
+            onConfirm={() => createDir({
+              name,
+              parent: breadcrumbList[breadcrumbList.length - 1].id || 0,
+              organ: departId ? +departId : undefined
+            })}
+          >
+            <div className="grid grid-cols-10 items-center">
+              <span className="col-span-2">文件夹名称：</span>
+              <CommonInput
+                defaultValue={name}
+                onChange={(e) => setName(e.target.value)}
+                className="col-span-8"
+              />
+            </div>
+          </CommonDialog>
+
           <CommonButton className={"bg-transparent px-0"} onClick={() => setDisplayType(0)}>
             <SquareMenu size={18} color={displayType === 0 && "#1997e6" || "white"}/>
           </CommonButton>
@@ -855,59 +829,49 @@ const MediaDataTable = ({onChangeDir}: Props) => {
         </div>
       </div>
 
-      <div className="overflow-hidden">
-        {displayType === 0 ? (
-          <CommonTable
-            loading={job_id ? defaultIsLoading : isLoading}
-            ref={tableRef}
-            data={data?.list || []}
-            columns={columns}
-            allCounts={data?.pagination.total || 0}
-            onPaginationChange={handlePaginationChange}
-            enableRowSelection={true}
-            onRowSelectionChange={setSelectedRows}
-            getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
-          />
-        ) : (
-          <InfiniteGridView
-            data={allItems}
-            hasMore={(data?.pagination?.total || 0) > allItems.length}
-            onLoadMore={loadMore}
-            onClickFolder={onClickFolder}
-            onUpdateFileName={(file) => {
-              setEditingFile(file);
-              setInputName(file.file_name);
-              setIsEditDialogOpen(true);
-            }}
-            onDeleteFile={onDeleteFile}
-          />
-        )}
-      </div>
+      {displayType === 0 ? (
+        <CommonTable
+          loading={job_id ? defaultIsLoading : isLoading}
+          ref={tableRef}
+          data={data?.list || []}
+          columns={columns}
+          allCounts={data?.pagination.total || 0}
+          onPaginationChange={handlePaginationChange}
+          enableRowSelection={true}
+          onRowSelectionChange={setSelectedRows}
+          getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+        />
+      ) : (
+        <InfiniteGridView
+          data={allItems}
+          hasMore={(data?.pagination?.total || 0) > allItems.length}
+          onLoadMore={loadMore}
+          onClickFolder={onClickFolder}
+          onUpdateFileName={(file) => {
+            setEditingFile(file);
+            setInputName(file.file_name);
+            setIsEditDialogOpen(true);
+          }}
+          onDeleteFile={onDeleteFile}
+        />
+      )}
 
       {/* 重命名对话框 */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>重命名</DialogTitle>
-            <div className="grid grid-cols-6 items-center gap-4">
-              <span className="text-right">名称</span>
-              <Input
-                value={inputName}
-                onChange={(e) => setInputName(e.target.value)}
-                className="col-span-5"
-              />
-            </div>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              onClick={() => editingFile && onUpdateFileName(editingFile)}
-              type="submit"
-            >
-              确认
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CommonDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        title={"重命名"}
+        onConfirm={() => editingFile && onUpdateFileName(editingFile)}
+      >
+        <div className="grid grid-cols-10 items-center">
+          <span className="col-span-2">文件名称：</span>
+          <CommonInput
+            value={inputName}
+            onChange={(e) => setInputName(e.target.value)}
+            className="col-span-8"
+          />
+        </div>
+      </CommonDialog>
     </div>
   );
 };

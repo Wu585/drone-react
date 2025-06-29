@@ -1,12 +1,7 @@
-import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog.tsx";
-import {Button} from "@/components/ui/button.tsx";
 import {z} from "zod";
 import {useFieldArray, useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
-import {Input} from "@/components/ui/input.tsx";
-import {Textarea} from "@/components/ui/textarea.tsx";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {useAjax} from "@/lib/http.ts";
 import {
   ALGORITHM_CONFIG_API_PREFIX,
@@ -18,7 +13,13 @@ import {toast} from "@/components/ui/use-toast.ts";
 import {eventMap} from "@/hooks/drone";
 import {Plus, Trash2} from "lucide-react";
 import {useEffect} from "react";
-import {Switch} from "@/components/ui/switch.tsx";
+import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import {CommonTextarea} from "@/components/drone/public/CommonTextarea.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import {CommonSwitch} from "@/components/drone/public/CommonSwitch.tsx";
 
 interface Props {
   open: boolean;
@@ -59,6 +60,9 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
   const {post, put} = useAjax();
   const {data: currentConfig, mutate} = useAlgorithmConfigById(id);
 
+  console.log("currentConfig");
+  console.log(currentConfig);
+
   const defaultValues: AlgorithmFormValues = {
     algorithm_name: "",
     contact: "",
@@ -73,18 +77,22 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
   const form = useForm<AlgorithmFormValues>({
     resolver: zodResolver(algorithmFormSchema),
     defaultValues,
-    values: currentConfig ? {
-      ...currentConfig,
-      device_list: currentConfig.device_list || []
-    } : defaultValues
   });
 
+  // Reset form when opening/closing or when ID changes
   useEffect(() => {
-    form.reset(currentConfig ? {
-      ...currentConfig,
-      device_list: currentConfig.device_list || []
-    } : defaultValues);
-  }, [currentConfig]);
+    if (open) {
+      if (currentConfig) {
+        form.reset({
+          ...currentConfig,
+          device_list: currentConfig.device_list || []
+        });
+      } else if (!id) {
+        // New form case
+        form.reset(defaultValues);
+      }
+    }
+  }, [open, currentConfig, id, form]);
 
   const algorithm_platform = form.watch("algorithm_platform");
 
@@ -94,7 +102,11 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
   });
 
   const _onOpenChange = (visible: boolean) => {
-    onOpenChange?.(visible);
+    if (!visible) {
+      // Reset to default only when closing without saving
+      form.reset(defaultValues);
+    }
+    onOpenChange(visible);
   };
 
   const onError = (error) => {
@@ -147,31 +159,151 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={_onOpenChange}>
-      <DialogContent className="max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-gray-800">
-            算法配置
-          </DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(_onSubmit, onError)} className="space-y-2">
-            <div className="space-y-4">
+    <CommonDialog
+      open={open}
+      onOpenChange={_onOpenChange}
+      title={"算法配置"}
+      showCancel={false}
+      customFooter={
+        <div className="flex">
+          <CommonButton type="submit" form="algorithm-form" className={"ml-auto"}>确认</CommonButton>
+        </div>}
+    >
+      <Form {...form}>
+        <form id="algorithm-form" onSubmit={form.handleSubmit(_onSubmit, onError)} className="space-y-2">
+          <div className="space-y-2">
+            <FormField
+              control={form.control}
+              name="algorithm_name"
+              render={({field}) => (
+                <FormItem>
+                  <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                    <FormLabel className="text-sm font-medium text-white">
+                      算法名称
+                    </FormLabel>
+                    <div className="space-y-1">
+                      <FormControl>
+                        <CommonInput
+                          {...field}
+                          placeholder="请输入算法名称"
+                        />
+                      </FormControl>
+                      <FormMessage className="text-xs text-red-500"/>
+                    </div>
+                  </div>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              render={({field}) =>
+                <FormItem>
+                  <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                    <FormLabel className="text-sm font-medium text-white">
+                      算法平台
+                    </FormLabel>
+                    <FormControl>
+                      <CommonSelect
+                        onValueChange={(value) => field.onChange(+value)}
+                        value={field.value.toString()}
+                        options={
+                          [
+                            {
+                              value: AlgorithmPlatform.CloudPlatForm.toString(),
+                              label: "算法平台"
+                            },
+                            {
+                              value: AlgorithmPlatform.Other.toString(),
+                              label: "第三方平台"
+                            }
+                          ]}
+                      />
+                    </FormControl>
+                    <FormMessage className="col-start-2 text-xs text-red-500"/>
+                  </div>
+                </FormItem>}
+              name={"algorithm_platform"}
+            />
+          </div>
+
+          <div className="space-y-2 pt-2">
+            <h3 className="text-sm font-medium text-white pt-4">工单配置：</h3>
+            <div className="space-y-2">
               <FormField
                 control={form.control}
-                name="algorithm_name"
+                render={({field}) =>
+                  <FormItem>
+                    <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                      <FormLabel className="text-sm font-medium text-white">
+                        事件类型
+                      </FormLabel>
+                      <FormControl>
+                        <CommonSelect
+                          onValueChange={field.onChange} value={field.value.toString()}
+                          options={Object.entries(eventMap).map(([key, value]) => ({
+                            value: key,
+                            label: value
+                          }))}
+                        />
+                      </FormControl>
+                      <FormMessage className="col-start-2 text-xs text-red-500"/>
+                    </div>
+                  </FormItem>}
+                name={"order_type"}
+              />
+
+              <FormField
+                control={form.control}
+                render={({field}) =>
+                  <FormItem>
+                    <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                      <FormLabel className="text-sm font-medium text-white">
+                        告警等级
+                      </FormLabel>
+                      <FormControl>
+                        <CommonSelect
+                          onValueChange={field.onChange}
+                          value={field.value?.toString()}
+                          options={[
+                            {
+                              value: "1",
+                              label: "一般告警"
+                            },
+                            {
+                              value: "2",
+                              label: "次要告警"
+                            },
+                            {
+                              value: "3",
+                              label: "主要告警"
+                            },
+                            {
+                              value: "4",
+                              label: "紧急告警"
+                            },
+                          ]}
+                        />
+                      </FormControl>
+                      <FormMessage className="col-start-2 text-xs text-red-500"/>
+                    </div>
+                  </FormItem>}
+                name={"warning_level"}
+              />
+
+              <FormField
+                control={form.control}
+                name="contact"
                 render={({field}) => (
                   <FormItem>
                     <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                      <FormLabel className="text-sm font-medium text-gray-700">
-                        算法名称
+                      <FormLabel className="text-sm font-medium text-white">
+                        联系人
                       </FormLabel>
                       <div className="space-y-1">
                         <FormControl>
-                          <Input
+                          <CommonInput
                             {...field}
-                            placeholder="请输入算法名称"
-                            className="h-9 bg-white placeholder:text-gray-400 focus:ring-1 focus:ring-blue-500"
+                            placeholder="请输入联系人"
                           />
                         </FormControl>
                         <FormMessage className="text-xs text-red-500"/>
@@ -180,193 +312,81 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
-                render={({field}) =>
+                name="contact_phone"
+                render={({field}) => (
                   <FormItem>
                     <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                      <FormLabel className="text-sm font-medium text-gray-700">
-                        算法平台
+                      <FormLabel className="text-sm font-medium text-white">
+                        联系电话
                       </FormLabel>
-                      <Select onValueChange={(value) => field.onChange(+value)} value={field.value.toString()}>
+                      <div className="space-y-1">
                         <FormControl>
-                          <SelectTrigger className="h-9 w-full min-w-[180px]">
-                            <SelectValue placeholder="选择算法平台"/>
-                          </SelectTrigger>
+                          <CommonInput
+                            {...field}
+                            placeholder="请输入联系电话"
+                          />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value={AlgorithmPlatform.CloudPlatForm.toString()} className="text-sm">
-                            算法平台
-                          </SelectItem>
-                          <SelectItem value={AlgorithmPlatform.Other.toString()} className="text-sm">
-                            第三方平台
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage className="col-start-2 text-xs text-red-500"/>
+                        <FormMessage className="text-xs text-red-500"/>
+                      </div>
                     </div>
-                  </FormItem>}
-                name={"algorithm_platform"}
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({field}) => (
+                  <FormItem>
+                    <div className="grid grid-cols-[120px_1fr] items-start gap-4">
+                      <FormLabel className="text-sm font-medium text-white mt-2">
+                        事件描述
+                      </FormLabel>
+                      <div className="space-y-1">
+                        <FormControl>
+                          <CommonTextarea
+                            {...field}
+                            placeholder="请输入事件描述"
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs text-red-500"/>
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
               />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-gray-700 border-b pb-2">工单配置</h3>
-              <div className="space-y-2 pl-2">
-                <FormField
-                  control={form.control}
-                  render={({field}) =>
-                    <FormItem>
-                      <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                        <FormLabel className="text-sm font-medium text-gray-700">
-                          事件类型
-                        </FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value.toString()}>
-                          <FormControl>
-                            <SelectTrigger className="h-9 w-full min-w-[180px]">
-                              <SelectValue placeholder="选择事件类型"/>
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.entries(eventMap).map(([key, value]) => (
-                              <SelectItem key={key} value={key} className="text-sm">
-                                {value}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className="col-start-2 text-xs text-red-500"/>
-                      </div>
-                    </FormItem>}
-                  name={"order_type"}
-                />
-
-                <FormField
-                  control={form.control}
-                  render={({field}) =>
-                    <FormItem>
-                      <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                        <FormLabel className="text-sm font-medium text-gray-700">
-                          告警等级
-                        </FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value?.toString()}>
-                          <FormControl>
-                            <SelectTrigger className="h-9 w-full min-w-[180px]">
-                              <SelectValue placeholder="选择告警等级"/>
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem key={"1"} value={"1"} className="text-blue-600">一般告警</SelectItem>
-                            <SelectItem key={"2"} value={"2"} className="text-yellow-600">次要告警</SelectItem>
-                            <SelectItem key={"3"} value={"3"} className="text-orange-600">主要告警</SelectItem>
-                            <SelectItem key={"4"} value={"4"} className="text-red-600">紧急告警</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className="col-start-2 text-xs text-red-500"/>
-                      </div>
-                    </FormItem>}
-                  name={"warning_level"}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="contact"
-                  render={({field}) => (
-                    <FormItem>
-                      <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                        <FormLabel className="text-sm font-medium text-gray-700">
-                          联系人
-                        </FormLabel>
-                        <div className="space-y-1">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder="请输入联系人"
-                              className="h-9 bg-white placeholder:text-gray-400 focus:ring-1 focus:ring-blue-500"
-                            />
-                          </FormControl>
-                          <FormMessage className="text-xs text-red-500"/>
-                        </div>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="contact_phone"
-                  render={({field}) => (
-                    <FormItem>
-                      <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                        <FormLabel className="text-sm font-medium text-gray-700">
-                          联系电话
-                        </FormLabel>
-                        <div className="space-y-1">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder="请输入联系电话"
-                              className="h-9 bg-white placeholder:text-gray-400 focus:ring-1 focus:ring-blue-500"
-                            />
-                          </FormControl>
-                          <FormMessage className="text-xs text-red-500"/>
-                        </div>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({field}) => (
-                    <FormItem>
-                      <div className="grid grid-cols-[120px_1fr] items-start gap-4">
-                        <FormLabel className="text-sm font-medium text-gray-700 mt-2">
-                          事件描述
-                        </FormLabel>
-                        <div className="space-y-1">
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              placeholder="请输入事件描述"
-                              className="min-h-[80px] bg-white placeholder:text-gray-400 focus:ring-1 focus:ring-blue-500"
-                            />
-                          </FormControl>
-                          <FormMessage className="text-xs text-red-500"/>
-                        </div>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </div>
+          <div className="space-y-4 pt-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-white">实例配置：</h3>
+              <CommonButton
+                type="button"
+                onClick={() => append({device_sn: "", instance_id: "", task_id: ""})}
+                size="sm"
+                className="h-8 gap-1"
+              >
+                <Plus className="h-3.5 w-3.5"/>
+                <span>添加</span>
+              </CommonButton>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="text-sm font-medium text-gray-700">实例配置</h3>
-                <Button
-                  type="button"
-                  onClick={() => append({device_sn: "", instance_id: "", task_id: ""})}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1"
-                >
-                  <Plus className="h-3.5 w-3.5"/>
-                  <span>添加</span>
-                </Button>
+            {fields.length === 0 ? (
+              <div
+                className="rounded-md border border-dashed p-4 text-center text-sm text-white border-[#2D5FAC]/[.85]">
+                暂无设备配置，点击上方按钮添加
               </div>
-
-              {fields.length === 0 ? (
-                <div className="rounded-md border border-dashed p-4 text-center text-sm text-gray-400">
-                  暂无设备配置，点击上方按钮添加
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="relative rounded-md border p-4">
-                      <div className={"flex justify-between items-center"}>
-                        {form.watch(`device_list.${index}.task_id`) ? <Switch
+            ) : (
+              <div className="space-y-3 max-h-[200px] overflow-y-auto">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="relative rounded p-4 bg-[#223B6F]/[.5]">
+                    <div className={"flex justify-between items-center pb-1"}>
+                      {form.watch(`device_list.${index}.task_id`) ?
+                        <CommonSwitch
                           checked={
                             !!taskList?.items.find(
                               (item) =>
@@ -375,105 +395,96 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
                                 item.status !== "not_started"
                             )
                           }
-                          onCheckedChange={(checked) => onSwitchTask(checked, form.watch(`device_list.${index}.task_id`))}/> : <div></div>}
-                        <Button
-                          type="button"
-                          onClick={() => remove(index)}
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                        >
-                          <Trash2 className="h-4 w-4"/>
-                        </Button>
-                      </div>
-                      <div className="space-y-3">
-                        <FormField
-                          control={form.control}
-                          name={`device_list.${index}.device_sn`}
-                          render={({field}) => (
-                            <FormItem>
-                              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                                <FormLabel className="text-sm font-medium text-gray-700">
-                                  设备序列号
-                                </FormLabel>
-                                <div className="space-y-1">
-                                  <FormControl>
-                                    <Input
-                                      {...field}
-                                      placeholder="请输入设备序列号"
-                                      className="h-9 bg-white placeholder:text-gray-400 focus:ring-1 focus:ring-blue-500"
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs text-red-500"/>
-                                </div>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-
-                        {algorithm_platform === 0 && <FormField
-                          control={form.control}
-                          name={`device_list.${index}.task_id`}
-                          render={({field}) => (
-                            <FormItem>
-                              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                                <FormLabel className="text-sm font-medium text-gray-700">
-                                  任务ID
-                                </FormLabel>
-                                <div className="space-y-1">
-                                  <FormControl>
-                                    <Input
-                                      {...field}
-                                      placeholder="请输入任务ID"
-                                      className="h-9 bg-white placeholder:text-gray-400 focus:ring-1 focus:ring-blue-500"
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs text-red-500"/>
-                                </div>
-                              </div>
-                            </FormItem>
-                          )}
-                        />}
-
-                        <FormField
-                          control={form.control}
-                          name={`device_list.${index}.instance_id`}
-                          render={({field}) => (
-                            <FormItem>
-                              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                                <FormLabel className="text-sm font-medium text-gray-700">
-                                  {+algorithm_platform === AlgorithmPlatform.CloudPlatForm ? "实例ID" : "视频源"}
-                                </FormLabel>
-                                <div className="space-y-1">
-                                  <FormControl>
-                                    <Input
-                                      {...field}
-                                      placeholder={+algorithm_platform === AlgorithmPlatform.CloudPlatForm ? "请输入实例ID" : "请输入视频源"}
-                                      className="h-9 bg-white placeholder:text-gray-400 focus:ring-1 focus:ring-blue-500"
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs text-red-500"/>
-                                </div>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                          onCheckedChange={(checked) =>
+                            onSwitchTask(checked, form.watch(`device_list.${index}.task_id`))}
+                        /> :
+                        <div></div>}
+                      <IconButton
+                        type="button"
+                        onClick={() => remove(index)}
+                        size="sm"
+                      >
+                        <Trash2 size={16}/>
+                      </IconButton>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    <div className="space-y-3">
+                      <FormField
+                        control={form.control}
+                        name={`device_list.${index}.device_sn`}
+                        render={({field}) => (
+                          <FormItem>
+                            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                              <FormLabel className="text-sm font-medium text-white">
+                                设备序列号
+                              </FormLabel>
+                              <div className="space-y-1">
+                                <FormControl>
+                                  <CommonInput
+                                    {...field}
+                                    placeholder="请输入设备序列号"
+                                  />
+                                </FormControl>
+                                <FormMessage className="text-xs text-red-500"/>
+                              </div>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
 
-            <DialogFooter className="mt-6">
-              <Button type="submit" className="min-w-[80px]">
-                确认
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+                      {algorithm_platform === 0 && <FormField
+                        control={form.control}
+                        name={`device_list.${index}.task_id`}
+                        render={({field}) => (
+                          <FormItem>
+                            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                              <FormLabel className="text-sm font-medium text-white">
+                                任务ID
+                              </FormLabel>
+                              <div className="space-y-1">
+                                <FormControl>
+                                  <CommonInput
+                                    {...field}
+                                    placeholder="请输入任务ID"
+                                  />
+                                </FormControl>
+                                <FormMessage className="text-xs text-red-500"/>
+                              </div>
+                            </div>
+                          </FormItem>
+                        )}
+                      />}
+
+                      <FormField
+                        control={form.control}
+                        name={`device_list.${index}.instance_id`}
+                        render={({field}) => (
+                          <FormItem>
+                            <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+                              <FormLabel className="text-sm font-medium text-white">
+                                {+algorithm_platform === AlgorithmPlatform.CloudPlatForm ? "实例ID" : "视频源"}
+                              </FormLabel>
+                              <div className="space-y-1">
+                                <FormControl>
+                                  <CommonInput
+                                    {...field}
+                                    placeholder={+algorithm_platform === AlgorithmPlatform.CloudPlatForm ? "请输入实例ID" : "请输入视频源"}
+                                  />
+                                </FormControl>
+                                <FormMessage className="text-xs text-red-500"/>
+                              </div>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </form>
+      </Form>
+    </CommonDialog>
   );
 };
 

@@ -80,7 +80,7 @@ const CommonDialog = ({
         <div className={"px-8 py-4"}>
           {children}
         </div>
-        <DialogFooter className={"pr-4 pb-4"}>
+        <DialogFooter className={cn("pr-4 pb-4")}>
           {customFooter ? (
             customFooter
           ) : (
