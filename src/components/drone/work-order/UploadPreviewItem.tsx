@@ -6,17 +6,19 @@ const UploadPreviewItem = memo(({
                                   url,
                                   type,
                                   id,
-                                  onClear
+                                  onClear,
+                                  fileKey
                                 }: {
-  url: string;
+  url?: string;
   type: string;
   id?: string;
   onClear: (id?: string) => void
+  fileKey?: string
 }) => {
   return (
     <div className="relative group shrink-0 w-28 h-28">
       <div className="w-28 h-28 border-[#2D5FAC]/[.85] border-[1px] rounded-[2px] content-center">
-        <MediaItem url={url} type={type}/>
+        <MediaItem fileKey={fileKey} url={url} type={type}/>
       </div>
       <button
         type="button"

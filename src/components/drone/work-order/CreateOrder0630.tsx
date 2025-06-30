@@ -87,7 +87,9 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const {post, get} = useAjax();
+  // 文件预览url 数组
   const [mediaUrlList, setMediaUrlList] = useState<string[]>([]);
+  // key 数组
   const [fileList, setFileList] = useState<{ id: string, fileKey: string }[]>([]);
   const isPreview = type === "preview";
 
@@ -123,7 +125,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
       form.setValue("longitude", longitude);
       form.setValue("latitude", latitude);
     });
-  }, []);
+  }, [isPreview, form]);
 
   useEffect(() => {
     if (currentOrder) {
@@ -138,10 +140,10 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
       form.reset({
         ...currentOrder,
         found_time: dayjs(currentOrder.found_time).valueOf(),
-        pic_list: initialFileList.map(item => item.fileKey)
+        pic_list: currentOrder.pic_list_origin
       });
     }
-  }, [currentOrder, form]);
+  }, [currentOrder?.pic_list_origin.join(","), form]);
 
   useEffect(() => {
     const subscription = form.watch((value) => {
@@ -166,18 +168,25 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
     });
   });
 
+  // 函数式更新
   useItemFinishListener(useCallback(({uploadResponse, id}) => {
-    if (uploadResponse?.data?.data) {
+    const fileKey = uploadResponse?.data?.data;
+    if (fileKey) {
       setFileList(prevFileList => {
-        const newFileList = [...prevFileList, {
-          id,
-          fileKey: uploadResponse?.data?.data
-        }];
-        form.setValue("pic_list", newFileList.map(item => item.fileKey));
+        const newFileList = [...prevFileList, {id, fileKey}];
+        form.setValue("pic_list", newFileList.map(({fileKey}) => fileKey));
         return newFileList;
       });
     }
-  }, [form]));
+  }, [form]));  // ✅ 不需要依赖 fileList
+
+  // useItemFinishListener(useCallback(({uploadResponse, id}) => {
+  //   const fileKey = uploadResponse?.data?.data;
+  //   if (fileKey) {
+  //     form.setValue("pic_list", [...fileList.map(({fileKey}) => fileKey), fileKey]);
+  //     setFileList([...fileList, {id, fileKey}]);
+  //   }
+  // }, [form, fileList]));
 
   const onSubmit = async (values: CreateOrderFormValues) => {
     if (isPreview) return;
@@ -196,7 +205,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
     };
     console.log("data===");
     console.log(data);
-    /*try {
+    try {
       if (currentOrder && type === "edit") {
         const res: any = await post(`${OPERATION_HTTP_PREFIX}/order/save`, {
           ...data,
@@ -224,9 +233,8 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
         description: error.data.message,
         variant: "destructive"
       });
-    }*/
+    }
   };
-
 
   const onClear = useCallback((id: string) => {
     if (previewMethodsRef.current?.removePreview) {
@@ -239,36 +247,27 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
     }
   }, [previewMethodsRef, form]);
 
-  const com = mediaUrlList.join(",")
-  console.log('com');
-  console.log(com);
-
-  const onEditRemove = useCallback((url: string) => {
-    const index = mediaUrlList.indexOf(url);
-    setMediaUrlList(mediaUrlList.filter(item => item !== url));
-    const newPicList = form.getValues("pic_list").filter((_, i) => i !== index);
-    form.setValue("pic_list", newPicList);
-  }, [form, com]);
-
-  // Memoized PreviewComponent for UploadPreview
-  const PreviewComponent = useCallback(({url, type, id}: PreviewComponentProps) => {
-    return url ? (
-      <UploadPreviewItem url={url} type={type} id={id} onClear={() => onClear(id)}/>
-    ) : undefined;
-  }, [onClear]);
-
+  const onEditRemove = useCallback((fileKey: string) => {
+    const newPicList = mediaUrlList.filter(item => item !== fileKey);
+    setFileList(prevFileList => {
+      const newFileList = prevFileList.filter(item => item.fileKey !== fileKey);
+      form.setValue("pic_list", newFileList.map(item => item.fileKey));
+      return newFileList;
+    });
+    setMediaUrlList(newPicList);
+  }, [mediaUrlList, form]);
 
   // Memoized media list for preview/edit mode
-  const mediaList = useMemo(() => {
+  const mediaFileList = useMemo(() => {
     if (type === "preview" || type === "edit" || type === "form-media") {
-      return mediaUrlList.map((key,index) => {
-        const url = currentOrder?.pic_list[index] || ""
-        const fileType = getMediaType(url);
+      return mediaUrlList.map((key) => {
+        const fileType = key.includes("mp4") ? "video" : "image";
+
         return (
           <UploadPreviewItem
-            key={url}
-            url={url}
-            id={url}
+            fileKey={key}
+            key={key}
+            id={key}
             type={fileType}
             onClear={() => onEditRemove(key)}
           />
@@ -276,7 +275,14 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
       });
     }
     return null;
-  }, [com, type, onEditRemove]);
+  }, [type, onEditRemove, mediaUrlList]);
+
+  // Memoized PreviewComponent for UploadPreview
+  const PreviewComponent = useCallback(({url, type, id}: PreviewComponentProps) => {
+    return url ? (
+      <UploadPreviewItem url={url} type={type} id={id} onClear={() => onClear(id)}/>
+    ) : undefined;
+  }, [onClear]);
 
   return (
     <Form {...form}>
@@ -472,7 +478,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
                           rememberPreviousBatches
                           PreviewComponent={PreviewComponent}
                         />
-                        {mediaList}
+                        {mediaFileList}
                         <ScrollBar orientation="horizontal"/>
                         <FormMessage/>
                       </div>

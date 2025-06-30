@@ -1,17 +1,21 @@
 import {memo} from "react";
 import {MediaPreview} from "@/components/drone/MediaPreview.tsx";
 import {X} from "lucide-react";
+import {useGetImageUrl} from "@/hooks/drone";
 
-const MediaItem = memo(({url, type, onRemove}: {
-  url: string;
+const MediaItem = memo(({url, type, onRemove, fileKey}: {
+  url?: string;
   type: string;
   onRemove?: () => void
+  fileKey?: string
 }) => {
+  const {data: fileUrl} = useGetImageUrl(fileKey);
+
   return (
     <div className="relative group aspect-video">
       {type === "video" ? (
         <MediaPreview
-          src={url}
+          src={url || fileUrl}
           type="video"
           alt="Video Preview"
           modalWidth="70vw"
@@ -21,20 +25,20 @@ const MediaItem = memo(({url, type, onRemove}: {
               controls
               muted
               className="w-full h-full object-cover rounded-sm"
-              src={url}
+              src={url || fileUrl}
             />
           }
         />
       ) : (
         <MediaPreview
-          src={url}
+          src={url || fileUrl}
           type="image"
           alt="Image Preview"
           modalWidth="1000px"
           modalHeight="800px"
           triggerElement={
             <img
-              src={url}
+              src={url || fileUrl}
               className="w-full h-full object-cover rounded-sm border-2"
               alt="Preview"
             />

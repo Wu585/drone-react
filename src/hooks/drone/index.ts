@@ -882,11 +882,10 @@ export const useWorkOrderByRealTimeId = (id?: number) => {
   return useSWRImmutable(key, async ([path]) => (await get<Resource<WorkOrder>>(path)).data.data);
 };
 
-
 // 查看图片url
-export const useGetImageUrl = (file: string) => {
+export const useGetImageUrl = (fileKey?: string) => {
   const {post} = useAjax();
-  const key = file ? [`${OPERATION_HTTP_PREFIX}/file/getUrl?key=${file}`] : null;
+  const key = fileKey ? [`${OPERATION_HTTP_PREFIX}/file/getUrl?key=${fileKey}`] : null;
   return useSWR(key, async ([path]) => (await post<Resource<any>>(path)).data.data);
 };
 
