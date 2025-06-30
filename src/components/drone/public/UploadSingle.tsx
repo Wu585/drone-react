@@ -3,7 +3,7 @@ import {Plus} from "lucide-react";
 import {PreviewItem, UploadPreview} from "@rpldy/upload-preview";
 import UploadButton from "@rpldy/upload-button";
 import {useItemFinishListener, useItemProgressListener, useItemStartListener} from "@rpldy/uploady";
-import {useCallback, useState} from "react";
+import {useCallback, useState, memo} from "react";
 import {Progress} from "@/components/ui/progress.tsx";
 
 interface Props {
@@ -11,10 +11,32 @@ interface Props {
   picOrigin?: string;
 }
 
+// Memoized PreviewComponent to prevent unnecessary re-renders
+const MemoizedPreview = memo(({url, type, isUploading}: {url: string, type: string, isUploading: boolean}) => {
+  return type === "image" ? (
+    <img
+      src={url}
+      className={cn(
+        "w-full h-full object-fill",
+        isUploading && "opacity-50"
+      )}
+      alt="Upload preview"
+    />
+  ) : null;
+});
+
 const UploadSingle = ({onSuccess, picOrigin}: Props) => {
   const [previewUrl, setPreviewUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  // Throttle progress updates to prevent too many re-renders
+  const throttledSetProgress = useCallback((value: number) => {
+    setProgress(prev => {
+      // Only update if the difference is significant enough
+      return Math.abs(prev - value) > 1 ? value : prev;
+    });
+  }, []);
 
   useItemStartListener(() => {
     setIsUploading(true);
@@ -23,7 +45,7 @@ const UploadSingle = ({onSuccess, picOrigin}: Props) => {
 
   useItemProgressListener((item) => {
     if (item) {
-      setProgress(item.completed);
+      throttledSetProgress(item.completed);
     }
   });
 
@@ -38,9 +60,15 @@ const UploadSingle = ({onSuccess, picOrigin}: Props) => {
     }, [onSuccess])
   );
 
-  const onPreviewChanged = (previewItems: PreviewItem[]) => {
+  const onPreviewChanged = useCallback((previewItems: PreviewItem[]) => {
     setPreviewUrl(previewItems[0]?.url);
-  };
+  }, []);
+
+  const PreviewComponent = useCallback(({url, type}: {url: string, type: string}) => {
+    return url ? (
+      <MemoizedPreview url={url} type={type} isUploading={isUploading} />
+    ) : null;
+  }, [isUploading]);
 
   return (
     <UploadButton
@@ -79,17 +107,7 @@ const UploadSingle = ({onSuccess, picOrigin}: Props) => {
 
         <UploadPreview
           onPreviewsChanged={onPreviewChanged}
-          PreviewComponent={({url, type}) => url ? (
-            type === "image" && <img
-              src={url}
-              className={cn(
-                "w-full h-full object-fill",
-                isUploading && "opacity-50"
-              )}
-              alt="Upload preview"
-            />
-          ) : null
-          }
+          PreviewComponent={PreviewComponent}
         />
       </div>
     </UploadButton>

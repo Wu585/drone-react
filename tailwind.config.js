@@ -69,6 +69,7 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))",
         },
         "custom-input": "rgba(24, 38, 64, 0.85)",
+        "custom-placeholder": "rgba(159, 159, 159, 1)",
       },
       borderRadius: {
         lg: "var(--radius)",

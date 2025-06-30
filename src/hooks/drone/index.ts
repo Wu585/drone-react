@@ -873,7 +873,7 @@ export const useWorkOrderList = (body: {
 export const useWorkOrderById = (id?: number) => {
   const {get} = useAjax();
   const key = id ? [`${OPERATION_HTTP_PREFIX}/order/get?id=${id}`] : null;
-  return useSWRImmutable(key, async ([path]) => (await get<Resource<WorkOrder>>(path)).data.data);
+  return useSWR(key, async ([path]) => (await get<Resource<WorkOrder>>(path)).data.data);
 };
 
 export const useWorkOrderByRealTimeId = (id?: number) => {

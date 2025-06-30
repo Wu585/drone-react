@@ -40,6 +40,8 @@ interface CommonDialogProps {
   confirmDisabled?: boolean;
   /** 对话框内容类名 */
   contentClassName?: string;
+  titleClassname?: string;
+  childrenClassname?: string;
 }
 
 const CommonDialog = ({
@@ -57,6 +59,8 @@ const CommonDialog = ({
                         confirmLoading = false,
                         confirmDisabled = false,
                         contentClassName = "",
+                        titleClassname = "",
+                        childrenClassname = ""
                       }: CommonDialogProps) => {
   const handleCancel = () => {
     onCancel?.();
@@ -75,9 +79,9 @@ const CommonDialog = ({
             backgroundSize: "100% 100%"
           }}
           className={"h-[45px] bg-dialog-title flex justify-center pl-8"}>
-          <DialogTitle className={"text-sm font-medium"}>{title}</DialogTitle>
+          <DialogTitle className={cn("text-sm font-medium", titleClassname)}>{title}</DialogTitle>
         </DialogHeader>
-        <div className={"px-8 py-4"}>
+        <div className={cn("px-8 py-4", childrenClassname)}>
           {children}
         </div>
         <DialogFooter className={cn("pr-4 pb-4")}>

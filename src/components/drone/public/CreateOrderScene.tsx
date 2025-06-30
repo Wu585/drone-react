@@ -167,7 +167,7 @@ const Scene = ({currentOrder}: Props) => {
   }, [currentOrder]);
 
   return (
-    <div id="cesiumContainer" className={"h-full rounded-lg"}></div>
+    <div id="cesiumContainer" className={"h-[150px] rounded-lg"}></div>
   );
 };
 

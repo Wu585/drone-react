@@ -40,6 +40,7 @@ import {Button} from "@/components/drone/public/Button.tsx";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 import {CommonDateRange} from "@/components/drone/public/CommonDateRange.tsx";
 import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
+import CreateOrder0630 from "@/components/drone/work-order/CreateOrder0630.tsx";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -229,7 +230,6 @@ const WorkOrderDataTable = () => {
     ];
   }, [isGly]);
 
-
   const initialQueryParams = {
     page: 1,
     page_size: 10,
@@ -410,7 +410,10 @@ const WorkOrderDataTable = () => {
             <CommonButton onClick={onLoadOrderToMap}>地图加载</CommonButton>}
 
           <CommonDialog
-            contentClassName={"max-w-screen-lg"}
+            showCancel={false}
+            contentClassName={"max-w-[1016px] py-0"}
+            titleClassname={"pl-8"}
+            childrenClassname={"pb-0"}
             open={open}
             onOpenChange={(value) => {
               if (!value) {
@@ -427,20 +430,24 @@ const WorkOrderDataTable = () => {
                 stepper.goTo("1");
               }}
             >创建</CommonButton>}
+            customFooter={
+              <CommonButton
+                type="submit"
+                form={`${stepper.current.id === "1" ? "createOrderForm" :
+                  stepper.current.id === "2" ? "feedbackForm" :
+                    stepper.current.id === "3" ? "auditForm" : ""}`}
+              >
+                确认
+              </CommonButton>}
           >
-            <div className={"border-[#43ABFF] flex p-8 rounded-md bg-[#1b233c] opacity-80"}>
-              <ol className="flex flex-col gap-2" aria-orientation="vertical">
+            <div className={"flex"}>
+              <ol className="flex flex-col" aria-orientation="vertical">
                 {stepper.all.map((step, index, array) => (
                   <div key={step.id} className={""}>
                     <li className="flex items-center gap-4 flex-shrink-0">
                       <Button
                         type="button"
-                        role="tab"
                         variant={index <= currentIndex ? "default" : "secondary"}
-                        aria-current={stepper.current.id === step.id ? "step" : undefined}
-                        aria-posinset={index + 1}
-                        aria-setsize={steps.length}
-                        aria-selected={stepper.current.id === step.id}
                         className={cn(
                           "flex size-10 items-center justify-center rounded-full",
                           index <= currentIndex ? "bg-[#43ABFF]" : "",
@@ -477,7 +484,7 @@ const WorkOrderDataTable = () => {
                         >
                           <Separator
                             orientation="vertical"
-                            className={`w-[2px] h-24`}
+                            className={`w-[2px] h-12 bg-[#9f9f9f]`}
                           />
                         </div>
                       )}
@@ -488,14 +495,15 @@ const WorkOrderDataTable = () => {
               <div className={"px-4 flex-1"}>
                 {stepper.switch({
                   "1": () =>
-                    <CreateOrder
+                    <CreateOrder0630
                       type={orderType}
                       onSuccess={() => {
                         setOpen(false);
                         mutate();
                         mutateCurrentOrder();
                       }}
-                      currentOrder={currentOrderData}/>,
+                      currentOrder={currentOrderData}
+                    />,
                   "2": () => isGly && (currentOrder?.status === 1 || currentOrder?.status === 4) ?
                     <div
                       className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
@@ -545,7 +553,7 @@ const WorkOrderDataTable = () => {
               <DialogHeader className={""}>
                 <DialogTitle>工单管理</DialogTitle>
               </DialogHeader>
-              <div className={" border-[#43ABFF] flex p-8 rounded-md bg-[#1b233c] opacity-80"}>
+              <div className={"border-[#43ABFF] flex p-8 rounded-md bg-[#1b233c] opacity-80"}>
                 <ol className="flex flex-col gap-2" aria-orientation="vertical">
                   {stepper.all.map((step, index, array) => (
                     <div key={step.id} className={""}>
