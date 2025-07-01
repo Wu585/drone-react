@@ -12,21 +12,12 @@ import {
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Edit, Eye} from "lucide-react";
 import {getAuthToken, useAjax} from "@/lib/http.ts";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog.tsx";
 import {defineStepper} from "@stepperize/react";
 import {Separator} from "@/components/ui/separator.tsx";
 import {cn} from "@/lib/utils.ts";
 import Uploady from "@rpldy/uploady";
 import {CURRENT_CONFIG} from "@/lib/config.ts";
 import dayjs from "dayjs";
-import CreateOrder from "@/components/drone/work-order/CreateOrder.tsx";
 import DistributeDialog from "@/components/drone/work-order/DistributeDialog.tsx";
 import Feedback from "@/components/drone/work-order/Feedback.tsx";
 import Audit from "@/components/drone/work-order/Audit.tsx";
@@ -532,140 +523,11 @@ const WorkOrderDataTable = () => {
                         mutateCurrentOrder();
                       }}
                     /> ,
-                  "4": () => <Complete currentOrder={currentOrder}/>
+                  "4": () => <Complete currentOrder={currentOrderData}/>
                 })}
               </div>
             </div>
           </CommonDialog>
-
-          <Dialog>
-            <DialogTrigger asChild>
-              <CommonButton
-                permissionKey={"Collection_TicketCreateEdit"}
-                onClick={() => {
-                  setCurrentOrder(null);
-                  setOrderType("create");
-                  stepper.goTo("1");
-                }}
-              >
-                创建
-              </CommonButton>
-            </DialogTrigger>
-            <DialogContent className="max-w-screen-lg bg-[#20355f]/[.8] text-white border-none">
-              <DialogHeader className={""}>
-                <DialogTitle>工单管理</DialogTitle>
-              </DialogHeader>
-              <div className={"border-[#43ABFF] flex p-8 rounded-md bg-[#1b233c] opacity-80"}>
-                <ol className="flex flex-col gap-2" aria-orientation="vertical">
-                  {stepper.all.map((step, index, array) => (
-                    <div key={step.id} className={""}>
-                      <li className="flex items-center gap-4 flex-shrink-0">
-                        <Button
-                          type="button"
-                          role="tab"
-                          variant={index <= currentIndex ? "default" : "secondary"}
-                          aria-current={stepper.current.id === step.id ? "step" : undefined}
-                          aria-posinset={index + 1}
-                          aria-setsize={steps.length}
-                          aria-selected={stepper.current.id === step.id}
-                          className={cn(
-                            "flex size-10 items-center justify-center rounded-full",
-                            index <= currentIndex ? "bg-[#43ABFF]" : "",
-                            (!currentOrder && step.id !== "1") ||
-                            (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status)))
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
-                          )}
-                          onClick={() => {
-                            if (!currentOrder && step.id !== "1") return;
-                            if (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status))) return;
-                            stepper.goTo(step.id);
-                          }}
-                        >
-                          {index + 1}
-                        </Button>
-                        <span className={cn(
-                          "text-sm font-medium",
-                          (!currentOrder && step.id !== "1") ||
-                          (currentOrder && parseInt(step.id) > parseInt(getStepByStatus(currentOrder.status)))
-                            ? "opacity-50"
-                            : ""
-                        )}>
-                          {step.title}
-                        </span>
-                      </li>
-                      <div className="flex gap-4">
-                        {index < array.length - 1 && (
-                          <div
-                            className="flex justify-center"
-                            style={{
-                              paddingInlineStart: "1.25rem",
-                            }}
-                          >
-                            <Separator
-                              orientation="vertical"
-                              className={`w-[2px] h-24`}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </ol>
-                <div className={"px-4 flex-1"}>
-                  {stepper.switch({
-                    "1": () =>
-                      <CreateOrder
-                        type={orderType}
-                        onSuccess={() => {
-                          setOpen(false);
-                          mutate();
-                          mutateCurrentOrder();
-                        }}
-                        currentOrder={currentOrderData}/>,
-                    "2": () => isGly && (currentOrder?.status === 1 || currentOrder?.status === 4) ?
-                      <div
-                        className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
-                        <span className={"text-[32px]"}>待处理...</span>
-                      </div> :
-                      <Feedback
-                        type={orderHandleType}
-                        onSuccess={() => {
-                          setOpen(false);
-                          mutate();
-                          mutateCurrentOrder();
-                        }}
-                        currentOrder={currentOrderData}
-                      />,
-                    "3": () => isGly || currentOrderData?.status === 3 ?
-                      <Audit
-                        currentOrder={currentOrderData}
-                        onSuccess={() => {
-                          setOpen(false);
-                          mutate();
-                          mutateCurrentOrder();
-                        }}
-                      /> : <div
-                        className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
-                        <span className={"text-[32px]"}>审核中...</span>
-                      </div>,
-                    "4": () => <Complete/>
-                  })}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="submit"
-                  form={`${stepper.current.id === "1" ? "createOrderForm" :
-                    stepper.current.id === "2" ? "feedbackForm" :
-                      stepper.current.id === "3" ? "auditForm" : ""}`}
-                  className="bg-[#43ABFF] w-24"
-                >
-                  确认
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
           <CommonButton
             permissionKey={"Collection_TicketExport"}
             disabled={loading}
