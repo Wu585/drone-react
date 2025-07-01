@@ -170,6 +170,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
     if (fileKey) {
       setFileList(prevFileList => {
         const newFileList = [...prevFileList, {id, fileKey}];
+
         form.setValue("pic_list", newFileList.map(({fileKey}) => fileKey));
         return newFileList;
       });

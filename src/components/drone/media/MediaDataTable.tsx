@@ -4,7 +4,7 @@ import {FileItem, MEDIA_HTTP_PREFIX, useMediaList, WorkOrder} from "@/hooks/dron
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Download, Edit, Eye, FolderClosed, Grid3X3, Loader, SquareMenu, Trash} from "lucide-react";
-import {useAjax} from "@/lib/http.ts";
+import {getAuthToken, useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {
   Dialog,
@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog.tsx";
 import {CameraType, MediaFileMap, MediaFileType, useDirectory} from "@/hooks/drone/media";
-import {useBatchFinishListener} from "@rpldy/uploady";
+import Uploady, {useBatchFinishListener} from "@rpldy/uploady";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -39,6 +39,8 @@ import {CommonTable, ReactTableInstance} from "@/components/drone/public/CommonT
 import {IconButton} from "@/components/drone/public/IconButton.tsx";
 import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
 import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
+import CreateOrder0630 from "@/components/drone/work-order/CreateOrder0630.tsx";
+import {CURRENT_CONFIG} from "@/lib/config.ts";
 
 const InfiniteGridView = ({
                             data,
@@ -188,6 +190,7 @@ interface Props {
 }
 
 const MediaDataTable = ({onChangeDir}: Props) => {
+  const OPERATION_HTTP_PREFIX = "operation/api/v1";
   const departId = localStorage.getItem("departId");
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const [searchParams] = useSearchParams();
@@ -664,215 +667,226 @@ const MediaDataTable = ({onChangeDir}: Props) => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center space-x-4 justify-between mb-6">
-        <div
-          className="col-span-4 pr-4 max-w-[50%] overflow-hidden"  // 添加 max-w 限制宽度
-          title={breadcrumbList.map(file => file.file_name).join(" / ")}
-        >
-          <Breadcrumb className="overflow-hidden">
-            <BreadcrumbList className="flex flex-nowrap overflow-hidden">
-              {breadcrumbList.map((file, index) => (
-                <BreadcrumbItem
-                  key={file.id}
-                  className="flex overflow-hidden flex-shrink min-w-0 max-w-full"  // 添加 max-w-full
-                >
-                  <BreadcrumbLink
-                    onClick={() => onClickFolder(file)}
-                    className={cn(
-                      "text-gray-400 hover:text-gray-300 truncate whitespace-nowrap",  // 添加 truncate 和 whitespace-nowrap
-                      index === breadcrumbList.length - 1
-                        ? "cursor-default pointer-events-none"
-                        : "cursor-pointer"
-                    )}
+    <Uploady
+      destination={{
+        url: `${CURRENT_CONFIG.baseURL}${OPERATION_HTTP_PREFIX}/file/upload`,
+        headers: {
+          [ELocalStorageKey.Token]: getAuthToken()
+        }
+      }}
+      accept="image/*,video/*"
+      multiple
+      autoUpload>
+      <div className="space-y-4">
+        <div className="flex items-center space-x-4 justify-between mb-6">
+          <div
+            className="col-span-4 pr-4 max-w-[50%] overflow-hidden"  // 添加 max-w 限制宽度
+            title={breadcrumbList.map(file => file.file_name).join(" / ")}
+          >
+            <Breadcrumb className="overflow-hidden">
+              <BreadcrumbList className="flex flex-nowrap overflow-hidden">
+                {breadcrumbList.map((file, index) => (
+                  <BreadcrumbItem
+                    key={file.id}
+                    className="flex overflow-hidden flex-shrink min-w-0 max-w-full"  // 添加 max-w-full
                   >
-                    {file.file_name}
-                  </BreadcrumbLink>
-                  {index < breadcrumbList.length - 1 && <BreadcrumbSeparator/>}
-                </BreadcrumbItem>
-              ))}
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-        <div className="flex items-center space-x-2 col-span-8">
-          <CommonDateRange
-            value={{
-              start: queryParams.begin_time,
-              end: queryParams.end_time
-            }}
-            onChange={({start, end}) => updateQuery({
-              begin_time: start,
-              end_time: end
-            })}
-          />
-          <CommonInput
-            className={"min-w-24"}
-            placeholder={"请输入航线名称"}
-            value={queryParams.wayline_name}
-            onChange={e => updateQuery({
-              wayline_name: e.target.value
-            })}
-          />
-          <CommonSelect
-            value={queryParams.types[0]?.toString() || ""}
-            placeholder={"请选择文件类型"}
-            options={Object.entries(MediaFileMap).map(([key, value]) => ({
-              value: key,
-              label: value
-            }))}
-            onValueChange={(value) => updateQuery({
-              types: [+value]
-            })}
-          />
-          <CommonSelect
-            value={queryParams.payloads[0]?.toString() || ""}
-            placeholder={"请选择负载类型"}
-            options={Object.values(CameraType).map((value) => ({
-              value: value,
-              label: value
-            }))}
-            onValueChange={(value) => updateQuery({
-              payloads: [value]
-            })}
-          />
-          <CommonButton onClick={onReset}>重置</CommonButton>
-          {getSelectedFileIds.length > 0 && <>
-            <CommonAlertDialog
-              title={"删除文件"}
-              description={"确认删除文件吗？"}
-              trigger={<CommonButton
-                permissionKey={"Collection_MediaOperation"}
-                disabled={selectedRows.length === 0}
-              >
-                删除
-              </CommonButton>}
-              onConfirm={handleBatchDelete}
+                    <BreadcrumbLink
+                      onClick={() => onClickFolder(file)}
+                      className={cn(
+                        "text-gray-400 hover:text-gray-300 truncate whitespace-nowrap",  // 添加 truncate 和 whitespace-nowrap
+                        index === breadcrumbList.length - 1
+                          ? "cursor-default pointer-events-none"
+                          : "cursor-pointer"
+                      )}
+                    >
+                      {file.file_name}
+                    </BreadcrumbLink>
+                    {index < breadcrumbList.length - 1 && <BreadcrumbSeparator/>}
+                  </BreadcrumbItem>
+                ))}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+          <div className="flex items-center space-x-2 col-span-8">
+            <CommonDateRange
+              value={{
+                start: queryParams.begin_time,
+                end: queryParams.end_time
+              }}
+              onChange={({start, end}) => updateQuery({
+                begin_time: start,
+                end_time: end
+              })}
             />
-            <CommonDialog
-              title={"移动文件"}
-              trigger={<CommonButton
-                permissionKey={"Collection_MediaOperation"}
-                disabled={selectedRows.length === 0}
+            <CommonInput
+              className={"min-w-24"}
+              placeholder={"请输入航线名称"}
+              value={queryParams.wayline_name}
+              onChange={e => updateQuery({
+                wayline_name: e.target.value
+              })}
+            />
+            <CommonSelect
+              value={queryParams.types[0]?.toString() || ""}
+              placeholder={"请选择文件类型"}
+              options={Object.entries(MediaFileMap).map(([key, value]) => ({
+                value: key,
+                label: value
+              }))}
+              onValueChange={(value) => updateQuery({
+                types: [+value]
+              })}
+            />
+            <CommonSelect
+              value={queryParams.payloads[0]?.toString() || ""}
+              placeholder={"请选择负载类型"}
+              options={Object.values(CameraType).map((value) => ({
+                value: value,
+                label: value
+              }))}
+              onValueChange={(value) => updateQuery({
+                payloads: [value]
+              })}
+            />
+            <CommonButton onClick={onReset}>重置</CommonButton>
+            {getSelectedFileIds.length > 0 && <>
+              <CommonAlertDialog
+                title={"删除文件"}
+                description={"确认删除文件吗？"}
+                trigger={<CommonButton
+                  permissionKey={"Collection_MediaOperation"}
+                  disabled={selectedRows.length === 0}
+                >
+                  删除
+                </CommonButton>}
+                onConfirm={handleBatchDelete}
+              />
+              <CommonDialog
+                title={"移动文件"}
+                trigger={<CommonButton
+                  permissionKey={"Collection_MediaOperation"}
+                  disabled={selectedRows.length === 0}
+                >
+                  移动
+                </CommonButton>}
+                onConfirm={handleBatchMove}
               >
-                移动
-              </CommonButton>}
-              onConfirm={handleBatchMove}
+                <DirTree onSelect={(id) => setSelectMoveDirId(id)}/>
+              </CommonDialog>
+
+              <CommonDialog
+                titleClassname={"pl-8"}
+                contentClassName={"max-w-[900px]"}
+                title={"创建工单"}
+                open={createOrderVisible}
+                onOpenChange={setCreateOrderVisible}
+                trigger={<CommonButton
+                  permissionKey={"Button_CreateTicket"}
+                  onClick={onClickCreateOrder}
+                >
+                  创建工单
+                </CommonButton>}
+                showCancel={false}
+                customFooter={<CommonButton form={"createOrderForm"} type="submit">确认</CommonButton>}
+              >
+                <CreateOrder0630
+                  onSuccess={() => {
+                    setCreateOrderVisible(false);
+                    navigate("/work-order");
+                  }}
+                  type={"form-media"}
+                  currentOrder={currentOrder as WorkOrder}
+                />
+              </CommonDialog>
+
+              <CommonButton
+                permissionKey={"Collection_MediaVisual"}
+                onClick={onLoadMap}>
+                地图加载
+              </CommonButton>
+            </>}
+            <CommonButton permissionKey={"Collection_MediaUpload"}>
+              <UploadButton>
+                上传文件
+              </UploadButton>
+            </CommonButton>
+
+            <CommonDialog
+              title={"创建文件夹"}
+              trigger={
+                <CommonButton permissionKey={"Collection_MediaOperation"}>
+                  创建文件夹
+                </CommonButton>}
+              onConfirm={() => createDir({
+                name,
+                parent: breadcrumbList[breadcrumbList.length - 1].id || 0,
+                organ: departId ? +departId : undefined
+              })}
             >
-              <DirTree onSelect={(id) => setSelectMoveDirId(id)}/>
+              <div className="grid grid-cols-10 items-center">
+                <span className="col-span-2">文件夹名称：</span>
+                <CommonInput
+                  defaultValue={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="col-span-8"
+                />
+              </div>
             </CommonDialog>
 
-            <Dialog open={createOrderVisible} onOpenChange={setCreateOrderVisible}>
-              <CommonButton
-                permissionKey={"Button_CreateTicket"}
-                onClick={onClickCreateOrder}
-              >
-                创建工单
-              </CommonButton>
-              <DialogContent className="max-w-screen-lg bg-[#0A4088]/[.7] text-white border-none">
-                <DialogHeader className={""}>
-                  <DialogTitle>创建工单</DialogTitle>
-                </DialogHeader>
-                <div className={"border-[2px] border-[#43ABFF] flex p-8 border-opacity-35 rounded-lg"}>
-                  <CreateOrder
-                    onSuccess={() => {
-                      setCreateOrderVisible(false);
-                      navigate("/work-order");
-                    }}
-                    type={"form-media"}
-                    currentOrder={currentOrder as WorkOrder}/>
-                </div>
-                <DialogFooter>
-                  <Button form={"createOrderForm"} className="bg-[#43ABFF] w-24" type="submit">确认</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            <CommonButton
-              permissionKey={"Collection_MediaVisual"}
-              onClick={onLoadMap}>
-              地图加载
+            <CommonButton className={"bg-transparent px-0"} onClick={() => setDisplayType(0)}>
+              <SquareMenu size={18} color={displayType === 0 && "#1997e6" || "white"}/>
             </CommonButton>
-          </>}
-          <CommonButton permissionKey={"Collection_MediaUpload"}>
-            <UploadButton>
-              上传文件
-            </UploadButton>
-          </CommonButton>
-
-          <CommonDialog
-            title={"创建文件夹"}
-            trigger={
-              <CommonButton permissionKey={"Collection_MediaOperation"}>
-                创建文件夹
-              </CommonButton>}
-            onConfirm={() => createDir({
-              name,
-              parent: breadcrumbList[breadcrumbList.length - 1].id || 0,
-              organ: departId ? +departId : undefined
-            })}
-          >
-            <div className="grid grid-cols-10 items-center">
-              <span className="col-span-2">文件夹名称：</span>
-              <CommonInput
-                defaultValue={name}
-                onChange={(e) => setName(e.target.value)}
-                className="col-span-8"
-              />
-            </div>
-          </CommonDialog>
-
-          <CommonButton className={"bg-transparent px-0"} onClick={() => setDisplayType(0)}>
-            <SquareMenu size={18} color={displayType === 0 && "#1997e6" || "white"}/>
-          </CommonButton>
-          <CommonButton className={"bg-transparent px-0"} onClick={() => setDisplayType(1)}>
-            <Grid3X3 color={displayType === 1 && "#1997e6" || "white"} size={18}/>
-          </CommonButton>
+            <CommonButton className={"bg-transparent px-0"} onClick={() => setDisplayType(1)}>
+              <Grid3X3 color={displayType === 1 && "#1997e6" || "white"} size={18}/>
+            </CommonButton>
+          </div>
         </div>
-      </div>
 
-      {displayType === 0 ? (
-        <CommonTable
-          loading={job_id ? defaultIsLoading : isLoading}
-          ref={tableRef}
-          data={data?.list || []}
-          columns={columns}
-          allCounts={data?.pagination.total || 0}
-          onPaginationChange={handlePaginationChange}
-          enableRowSelection={true}
-          onRowSelectionChange={setSelectedRows}
-          getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
-        />
-      ) : (
-        <InfiniteGridView
-          data={allItems}
-          hasMore={(data?.pagination?.total || 0) > allItems.length}
-          onLoadMore={loadMore}
-          onClickFolder={onClickFolder}
-          onUpdateFileName={(file) => {
-            setEditingFile(file);
-            setInputName(file.file_name);
-            setIsEditDialogOpen(true);
-          }}
-          onDeleteFile={onDeleteFile}
-        />
-      )}
-
-      {/* 重命名对话框 */}
-      <CommonDialog
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        title={"重命名"}
-        onConfirm={() => editingFile && onUpdateFileName(editingFile)}
-      >
-        <div className="grid grid-cols-10 items-center">
-          <span className="col-span-2">文件名称：</span>
-          <CommonInput
-            value={inputName}
-            onChange={(e) => setInputName(e.target.value)}
-            className="col-span-8"
+        {displayType === 0 ? (
+          <CommonTable
+            loading={job_id ? defaultIsLoading : isLoading}
+            ref={tableRef}
+            data={data?.list || []}
+            columns={columns}
+            allCounts={data?.pagination.total || 0}
+            onPaginationChange={handlePaginationChange}
+            enableRowSelection={true}
+            onRowSelectionChange={setSelectedRows}
+            getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
           />
-        </div>
-      </CommonDialog>
-    </div>
+        ) : (
+          <InfiniteGridView
+            data={allItems}
+            hasMore={(data?.pagination?.total || 0) > allItems.length}
+            onLoadMore={loadMore}
+            onClickFolder={onClickFolder}
+            onUpdateFileName={(file) => {
+              setEditingFile(file);
+              setInputName(file.file_name);
+              setIsEditDialogOpen(true);
+            }}
+            onDeleteFile={onDeleteFile}
+          />
+        )}
+
+        {/* 重命名对话框 */}
+        <CommonDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          title={"重命名"}
+          onConfirm={() => editingFile && onUpdateFileName(editingFile)}
+        >
+          <div className="grid grid-cols-10 items-center">
+            <span className="col-span-2">文件名称：</span>
+            <CommonInput
+              value={inputName}
+              onChange={(e) => setInputName(e.target.value)}
+              className="col-span-8"
+            />
+          </div>
+        </CommonDialog>
+      </div>
+    </Uploady>
   );
 };
 

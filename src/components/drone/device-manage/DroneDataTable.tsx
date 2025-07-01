@@ -69,6 +69,7 @@ const DroneDataTable = () => {
       {
         accessorKey: "nickname",
         header: "名称",
+        size: 140,
         cell: ({row}) => (
           <div className="truncate" title={row.getValue("nickname")}>
             {row.getValue("nickname")}
@@ -99,6 +100,7 @@ const DroneDataTable = () => {
       {
         accessorKey: "workspace_name",
         header: "组织",
+        size: 100,
         cell: ({row}) => (
           <div className="truncate" title={row.getValue("workspace_name")}>
             {row.getValue("workspace_name")}

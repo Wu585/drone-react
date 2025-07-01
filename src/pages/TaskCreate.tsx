@@ -355,7 +355,7 @@ const TaskCreate = () => {
             <Minus onClick={() => navigate("/task-list")}/>
           </div>
           <div className={"px-[12px] py-[14px]"}>
-            <div className={"pb-4"}>
+            <div className={"pb-4 text-sm"}>
               创建任务：
             </div>
             <div className={"px-4 text-[14px] space-y-4 h-[calc(100vh-240px)] overflow-y-auto"}>
