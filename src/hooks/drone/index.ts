@@ -804,7 +804,7 @@ export interface WorkOrder {
   uu_key: string;
   wayline: number;
   wayline_name: string;
-  found_time: number;
+  found_time: string;
   street: string;
   street_code: string;
   address: string;

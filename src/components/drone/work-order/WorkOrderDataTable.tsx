@@ -441,7 +441,7 @@ const WorkOrderDataTable = () => {
               </CommonButton>}
           >
             <div className={"flex"}>
-              <ol className="flex flex-col" aria-orientation="vertical">
+              <ol className="flex flex-col pr-8" aria-orientation="vertical">
                 {stepper.all.map((step, index, array) => (
                   <div key={step.id} className={""}>
                     <li className="flex items-center gap-4 flex-shrink-0">
@@ -505,10 +505,15 @@ const WorkOrderDataTable = () => {
                       currentOrder={currentOrderData}
                     />,
                   "2": () => isGly && (currentOrder?.status === 1 || currentOrder?.status === 4) ?
-                    <div
-                      className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
-                      <span className={"text-[32px]"}>待处理...</span>
-                    </div> :
+                    <Feedback
+                      type={orderHandleType}
+                      onSuccess={() => {
+                        setOpen(false);
+                        mutate();
+                        mutateCurrentOrder();
+                      }}
+                      currentOrder={currentOrderData}
+                    /> :
                     <Feedback
                       type={orderHandleType}
                       onSuccess={() => {
@@ -518,7 +523,7 @@ const WorkOrderDataTable = () => {
                       }}
                       currentOrder={currentOrderData}
                     />,
-                  "3": () => isGly || currentOrderData?.status === 3 ?
+                  "3": () =>
                     <Audit
                       currentOrder={currentOrderData}
                       onSuccess={() => {
@@ -526,11 +531,8 @@ const WorkOrderDataTable = () => {
                         mutate();
                         mutateCurrentOrder();
                       }}
-                    /> : <div
-                      className="text-lg py-4 text-blue-500 font-semibold content-center h-full flex flex-col items-center space-y-4">
-                      <span className={"text-[32px]"}>审核中...</span>
-                    </div>,
-                  "4": () => <Complete/>
+                    /> ,
+                  "4": () => <Complete currentOrder={currentOrder}/>
                 })}
               </div>
             </div>

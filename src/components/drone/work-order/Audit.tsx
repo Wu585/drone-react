@@ -3,10 +3,9 @@ import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {Textarea} from "@/components/ui/textarea";
 import {toast} from "@/components/ui/use-toast";
 import {useAjax} from "@/lib/http";
-import {useBindingDevice, useOperationList, WorkOrder} from "@/hooks/drone";
+import {useBindingDevice, useOperationList, usePermission, WorkOrder} from "@/hooks/drone";
 import {Button} from "@/components/ui/button.tsx";
 import {
   Sheet,
@@ -21,6 +20,12 @@ import {useState} from "react";
 import WaylineActionList from "@/components/drone/wayline/WaylineActionList.tsx";
 import {EDeviceTypeName} from "@/hooks/drone/device.ts";
 import {ELocalStorageKey} from "@/types/enum.ts";
+import OrderDetail from "@/components/drone/work-order/OrderDetail.tsx";
+import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import {CommonTextarea} from "@/components/drone/public/CommonTextarea.tsx";
+import {cn} from "@/lib/utils.ts";
+import {OrderStatusMap} from "@/components/drone/work-order/order-eventmap.ts";
 
 // 定义审核状态枚举
 enum AuditStatus {
@@ -81,6 +86,9 @@ interface Props {
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
 const Audit = ({currentOrder, onSuccess}: Props) => {
+  const {hasPermission} = usePermission();
+  const isGly = hasPermission("Collection_TicketAssign");
+
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 
   const {post} = useAjax();
@@ -358,32 +366,46 @@ const Audit = ({currentOrder, onSuccess}: Props) => {
           </Form>
         </SheetContent>
       </Sheet>
-      <Form {...form}>
-        <form id="auditForm" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <OrderDetail currentOrder={currentOrder}/>
+      <div className={"flex space-x-2 mt-4"}>
+        <h1 className={"text-blue-500 font-semibold text-lg "}>工单状态：</h1>
+        <div className={cn({
+          "text-yellow-500": currentOrder?.status === 0,
+          "text-blue-500": currentOrder?.status === 1,
+          "text-orange-500": currentOrder?.status === 2,
+          "text-green-500": currentOrder?.status === 3,
+          "text-red-500": currentOrder?.status === 4,
+        }, "text-lg font-semibold")}>
+          <span className={"text-lg"}>{OrderStatusMap[currentOrder?.status]}</span>
+        </div>
+      </div>
+      {isGly && <Form {...form}>
+        <form id="auditForm" onSubmit={form.handleSubmit(onSubmit)} className="mt-4">
           <FormField
             control={form.control}
             name="status"
             render={({field}) => (
-              <FormItem className="grid grid-cols-4 gap-4">
-                <FormLabel className="text-right mt-4">审核结果</FormLabel>
-                <Select
-                  disabled={isPreview}
-                  value={field.value.toString()}
-                  onValueChange={(value) => field.onChange(Number(value))}
-                >
-                  <FormControl>
-                    <SelectTrigger className="col-span-1 rounded-none h-[40px] bg-[#072E62]/[.7] border-[#43ABFF]">
-                      <SelectValue placeholder="请选择审核结果"/>
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Object.entries(auditStatusMap).map(([key, value]) => (
-                      <SelectItem key={key} value={key}>{value}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <FormItem className="grid grid-cols-12 gap-4">
+                <FormLabel className="text-left mt-4 col-span-2">审核结果：</FormLabel>
+                <FormControl>
+                  <CommonSelect
+                    className={"col-span-4"}
+                    disabled={isPreview}
+                    value={field.value.toString()}
+                    onValueChange={(value) => field.onChange(Number(value))}
+                    placeholder={"请选择审核结果"}
+                    options={Object.entries(auditStatusMap).map(([key, value]) => ({
+                      value: key,
+                      label: value
+                    }))}
+                  />
+                </FormControl>
                 <FormMessage className="col-span-3 col-start-2"/>
-                <Button className="bg-[#43ABFF] w-24" type={"button"} onClick={() => setSheetVisible(true)}>无人机复核</Button>
+                <CommonButton
+                  disabled={currentOrder?.status === 3}
+                  className={"col-span-2"}
+                  type={"button"}
+                  onClick={() => setSheetVisible(true)}>无人机复核</CommonButton>
               </FormItem>
             )}
           />
@@ -393,14 +415,13 @@ const Audit = ({currentOrder, onSuccess}: Props) => {
               control={form.control}
               name="reason"
               render={({field}) => (
-                <FormItem className="grid grid-cols-4 gap-4">
-                  <FormLabel className="text-right mt-4">不通过原因</FormLabel>
-                  <div className="col-span-3">
+                <FormItem className="grid grid-cols-12 gap-4">
+                  <FormLabel className="col-span-2 mt-4">不通过原因：</FormLabel>
+                  <div className="col-span-10">
                     <FormControl>
-                      <Textarea
+                      <CommonTextarea
                         disabled={isPreview}
                         placeholder="请输入不通过原因"
-                        className="resize-none h-[100px] rounded-none bg-[#072E62]/[.7] border-[#43ABFF]"
                         {...field}
                       />
                     </FormControl>
@@ -411,7 +432,7 @@ const Audit = ({currentOrder, onSuccess}: Props) => {
             />
           )}
         </form>
-      </Form>
+      </Form>}
     </>
   );
 };

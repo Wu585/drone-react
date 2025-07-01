@@ -5,11 +5,8 @@ import dayjs from "dayjs";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
-import {Input} from "@/components/ui/input.tsx";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {DateTimePicker} from "@/components/ui/date-time-picker.tsx";
-import {Textarea} from "@/components/ui/textarea.tsx";
-import {memo, useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {pickPosition} from "@/components/toolbar/tools";
 import {
   useBatchFinishListener,
@@ -18,23 +15,21 @@ import {
   useItemFinishListener
 } from "@rpldy/uploady";
 import UploadButton from "@rpldy/upload-button";
-import {Plus, UploadCloud, X} from "lucide-react";
+import {CircleCheckBig, Copy, Plus} from "lucide-react";
 import {cn, uuidv4} from "@/lib/utils";
 import {eventMap, WorkOrder} from "@/hooks/drone";
 import {PreviewComponentProps, PreviewMethods, UploadPreview} from "@rpldy/upload-preview";
-import {getMediaType} from "@/hooks/drone/order";
-import {Button} from "@/components/ui/button.tsx";
 import ReviewSheet from "@/components/drone/work-order/ReviewSheet.tsx";
-import {MediaPreview} from "@/components/drone/MediaPreview.tsx";
 import CreateOrderScene from "@/components/drone/public/CreateOrderScene.tsx";
 import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
 import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
 import {CommonTextarea} from "@/components/drone/public/CommonTextarea.tsx";
 import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area.tsx";
 import {Progress} from "@/components/ui/progress.tsx";
-import MediaItem from "@/components/drone/work-order/MediaItem.tsx";
 import UploadPreviewItem from "@/components/drone/work-order/UploadPreviewItem.tsx";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import {useClipboard} from "@/hooks/drone/useClipboard.ts";
 
 const createOrderSchema = z.object({
   name: z.string().min(1, "请输入事件名称"),
@@ -78,15 +73,13 @@ interface Props {
 }
 
 const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
-  console.log("currentOrder");
-  console.log(currentOrder);
   const departId = localStorage.getItem("departId");
 
   const previewMethodsRef = useRef<PreviewMethods>(null);
   const [open, setOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const {post, get} = useAjax();
+  const {post} = useAjax();
   // 文件预览url 数组
   const [mediaUrlList, setMediaUrlList] = useState<string[]>([]);
   // key 数组
@@ -119,6 +112,9 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
   // 格式化经纬度，保留三位小数
   const formattedLatitude = typeof latitude === "number" ? latitude.toFixed(5) : "";
   const formattedLongitude = typeof longitude === "number" ? longitude.toFixed(5) : "";
+
+  const [isCopied, copy] = useClipboard(1000);
+  const formattedCoordinates = `${formattedLongitude}, ${formattedLatitude}`;
 
   useEffect(() => {
     !isPreview && pickPosition(({longitude, latitude}) => {
@@ -270,6 +266,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
             id={key}
             type={fileType}
             onClear={() => onEditRemove(key)}
+            canRemove={type === "edit"}
           />
         );
       });
@@ -461,10 +458,10 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
                       <div className={"flex space-x-2"}>
                         <UploadButton
                           extraProps={{
-                            disabled: isUploading,
+                            disabled: isUploading || isPreview,
                             type: "button"
                           }}
-                          className={cn("border-[#2D5FAC]/[.85] border-[1px] w-28 h-28 rounded-[2px] shrink-0 relative", isUploading && "opacity-70")}
+                          className={cn("border-[#2D5FAC]/[.85] border-[1px] w-28 h-28 rounded-[2px] shrink-0 relative", (isUploading || isPreview) && "opacity-50")}
                         >
                           {!isUploading ? <div className={"h-full content-center"}>
                             <Plus/>
@@ -510,104 +507,22 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
             <div className={"grid grid-cols-4 gap-2"}>
               <div className={"col-span-3 col-start-2"}>
                 <CreateOrderScene currentOrder={currentOrder}/>
-                <div className={"flex items-center justify-between"}>
-                  <span>经纬度：{formattedLongitude}, {formattedLatitude}</span>
-                  {isPreview && <CommonButton className={"px-2 mt-2"} type={"button"}
-                                              onClick={() => setOpen(true)}>无人机核查</CommonButton>}
+                <div className={"flex items-center justify-between mt-2"}>
+                  <div className={"flex items-center space-x-2 whitespace-nowrap"}>
+                    <span>坐标：{formattedCoordinates} </span>
+                    <IconButton
+                      type={"button"}
+                      onClick={() => copy(formattedCoordinates)}>
+                      {isCopied ? <CircleCheckBig size={12}/> : <Copy size={12}/>}
+                    </IconButton>
+                  </div>
+                  {isPreview && <CommonButton
+                    className={"px-2"} type={"button"}
+                    onClick={() => setOpen(true)}>无人机核查</CommonButton>}
                 </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mt-4 ml-24 overflow-auto max-h-[168px]">
-          {/*{(type === "edit" || type === "form-media") && mediaUrlList.map(url => {
-            const fileType = getMediaType(url);
-            return <div className="relative group aspect-video" key={url}>
-              {fileType === "video" ? <video
-                key={url}
-                muted
-                loop
-                controls
-                className="w-full h-full object-cover rounded-sm"
-                src={url}
-              /> : <img
-                key={url}
-                src={url}
-                className="w-full h-full object-cover rounded-sm"
-              />}
-              <button
-                onClick={() => onEditRemove(url)}
-                type="button"
-                className="absolute top-2 right-2 p-1 bg-red-500 rounded-full
-                         text-white opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-4 h-4"/>
-              </button>
-            </div>;
-          })}*/}
-          {/* <UploadPreview
-            previewMethodsRef={previewMethodsRef}
-            rememberPreviousBatches
-            PreviewComponent={({url, type: fileType, id}) => <div className="relative group aspect-video">
-              {fileType === "video" ? (
-                <video
-                  muted
-                  loop
-                  controls
-                  className="w-full h-full object-cover rounded-sm"
-                  src={url}
-                />
-              ) : (
-                <img
-                  src={url}
-                  className="w-full h-full object-cover rounded-sm"
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => onClear(id)}
-                className="absolute top-2 right-2 p-1 bg-red-500 rounded-full
-                         text-white opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-4 h-4"/>
-              </button>
-            </div>}
-          />*/}
-          {/*{type === "preview" && mediaUrlList.map(url => {
-            const fileType = getMediaType(url);
-            return <div className="relative group aspect-video">
-              {fileType === "video" ?
-                <MediaPreview
-                  src={url}
-                  type="video"
-                  alt="Example Video"
-                  modalWidth="70vw"
-                  modalHeight="70vh"
-                  triggerElement={<video
-                    controls
-                    key={url}
-                    muted
-                    className="w-full h-full object-cover rounded-sm"
-                    src={url}
-                  />}
-                />
-                :
-                <MediaPreview
-                  src={url}
-                  type="image"
-                  alt="Example Image"
-                  modalWidth="1000px"
-                  modalHeight="800px"
-                  triggerElement={<img
-                    key={url}
-                    src={url}
-                    className="w-full h-full object-cover rounded-sm border-2"
-                  />}
-                />
-              }
-            </div>;
-          })}*/}
         </div>
       </form>
     </Form>

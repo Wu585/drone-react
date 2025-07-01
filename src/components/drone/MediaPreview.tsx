@@ -33,11 +33,7 @@ export function MediaPreview({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {triggerElement ? (
-          cloneElement(triggerElement as ReactElement, {
-            className: triggerClassName,
-          })
-        ) : (
+        {triggerElement ? triggerElement : (
           <Button variant="outline" className={triggerClassName}>
             Preview
           </Button>
