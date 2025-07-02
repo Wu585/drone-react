@@ -43,6 +43,7 @@ import {toast} from "@/components/ui/use-toast.ts";
 import {Textarea} from "@/components/ui/textarea.tsx";
 import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import dayjs from "dayjs";
+import {useSetViewByWaylineData} from "@/hooks/drone/wayline/useSetViewByWaylineData.ts";
 
 const formSchema = z.object({
   name: z.string()
@@ -235,6 +236,8 @@ const TaskCreateApply = () => {
       setSelectedDevice(device);
     }
   }, [currentApplyWaylineJob, bindingDevices]);
+
+  useSetViewByWaylineData(selectedWayline?.id || "");
 
   useEffect(() => {
     console.log("currentWaylineData");

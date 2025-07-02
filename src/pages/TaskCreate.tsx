@@ -41,6 +41,7 @@ import Scene from "@/components/drone/public/Scene.tsx";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import {waylinePointConfig} from "@/lib/wayline.ts";
 import {toast} from "@/components/ui/use-toast.ts";
+import {useSetViewByWaylineData} from "@/hooks/drone/wayline/useSetViewByWaylineData.ts";
 
 const formSchema = z.object({
   name: z.string()
@@ -217,6 +218,8 @@ const TaskCreate = () => {
   };
 
   const {data: currentWaylineData} = useWaylineById(selectedWayline?.id || "");
+
+  useSetViewByWaylineData(selectedWayline?.id || "");
 
   useEffect(() => {
     console.log("currentWaylineData");

@@ -1,12 +1,18 @@
 import {useAjax} from "@/lib/http.ts";
 import {
+  BatteryFull,
+  CircleStop,
+  ClipboardList,
+  CloudHail,
+  Forward,
   LandPlot,
   Rocket,
   Satellite,
+  Send,
   Settings,
   ThermometerSun,
-  X,
-  Forward, CircleStop, BatteryFull, Wind, CloudHail, Send, ClipboardList
+  Wind,
+  X
 } from "lucide-react";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import TakeOffFormPanel from "@/components/drone/public/TakeOffFormPanel.tsx";
@@ -186,30 +192,34 @@ const DronePanel = () => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const departId = localStorage.getItem("departId")!;
 
+  // 查询当天待执行任务
   const {data: taskList} = useWaylinJobs(workspaceId, {
     page: 1,
-    page_size: 10,
-    start_time: "",
-    end_time: "",
+    page_size: 100,
+    start_time: dayjs().format("YYYY-MM-DD 00:00:00"),
+    end_time: dayjs().format("YYYY-MM-DD 23:59:59"),
     task_type: undefined as TaskType | undefined,
     dock_sn: osdVisible.gateway_sn,
     keyword: "",
-    status: undefined as TaskStatus | undefined,
+    status: TaskStatus.Wait,
     organs: departId ? [+departId] : undefined
   });
 
   const taskStaus = useMemo(() => {
-    if (!taskList) return "暂无任务";
-    if (taskList.list?.[0]?.status === TaskStatus.Wait) return "待执行";
-    if (taskList.list?.[0]?.status === TaskStatus.Carrying) return "执行中";
+    if (!taskList) return "今日暂无任务";
+    // if (deviceInfo?.device?.mode_code === EModeCode.Waypoint) return "执行中";
+    const _taskList = taskList.list.slice().reverse();
+    if (_taskList[0]?.status === TaskStatus.Wait) return "待执行";
+    // if (_taskList[0]?.status === TaskStatus.Carrying) return "执行中";
 
-    return "暂无任务";
+    return "今日暂无任务";
   }, [taskList]);
 
   const taskTime = useMemo(() => {
     if (!taskList) return null;
-    if (taskList.list?.[0]?.status === TaskStatus.Wait) {
-      const task = taskList.list?.[0];
+    const _taskList = taskList.list.slice().reverse();
+    if (_taskList[0]?.status === TaskStatus.Wait) {
+      const task = _taskList[0];
       if (task.begin_time) {
         return dayjs(task.begin_time).format("MM-DD HH:mm");
       }
