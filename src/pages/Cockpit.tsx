@@ -11,7 +11,7 @@ import CockpitFlyControl from "@/components/drone/public/CockpitFlyControl.tsx";
 import {clarityList} from "@/hooks/drone/useDeviceVideo.ts";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
-import {useDeviceTopo, useOnlineDocks, useWaylinJobs} from "@/hooks/drone";
+import {Task, useDeviceTopo, useOnlineDocks, useWaylinJobs} from "@/hooks/drone";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
@@ -20,7 +20,17 @@ import {cn} from "@/lib/utils.ts";
 import PayloadControl from "@/components/drone/PayloadControl.tsx";
 import compassPng from "@/assets/images/drone/cockpit/compass.png";
 import pointerPng from "@/assets/images/drone/cockpit/pointer.png";
-import {ArrowRightLeft, ChevronsUpDown, Maximize2, RefreshCcw, Settings, Triangle, Undo2, X} from "lucide-react";
+import {
+  ArrowRightLeft,
+  ChevronsUpDown,
+  ClipboardList,
+  Maximize2,
+  RefreshCcw,
+  Settings,
+  Triangle,
+  Undo2,
+  X
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,10 +69,17 @@ import {WorkOrderCarousel} from "@/components/drone/WorkOrderCarousel.tsx";
 import {Switch} from "@/components/ui/switch.tsx";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import CustomPopover from "@/components/public/CustomPopover.tsx";
-import {TaskStatus, TaskType} from "@/types/task.ts";
+import {TaskStatus, TaskType, TaskTypeMap} from "@/types/task.ts";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import startPng from "@/assets/images/start.png";
 import endPng from "@/assets/images/end.png";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import dayjs from "dayjs";
+import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
+import {ColumnDef} from "@tanstack/react-table";
+import {formatTaskStatus} from "@/hooks/drone/task";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -886,13 +903,79 @@ const Cockpit = () => {
     }
   };
 
+  const columns: ColumnDef<Task>[] = useMemo(() => {
+    return [
+      {
+        header: "计划时间 | 实际时间",
+        size: 200,
+        cell: ({row}) => {
+          // 格式化时间函数
+          const formatTime = (timeStr: string) => {
+            if (!timeStr) return "";
+            const time = timeStr.split(" ")[1];  // 取空格后的时间部分
+            return time ? time.substring(0, 8) : ""; // 只保留时分秒 (HH:mm:ss)
+          };
+
+          return (
+            <div className="flex gap-0.5 space-x-2 whitespace-nowrap">
+              <div className="text-gray-400 text-[13px]">
+                {/*[{formatTime(row.original.begin_time)}-{formatTime(row.original.end_time)}]*/}
+                [{formatTime(row.original.begin_time)}-{formatTime(row.original.end_time)}]
+              </div>
+              <div className="text-[#43ABFF] text-[13px]">
+                {formatTime(row.original.execute_time) ?
+                  `[${formatTime(row.original.execute_time)}-${formatTime(row.original.completed_time)}]` : "--"
+                }
+              </div>
+            </div>
+          );
+        }
+      },
+
+      {
+        accessorKey: "job_name",
+        header: "计划名称",
+        size: 140,
+        cell: ({row}) => (
+          <div className="truncate" title={row.original.job_name}>
+            {row.original.job_name}
+          </div>
+        )
+      },
+      {
+        accessorKey: "task_type",
+        header: "类型",
+        size: 80,
+        cell: ({row}) => <span className="whitespace-nowrap">{TaskTypeMap[row.original.task_type]}</span>
+      },
+      {
+        accessorKey: "file_name",
+        header: "航线名称",
+        size: 160,
+        cell: ({row}) => (
+          <div className="max-w-[160px] truncate" title={row.original.file_name}>
+            {row.original.file_name}
+          </div>
+        )
+      },
+      {
+        header: "执行状态",
+        size: 100,
+        cell: ({row}) =>
+          <span style={{
+            color: formatTaskStatus(row.original).color
+          }} className={"whitespace-nowrap"}>{formatTaskStatus(row.original).text}</span>
+      },
+    ];
+  }, []);
+
   const departId = localStorage.getItem("departId")!;
 
   const {data: jobList} = useWaylinJobs(workspaceId, {
     page: 1,
     page_size: 100,
-    start_time: "",
-    end_time: "",
+    start_time: dayjs().format("YYYY-MM-DD 00:00:00"),
+    end_time: dayjs().format("YYYY-MM-DD 23:59:59"),
     task_type: undefined as TaskType | undefined,
     dock_sn: dockSn,
     keyword: "",
@@ -922,7 +1005,7 @@ const Cockpit = () => {
             </div>
             <img src={wurenjiPng} alt=""/>
             <span>{currentTopo?.nickname + " - " + currentTopo?.children.nickname}</span>
-            <CustomPopover
+            {/*<CustomPopover
               trigger={<Triangle fill={"white"} size={12} className="rotate-180"/>}
               className={"max-h-48 overflow-auto max-w-80"}
               content={
@@ -943,7 +1026,26 @@ const Cockpit = () => {
                     <div className={"text-center"}>暂无任务</div>
                   )}
                 </div>
-              }/>
+              }
+            />*/}
+            <CommonDialog
+              titleClassname={"text-lg font-medium pl-8"}
+              contentClassName={"max-w-[1000px]"}
+              title={"今日飞行任务列表"}
+              trigger={<IconButton>
+                <ClipboardList size={16}/>
+              </IconButton>}
+              showCancel={false}
+            >
+              <CommonTable
+                getRowClassName={(_, index) => index % 2 === 1 ? "bg-[#203D67]/70" : ""}
+                maxHeight={"calc(100vh - 600px)"}
+                manualPagination={false}
+                data={jobList?.list || []}
+                columns={columns}
+              />
+            </CommonDialog>
+
           </div>
           {/* 中间部分（绝对居中） */}
           <div className={"py-4 text-xl font-bold text-[#63E5FF] z-50 absolute left-1/2 top-0 -translate-x-1/2"}>
@@ -1202,13 +1304,13 @@ const Cockpit = () => {
               <div>
                 <div className={"grid grid-cols-2 px-[16px]"}>
                   <span>当前经度：</span>
-                  <span>{deviceInfo?.device?.longitude || str} °</span>
+                  <span>{deviceInfo?.device?.longitude || str}</span>
                 </div>
               </div>
               <div>
                 <div className={"grid grid-cols-2 px-[16px]"}>
                   <span>当前纬度：</span>
-                  <span>{deviceInfo?.device?.latitude || str} °</span>
+                  <span>{deviceInfo?.device?.latitude || str}</span>
                 </div>
               </div>
             </div>
