@@ -13,6 +13,7 @@ import companyTitle from "@/assets/images/drone/company-title.png";
 // import companyTitle from "@/assets/images/drone/zdhxc-bg.png";
 import {toast} from "@/components/ui/use-toast.ts";
 import {Depart} from "@/hooks/drone";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
 
 const formSchema = z.object({
   username: z.string().min(3, {
@@ -96,9 +97,7 @@ const Login = () => {
                   <FormControl>
                     <div className={"flex items-center relative space-x-[12px]"}>
                       <User className={""}/>
-                      <Input {...field} style={{
-                        borderImage: "linear-gradient(178deg, rgba(88, 189, 255, 1), rgba(10, 114, 205, 1)) 1 1"
-                      }} className={"bg-[#0B3B7D] pl-[22px]"} placeholder="请输入用户名"/>
+                      <CommonInput {...field} placeholder="请输入用户名"/>
                     </div>
                   </FormControl>
                   <FormMessage/>
@@ -113,10 +112,8 @@ const Login = () => {
                   <FormControl>
                     <div className={"flex items-center relative space-x-[12px]"}>
                       <LockKeyhole className={""}/>
-                      <Input style={{
-                        borderImage: "linear-gradient(178deg, rgba(88, 189, 255, 1), rgba(10, 114, 205, 1)) 1 1"
-                      }} {...field} className={"bg-[#0B3B7D] pl-[22px]"} type={"password"}
-                             placeholder="请输入密码"/>
+                      <CommonInput  {...field} type={"password"}
+                                    placeholder="请输入密码"/>
                     </div>
                   </FormControl>
                   <FormMessage/>
@@ -130,7 +127,7 @@ const Login = () => {
             boxShadow: "inset 8px -5px 19px 0px #1283FF, inset 15px 5px 25px 0px #2BA1D7, inset 3px -5px 19px 0px #12B0FF",
             borderRadius: "2px",
             borderImage: "linear-gradient(270deg, rgba(103, 187, 246, 1), rgba(97, 190, 245, 1), rgba(108, 233, 254, 1)) 1 1"
-          }} className={"border w-full mt-[60px]"}>登录</Button>
+          }} className={"border w-full mt-[40px]"}>登录</Button>
         </div>
       </form>
     </Form>
