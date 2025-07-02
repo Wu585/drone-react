@@ -7,7 +7,7 @@ export const useSetViewByWaylineData = (id?: string) => {
 
   useEffect(() => {
     if (!currentWaylineData) {
-      return resetView();
+      return;
     }
     const takeoffPoint = currentWaylineData.take_off_ref_point?.split(",");
     if (takeoffPoint && takeoffPoint.length >= 2) {

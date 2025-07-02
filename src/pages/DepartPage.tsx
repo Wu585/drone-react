@@ -1,4 +1,4 @@
-import {useMemo, useState, useEffect} from "react";
+import {useMemo, useState, useEffect, useCallback} from "react";
 import {LogInIcon, Pencil, Plus, Trash2, X} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
 import {
@@ -26,6 +26,11 @@ import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
 import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import {Label} from "@/components/ui/label.tsx";
+import {pickPosition} from "@/components/toolbar/tools";
+import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
+import {addDepartEntity} from "@/hooks/drone/depart/useAddDepartEntity.ts";
+import {useSceneStore} from "@/store/useSceneStore.ts";
 
 const OPERATION_HTTP_PREFIX = "/operation/api/v1";
 
@@ -35,6 +40,8 @@ const formSchema = z.object({
     required_error: "请选择负责人",
     invalid_type_error: "负责人必须是数字"
   }),
+  longitude: z.coerce.number().optional(),
+  latitude: z.coerce.number().optional(),
   workspace: z.coerce.number({
     required_error: "请选择组织",
     invalid_type_error: "组织必须是数字"
@@ -46,7 +53,7 @@ const formSchema = z.object({
 const DepartPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-
+  const viewerInitialized = useSceneStore(state => state.viewerInitialized);
   const currentWorkSpaceId = localStorage.getItem(ELocalStorageKey.SelectedWorkspaceId) || localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const tmpWorkspaceId = searchParams.get("id") || undefined;
 
@@ -88,7 +95,7 @@ const DepartPage = () => {
     lead_user: 0,
     workspace: currentWorkSpace?.id || 0,
     users: [],
-    devices: []
+    devices: [],
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -99,6 +106,8 @@ const DepartPage = () => {
   useEffect(() => {
     if (currentDepart) {
       form.setValue("name", currentDepart.name);
+      form.setValue("longitude", currentDepart.longitude ? +currentDepart.longitude : undefined);
+      form.setValue("latitude", currentDepart.latitude ? +currentDepart.latitude : undefined);
       form.setValue("lead_user", currentDepart.lead_user || 0);
       form.setValue("users", currentDepart.users.map((item) => (item as User).id) || []);
       form.setValue("devices", currentDepart.devices.map(item => item.id) || []);
@@ -123,6 +132,11 @@ const DepartPage = () => {
       toast({
         description: departId === 0 ? "部门创建成功！" : "部门编辑成功！"
       });
+      if (values.longitude && values.latitude) {
+        viewer.entities.removeById("depart-position");
+        addDepartEntity(values.longitude, values.latitude, values.name);
+        clearPickPosition();
+      }
       await mutateDepartList();
       // setVisible(false);
       // form.reset(defaultValues);
@@ -151,6 +165,48 @@ const DepartPage = () => {
     await mutateDepartList();
   };
 
+  const longitude = form.watch("longitude");
+  const latitude = form.watch("latitude");
+
+  const onSetPosition = useCallback(() => {
+    clearPickPosition();
+    pickPosition(({longitude, latitude}) => {
+      viewer.entities.removeById("depart-position");
+      // 添加蓝色圆形entity
+      console.log(111);
+      viewer.entities.add({
+        id: "depart-position",
+        position: Cesium.Cartesian3.fromDegrees(longitude, latitude),
+        point: {
+          pixelSize: 10,                   // 点的大小（像素）
+          color: Cesium.Color.BLUE,        // 蓝色
+          outlineColor: Cesium.Color.WHITE, // 白色边框
+          outlineWidth: 2,                // 边框宽度
+        }
+      });
+      form.setValue("longitude", longitude);
+      form.setValue("latitude", latitude);
+    });
+  }, [viewerInitialized]);
+
+  useEffect(() => {
+    if (departId <= 0) return;
+    if (!currentDepart || !currentDepart.longitude || !currentDepart.latitude) return;
+    viewer.entities.removeById("depart-position");
+    addDepartEntity(+currentDepart.longitude, +currentDepart.latitude, currentDepart.name);
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(+currentDepart.longitude, +currentDepart.latitude, 200),
+      duration: 1
+    });
+  }, [departId, currentDepart]);
+
+  useEffect(() => {
+    return () => {
+      viewer.entities.removeById("depart-position");
+      clearPickPosition();
+    };
+  }, []);
+
   return (
     <div className={"w-full h-full flex"}>
       <div
@@ -171,11 +227,12 @@ const DepartPage = () => {
             <div className={"content-center py-8 text-[#d0d0d0]"}>暂无数据</div>}
           {departList?.map(item =>
             <div
+              onClick={() => setDepartId(item.id)}
               style={{
                 backgroundSize: "100% 100%"
               }}
               key={item.id}
-              className={cn("bg-full-size text-[14px] p-4 space-y-2", item.id === departId ? "bg-panel-item-active" : "bg-panel-item")}>
+              className={cn("bg-full-size text-[14px] p-4 space-y-2 cursor-pointer", item.id === departId ? "bg-panel-item-active" : "bg-panel-item")}>
               <div>
                 <span>部门名称：</span>
                 <span>{item.name}</span>
@@ -317,6 +374,17 @@ const DepartPage = () => {
                 </FormItem>
               )}
             />
+
+            <div className={"flex justify-between items-center"}>
+              <Label>部门中心点：</Label>
+              <CommonButton type={"button"} onClick={onSetPosition}>设置中心点</CommonButton>
+            </div>
+
+            <div className={"text-sm text-[#d0d0d0]"}>
+              <Label>经纬度：</Label>
+              <span>{longitude && latitude && `${longitude.toFixed(6)} , ${latitude.toFixed(6)}`}</span>
+            </div>
+
             <FormField
               control={form.control}
               name="devices"

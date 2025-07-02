@@ -26,6 +26,7 @@ const mapLayerList = [
 
 const DepartScene = () => {
   const deviceState = useSceneStore(state => state.deviceState);
+  const setViewerInitialized = useSceneStore(state => state.setViewerInitialized);
   const addMapLayer = () => {
     mapLayerList.forEach(item => {
       const layer = new Cesium.SuperMapImageryProvider(item);
@@ -43,6 +44,7 @@ const DepartScene = () => {
       infoBox: false,
       navigation: true, //指南针
       selectionIndicator: false, //绿色选择框
+      requestRenderMode: false
     });
 
     const {scene} = viewer;
@@ -54,6 +56,8 @@ const DepartScene = () => {
     scene.hdrEnabled = false;
     scene.sun.show = true;
 
+    setViewerInitialized(true);
+
     addMapLayer();
     resetView();
 
@@ -61,13 +65,14 @@ const DepartScene = () => {
     yx && (yx.show = false);
 
     return () => {
+      setViewerInitialized(false);
       viewer.destroy();
     };
-  }, []);
+  }, [setViewerInitialized]);
 
   useEntityCustomSource("dock");
 
-  useEffect(() => {
+  /*useEffect(() => {
     if (!viewer || !deviceTopo) return;
     Object.keys(deviceState.dockInfo).forEach(dockSn => {
       const dockInfo = deviceState.dockInfo[dockSn];
@@ -98,7 +103,7 @@ const DepartScene = () => {
         });
       }
     });
-  }, [deviceState, deviceTopo]);
+  }, [deviceState, deviceTopo]);*/
 
   return (
     <div id="cesiumContainer" className={"h-full relative"}>

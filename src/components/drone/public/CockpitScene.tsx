@@ -94,6 +94,8 @@ const CockpitScene = () => {
 
   }, [setViewerInitialized]);
 
+  // useSetViewToCurrentDepart();
+
   // 机场坐标字符串
   const dockPoiStr = useMemo(() => {
     if (realTimeDeviceInfo && realTimeDeviceInfo.dock && realTimeDeviceInfo.dock.basic_osd) {

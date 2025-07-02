@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useRef} from "react";
-import {findMapLayer, resetView} from "@/lib/view.ts";
+import {findMapLayer} from "@/lib/view.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-source.ts";
@@ -16,6 +16,7 @@ import {useDeviceTopo, useWaylinJobs} from "@/hooks/drone";
 import {useAddWaylineEntityById} from "@/hooks/drone/useAddWaylineEntityById.ts";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {toast} from "@/components/ui/use-toast.ts";
+import {useSetViewToCurrentDepart} from "@/hooks/drone/depart/useAddDepartEntity.ts";
 
 const mapLayerList = [
   {
@@ -79,7 +80,7 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
     addMapLayer();
     // const nameMap = findMapLayer("中文注记");
     // viewer.scene.layers.raiseToTop(nameMap);
-    resetView();
+    // resetView();
 
     const yx = findMapLayer("影像");
     yx && (yx.show = false);
@@ -90,6 +91,8 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
       viewer.destroy();
     };
   }, []);
+
+  useSetViewToCurrentDepart();
 
   useEntityCustomSource("dock");
   useEntityCustomSource("drone");

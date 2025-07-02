@@ -5,6 +5,7 @@ import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-sour
 import dockPng from "@/assets/images/drone/dock.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
+import {useSetViewToCurrentDepart} from "@/hooks/drone/depart/useAddDepartEntity.ts";
 
 const mapLayerList = [
   {
@@ -66,6 +67,8 @@ const CreateWaylineScene = () => {
       viewer.destroy();
     };
   }, [setViewerInitialized]);
+
+  useSetViewToCurrentDepart();
 
   // 机场图标的集合
   useEntityCustomSource("dock");

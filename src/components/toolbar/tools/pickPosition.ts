@@ -14,8 +14,6 @@ const createCallback = (onFinish?: ({longitude, latitude, height}: {
   viewer.scene.pickPositionAsync(e.position).then((position: any) => {
     //将笛卡尔坐标转化为经纬度坐标
     const cartographic = Cesium.Cartographic.fromCartesian(position);
-    console.log("cartographic");
-    console.log(cartographic);
     const longitude = Cesium.Math.toDegrees(cartographic.longitude);
     const latitude = Cesium.Math.toDegrees(cartographic.latitude);
     let height = cartographic.height;

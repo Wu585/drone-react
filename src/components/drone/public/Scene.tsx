@@ -5,6 +5,7 @@ import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-sour
 import dockPng from "@/assets/images/drone/dock.png";
 import {EntitySize} from "@/assets/datas/enum.ts";
 import {useOrderToMap} from "@/hooks/drone/order/useOrderToMap.ts";
+import {useSetViewToCurrentDepart} from "@/hooks/drone/depart/useAddDepartEntity.ts";
 
 const mapLayerList = [
   {
@@ -52,7 +53,7 @@ const Scene = () => {
     scene.sun.show = true;
 
     addMapLayer();
-    resetView();
+    // resetView();
 
     const yx = findMapLayer("影像");
     yx && (yx.show = false);
@@ -61,6 +62,8 @@ const Scene = () => {
       viewer.destroy();
     };
   }, []);
+
+  useSetViewToCurrentDepart();
 
   // 机场图标的集合
   useEntityCustomSource("dock");

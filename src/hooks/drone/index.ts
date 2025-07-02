@@ -765,6 +765,8 @@ interface Data {
   users: number[] | User[];
   devices: Device[];
   workspace_id: string;
+  longitude: string | null;
+  latitude: string | null;
 }
 
 // 根据id获取部门详情
