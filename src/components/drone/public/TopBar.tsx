@@ -24,7 +24,7 @@ const TopBar = () => {
 
   const currentWorkSpace = workSpaceList?.find(item =>
     item.workspace_id === localStorage.getItem(ELocalStorageKey.WorkspaceId)
-  )?.workspace_name || "未选择组织";
+  );
 
   const handleSwitchWorkspace = useCallback(async (workspaceId: string) => {
     localStorage.setItem(ELocalStorageKey.WorkspaceId, workspaceId);
@@ -47,11 +47,11 @@ const TopBar = () => {
       "flex justify-between items-center px-[30px] py-[18px] whitespace-nowrap"}>
       <div className={"text-[24px] font-semibold content-center space-x-2"}>
         <img src={logo} alt=""/>
-        <span className={"tracking-wider"}>绣花针低空管控平台</span>
+        <span className={"tracking-wider"}>{currentWorkSpace?.platform_name || "绣花针低空管控平台"}</span>
       </div>
       <div className={"flex space-x-4"}>
         <div className="flex space-x-6 text-lg mr-8">
-          <div>奉贤区：</div>
+          {/*<div>奉贤区：</div>*/}
           <div className={"space-x-2 content-center"}>
             <img className={"h-6"} src={wenduPng} alt=""/>
             <span>{weatherInfo?.[0]?.realtime.sendibleTemp}°C</span>
@@ -72,7 +72,7 @@ const TopBar = () => {
 
         <CircleUser/>
         <span>{currentUser?.name || "未登录"} </span>
-        <span>{"当前组织: " + currentWorkSpace}</span>
+        <span>{"当前组织: " + currentWorkSpace?.workspace_name || "未选择组织"}</span>
         {username && <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <ArrowDown/>

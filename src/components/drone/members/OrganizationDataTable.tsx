@@ -291,10 +291,11 @@ const OrganizationDataTable = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("onSubmit values:", values);
     if (!currentUser) return;
+
     const formData = {
       ...values,
       workspace_id: currentOrg ? undefined : uuidv4(),
-      lead_user: currentUser?.id,
+      lead_user: currentOrg ? currentOrg.lead_user : currentUser?.id,
       id: currentOrg?.id
     };
     console.log("formData", formData);
@@ -375,6 +376,21 @@ const OrganizationDataTable = () => {
                 </FormItem>
               )}
               name={"parent"}
+            />
+            <FormField
+              control={form.control}
+              render={({field}) => (
+                <FormItem className={"grid grid-cols-4 items-center gap-4"}>
+                  <FormLabel className={"text-right"}>平台名称：</FormLabel>
+                  <div className={"col-span-3"}>
+                    <FormControl>
+                      <CommonInput {...field} placeholder={"输入平台名称"}/>
+                    </FormControl>
+                    <FormMessage/>
+                  </div>
+                </FormItem>
+              )}
+              name={"platform_name"}
             />
             <FormField
               control={form.control}
