@@ -22,6 +22,8 @@ import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
 import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
 import {CommonDateRange} from "@/components/drone/public/CommonDateRange.tsx";
 import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
+import {useConnectMqtt} from "@/hooks/drone/useConnectMqtt.ts";
+import {useMqtt} from "@/hooks/drone/use-mqtt.ts";
 
 const TaskDataTable = () => {
   const {delete: deleteClient, put, post} = useAjax();
@@ -324,10 +326,45 @@ const TaskDataTable = () => {
     }
   };
 
+  useConnectMqtt();
+
+  const [x, setX] = useState({
+    sn: "",
+    pubTopic: "",
+    subTopic: ""
+  });
+
+  const aaa = () => setX({
+    sn: "8UUXN2N00A01AX",
+    pubTopic: "thing/product/1581F8HGD25110010022/state",
+    subTopic: "thing/product/1581F8HGD25110010022/state"
+  });
+
+  const {publishMqtt} = useMqtt(x);
+
+  const bbb = () => {
+    publishMqtt("thing/product/8UUXN2N00A01AX/services", {
+      "bid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "data": {
+        "psdk_index": 2,
+        "tts": {
+          "md5": "0bfb9bceee974f41a6ddfd81521bd733",
+          "name": "1111",
+          "text": "111111111111"
+        }
+      },
+      "method": "speaker_tts_play_start",
+      "tid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "timestamp": 1689860575397
+    });
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-4">
+          {/*<CommonButton onClick={aaa}>订阅</CommonButton>*/}
+          {/*<CommonButton onClick={bbb}>发布</CommonButton>*/}
           <CommonDateRange
             value={{
               start: queryParams.start_time,

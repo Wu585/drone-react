@@ -2,7 +2,6 @@ import {EBizCode} from "@/types/enum.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {useConnectWebSocket} from "@/lib/websocket/useConnectWebSocket.ts";
 import EventBus from "@/lib/event-bus.ts";
-import {useEffect} from "react";
 
 export const useInitialConnectWebSocket = () => {
   const {
@@ -13,16 +12,7 @@ export const useInitialConnectWebSocket = () => {
     setDeviceOnline,
     setHmsInfo,
     setDevicesCmdExecuteInfo,
-    clearDeviceState
   } = useSceneStore();
-
-  // 在重新连接时，清理并重新获取设备状态
-  /*useEffect(() => {
-    return () => {
-      // 组件卸载时清理设备状态
-      clearDeviceState();
-    };
-  }, []);*/
 
   useConnectWebSocket(async (payload: any) => {
     if (!payload) {

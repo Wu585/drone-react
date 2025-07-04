@@ -159,7 +159,7 @@ const MembersDataTable = () => {
     user_type: 1,
     mqtt_username: "admin",
     mqtt_password: "admin",
-    role: 0,
+    role: "",
     organ: [],
     phone: ""
   };
@@ -230,7 +230,7 @@ const MembersDataTable = () => {
                     <FormLabel className={"text-right"}>姓名：</FormLabel>
                     <FormControl>
                       <div className="col-span-3 space-y-1">
-                        <CommonInput {...field} placeholder={"输入人员姓名"} className={"col-span-3"}/>
+                        <CommonInput {...field} placeholder={"请输入人员姓名"} className={"col-span-3"}/>
                         <FormMessage/>
                       </div>
                     </FormControl>
@@ -245,7 +245,7 @@ const MembersDataTable = () => {
                     <FormLabel className={"text-right"}>账号：</FormLabel>
                     <FormControl>
                       <div className="col-span-3 space-y-1">
-                        <CommonInput {...field} placeholder={"输入账号"} className={"col-span-3"}/>
+                        <CommonInput {...field} placeholder={"请输入账号"} className={"col-span-3"}/>
                         <FormMessage/>
                       </div>
                     </FormControl>
@@ -260,7 +260,7 @@ const MembersDataTable = () => {
                     <FormLabel className={"text-right"}>密码：</FormLabel>
                     <FormControl>
                       <div className="col-span-3 space-y-1">
-                        <CommonInput type={"password"} {...field} placeholder={"输入密码"} className={"col-span-3"}/>
+                        <CommonInput type={"password"} {...field} placeholder={"请输入密码"} className={"col-span-3"}/>
                         <FormMessage/>
                       </div>
                     </FormControl>
@@ -279,7 +279,7 @@ const MembersDataTable = () => {
                           {...field}
                           type="tel"
                           pattern="[0-9]*"
-                          placeholder={"输入人员手机号"}
+                          placeholder={"请输入人员手机号"}
                           maxLength={11}
                           onKeyDown={(e) => {
                             // 只允许数字、退格、删除、Tab和箭头键
@@ -338,6 +338,7 @@ const MembersDataTable = () => {
                     <FormLabel className={"text-right"}>角色：</FormLabel>
                     <FormControl>
                       <CommonSelect
+                        placeholder={"请选择用户角色"}
                         className={"col-span-3"}
                         value={String(value)}
                         onValueChange={onChange}

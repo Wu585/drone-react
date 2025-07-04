@@ -29,8 +29,6 @@ export class UranusMqtt extends EventEmitter {
   initMqtt = () => {
     // 仅初始化一次
     if (this._hasInit) return;
-    console.log("this._url");
-    console.log(this._url);
     // 建立连接
     this._client = connect(this._url, {
       ...OPTIONS,

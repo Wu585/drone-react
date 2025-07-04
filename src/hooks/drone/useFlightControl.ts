@@ -7,11 +7,12 @@ import {ELocalStorageKey} from "@/types/enum.ts";
 import {useDroneControlWsEvent} from "@/hooks/drone/useDroneControlWsEvent.ts";
 import {ControlSource} from "@/types/device.ts";
 
-const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
 
 export const useFlightControl = (sn?: string) => {
+  const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
+
   const {visible: isRemoteControl, show: enterRemoteControl, hide: outRemoteControl} = useVisible();
   const osdVisible = useSceneStore(state => state.osdVisible);
   const clientId = useSceneStore(state => state.clientId);
