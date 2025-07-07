@@ -56,7 +56,7 @@ const RoleDataTable = () => {
             className="cursor-pointer hover:text-[#43ABFF] transition-colors"
             onClick={() => handleEdit(row.original)}
           />
-          <CommonAlertDialog
+          {row.original.name !== "组织管理员" && row.original.name !== "组织成员" && <CommonAlertDialog
             title={"删除角色"}
             trigger={
               <IconButton>
@@ -65,7 +65,7 @@ const RoleDataTable = () => {
             }
             description={"确认删除该角色吗？"}
             onConfirm={() => onDeleteRole(row.original.id)}
-          />
+          />}
         </div>
       ),
     },

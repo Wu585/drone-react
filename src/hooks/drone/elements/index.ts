@@ -150,22 +150,78 @@ export const generateLabelConfig = (text: string) => ({
 
 // 初始化所有显示的标签
 export const useAddAllElements = () => {
-  const {data: groups} = useElementsGroup();
+  const departId = localStorage.getItem("departId");
+  const {data: groups} = useElementsGroup(departId ? +departId : undefined);
 
   useEffect(() => {
     const elementsSource = getCustomSource("elements");
-    if (!groups || !elementsSource) return;
-
-    console.log("elementsSource");
+    console.log("elementsSource==");
     console.log(elementsSource);
+    if (!groups || !elementsSource) return;
+    console.log("remove all===");
+    // 清理现有实体
+    elementsSource.entities.removeAll();
+
     groups.forEach(group => {
       group.elements.forEach(element => {
+        if (!element.visual) return;
         const entity = elementsSource.entities.getById(element.id);
         if (!entity) {
           switch (element.resource.type) {
+            case MapElementEnum.PIN: {
+              const coordinates = element.resource.content.geometry.coordinates;
+              elementsSource.entities.add({
+                id: element.id,
+                position: Cesium.Cartesian3.fromDegrees(coordinates[0], coordinates[1], coordinates[2] + 5),
+                label: generateLabelConfig(element.name),
+                polyline: {
+                  positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+                    coordinates[0], coordinates[1], 0,  // 地面点
+                    coordinates[0], coordinates[1], coordinates[2] + 5  // 标记点
+                  ]),
+                  width: 1,
+                  material: new Cesium.PolylineDashMaterialProperty({
+                    color: Cesium.Color.fromCssColorString(element.resource.content.properties.color).withAlpha(0.6),
+                    dashLength: 8
+                  })
+                },
+                billboard: {
+                  image: (() => {
+                    // 创建一个 canvas 来绘制菱形
+                    const canvas = document.createElement("canvas");
+                    canvas.width = 16;
+                    canvas.height = 16;
+                    const context = canvas.getContext("2d");
+                    if (context) {
+                      // 开始绘制菱形
+                      context.beginPath();
+                      // 移动到顶点
+                      context.moveTo(8, 0);
+                      // 绘制右边
+                      context.lineTo(16, 8);
+                      // 绘制底边
+                      context.lineTo(8, 16);
+                      // 绘制左边
+                      context.lineTo(0, 8);
+                      // 闭合路径
+                      context.closePath();
+
+                      // 填充颜色
+                      context.fillStyle = element.resource.content.properties.color;
+                      context.fill();
+                    }
+                    return canvas;
+                  })(),
+                  verticalOrigin: Cesium.VerticalOrigin.CENTER,
+                  horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+                  width: 16,
+                  height: 32
+                }
+              });
+              break;
+            }
             case MapElementEnum.LINE: {
               const coordinates = element.resource.content.geometry.coordinates;
-
               // 创建线段实体
               elementsSource.entities.add({
                 id: element.id,
@@ -175,18 +231,14 @@ export const useAddAllElements = () => {
                   material: Cesium.Color.fromCssColorString(element.resource.content.properties.color),
                 }
               });
-
               // 为每段线段添加标签
               for (let i = 0; i < coordinates.length - 1; i++) {
                 const point1 = turf.point(coordinates[i]);
                 const point2 = turf.point(coordinates[i + 1]);
-
                 // 计算中点
                 const midpoint = turf.midpoint(point1, point2);
-
                 // 计算这段线段的距离
                 const distance = turf.distance(point1, point2, {units: "meters"});
-
                 // 在中点添加标签
                 elementsSource.entities.add({
                   id: `${element.id}_label_${i}`,
@@ -214,9 +266,7 @@ export const useAddAllElements = () => {
                 id: element.id,
                 position: Cesium.Cartesian3.fromDegrees(...center.geometry.coordinates),
                 polygon: {
-                  hierarchy: Cesium.Cartesian3.fromDegreesArray(
-                    element.resource.content.geometry.coordinates.flat(2)
-                  ),
+                  hierarchy: Cesium.Cartesian3.fromDegreesArray(element.resource.content.geometry.coordinates.flat(2)),
                   material: Cesium.Color.fromCssColorString(element.resource.content.properties.color).withAlpha(0.5),
                   outline: true,
                   outlineColor: Cesium.Color.fromCssColorString(element.resource.content.properties.color),
@@ -225,69 +275,18 @@ export const useAddAllElements = () => {
               });
               break;
             }
-            case MapElementEnum.CIRCLE:
+            case MapElementEnum.CIRCLE: {
               elementsSource.entities.add({
                 id: element.id,
                 position: Cesium.Cartesian3.fromDegrees(...element.resource.content.geometry.coordinates),
                 ellipse: {
                   semiMinorAxis: element.resource.content.geometry.radius,
                   semiMajorAxis: element.resource.content.geometry.radius,
-                  material: Cesium.Color.fromCssColorString("#2D8CF0").withAlpha(0.5),
+                  material: Cesium.Color.fromCssColorString(element.resource.content.properties.color).withAlpha(0.5),
                   outline: true,
-                  outlineColor: Cesium.Color.fromCssColorString("#2D8CF0"),
+                  outlineColor: Cesium.Color.fromCssColorString(element.resource.content.properties.color),
                 },
-                label: generateLabelConfig(`${element.name}\n半径：${element.resource.content.geometry.radius}m`)
-              });
-              break;
-            case MapElementEnum.PIN: {
-              const coordinates = element.resource.content.geometry.coordinates;
-              elementsSource.entities.add({
-                id: element.id,
-                position: Cesium.Cartesian3.fromDegrees(coordinates[0], coordinates[1], coordinates[2] + 5),
-                label: generateLabelConfig(element.name),
-                polyline: {
-                  positions: Cesium.Cartesian3.fromDegreesArrayHeights([
-                    coordinates[0], coordinates[1], 0,  // 地面点
-                    coordinates[0], coordinates[1], coordinates[2] + 5  // 标记点
-                  ]),
-                  width: 1,
-                  material: new Cesium.PolylineDashMaterialProperty({
-                    color: Cesium.Color.fromCssColorString("#2D8CF0").withAlpha(0.6),
-                    dashLength: 8
-                  })
-                },
-                billboard: {
-                  image: (() => {
-                    // 创建一个 canvas 来绘制菱形
-                    const canvas = document.createElement("canvas");
-                    canvas.width = 16;
-                    canvas.height = 16;
-                    const context = canvas.getContext("2d");
-                    if (context) {
-                      // 开始绘制菱形
-                      context.beginPath();
-                      // 移动到顶点
-                      context.moveTo(8, 0);
-                      // 绘制右边
-                      context.lineTo(16, 8);
-                      // 绘制底边
-                      context.lineTo(8, 16);
-                      // 绘制左边
-                      context.lineTo(0, 8);
-                      // 闭合路径
-                      context.closePath();
-
-                      // 填充颜色
-                      context.fillStyle = "#2D8CF0";
-                      context.fill();
-                    }
-                    return canvas;
-                  })(),
-                  verticalOrigin: Cesium.VerticalOrigin.CENTER,
-                  horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-                  width: 16,
-                  height: 32
-                }
+                label: generateLabelConfig(`${element.name}\n半径：${element.resource.content.geometry.radius}m\n面积：${(3.14 * element.resource.content.geometry.radius! * element.resource.content.geometry.radius!).toFixed(2)}㎡`)
               });
               break;
             }
@@ -295,6 +294,12 @@ export const useAddAllElements = () => {
         }
       });
     });
+
+    // 组件卸载时清理所有实体
+    return () => {
+      const source = getCustomSource("elements");
+      source?.entities.removeAll();
+    };
   }, [groups]);
 };
 

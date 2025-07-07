@@ -14,6 +14,7 @@ import {ELocalStorageKey} from "@/types/enum.ts";
 import {useWaylinJobs} from "@/hooks/drone";
 import {useAddWaylineEntityById} from "@/hooks/drone/useAddWaylineEntityById.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
+import {useAddAllElements} from "@/hooks/drone/elements";
 
 const mapLayerList = [
   {
@@ -133,6 +134,7 @@ const CockpitScene = () => {
 
   useEntityCustomSource("dock");
   useEntityCustomSource("drone");
+  useEntityCustomSource("elements");
   useEntityCustomSource("drone-wayline");
   useEntityCustomSource("waylines-create");
   useEntityCustomSource("waylines-preview");
@@ -156,6 +158,8 @@ const CockpitScene = () => {
       // getCustomSource("waylines-preview")?.entities.removeAll();
     }
   }, [realTimeDeviceInfo]);
+
+  useAddAllElements();
 
   const {data: currentJobList} = useWaylinJobs(workspaceId, {
     page: 1,

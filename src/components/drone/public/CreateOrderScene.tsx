@@ -2,8 +2,6 @@ import {useEffect} from "react";
 import {findMapLayer, resetView} from "@/lib/view.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-source.ts";
-import dockPng from "@/assets/images/drone/dock.png";
-import {EntitySize} from "@/assets/datas/enum.ts";
 import {useOrderToMap} from "@/hooks/drone/order/useOrderToMap.ts";
 import {WorkOrder} from "@/hooks/drone";
 import {generateLabelConfig} from "@/hooks/drone/elements";
@@ -28,7 +26,7 @@ interface Props {
 }
 
 const Scene = ({currentOrder}: Props) => {
-  const deviceState = useSceneStore(state => state.deviceState);
+  // const deviceState = useSceneStore(state => state.deviceState);
   const addMapLayer = () => {
     mapLayerList.forEach(item => {
       const layer = new Cesium.SuperMapImageryProvider(item);
@@ -111,7 +109,7 @@ const Scene = ({currentOrder}: Props) => {
     const {longitude, latitude} = currentOrder;
     if (!longitude || !latitude) return;
     viewer.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(longitude, latitude, 100),
+      destination: Cesium.Cartesian3.fromDegrees(longitude, latitude, 500),
       orientation: {
         heading: 0,
         pitch: Cesium.Math.toRadians(-90),
@@ -119,11 +117,22 @@ const Scene = ({currentOrder}: Props) => {
       }
     });
     viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(longitude, latitude, 5),
+      position: Cesium.Cartesian3.fromDegrees(longitude, latitude, 150),
+      label: {
+        text: currentOrder.address,
+        font: "13pt sans-serif",
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,  // 垂直对齐：底部
+        horizontalOrigin: Cesium.HorizontalOrigin.LEFT, // 水平对齐：左对齐
+        pixelOffset: new Cesium.Cartesian2(-100, -30),    // 偏移量（向下偏移 20 像素）
+        fillColor: Cesium.Color.WHITE,                // 文字颜色
+        backgroundColor: new Cesium.Color(0.2, 0.2, 0.2, 0.7), // 背景颜色（灰色，70% 透明度）
+        padding: new Cesium.Cartesian2(10, 10),       // 内边距
+        showBackground: true                          // 显示背景
+      },
       polyline: {
         positions: Cesium.Cartesian3.fromDegreesArrayHeights([
           longitude, latitude, 0,  // 地面点
-          longitude, latitude, 5  // 标记点
+          longitude, latitude, 150  // 标记点
         ]),
         width: 1,
         material: new Cesium.PolylineDashMaterialProperty({

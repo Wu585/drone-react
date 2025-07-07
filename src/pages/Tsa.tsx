@@ -1,6 +1,5 @@
-import {Bot, Drone, Eye, EyeOff, Grid3x2, Package2} from "lucide-react";
+import {Drone, Eye, EyeOff, Grid3x2, Package2} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
-import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion.tsx";
 import {useOnlineDocks} from "@/hooks/drone";
 import DronePanel from "@/components/drone/public/DronePanel.tsx";
 import {useSceneStore} from "@/store/useSceneStore.ts";
@@ -23,8 +22,6 @@ import endPng from "@/assets/images/end.png";
 const DRC_API_PREFIX = "/control/api/v1";
 
 const Tsa = () => {
-  useInitialConnectWebSocket();
-
   const {
     deviceState,
     osdVisible,
@@ -38,6 +35,8 @@ const Tsa = () => {
   useEffect(() => {
     clearDeviceState();
   }, [clearDeviceState]);
+
+  useInitialConnectWebSocket();
 
   const switchVisible = (dock: OnlineDevice) => {
     if (dock.sn === osdVisible.sn) {
