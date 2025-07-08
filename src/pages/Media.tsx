@@ -18,7 +18,7 @@ const Media = () => {
   return (
     <Uploady
       destination={{
-        url: isUploadOrder ? `${CURRENT_CONFIG.baseURL}${OPERATION_HTTP_PREFIX}/file/upload/${departId}` :
+        url: isUploadOrder ? `${CURRENT_CONFIG.baseURL}${OPERATION_HTTP_PREFIX}/file/upload` :
           `${CURRENT_CONFIG.baseURL}${MEDIA_HTTP_PREFIX}/files/${workspaceId}/upload/${departId}?parent=${dirId}`,
         headers: {
           [ELocalStorageKey.Token]: getAuthToken()
