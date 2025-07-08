@@ -11,9 +11,9 @@ import {MAP_API_PREFIX, useFlightAreas} from "@/hooks/drone";
 import {PostFlightAreaBody} from "@/types/flight-area.ts";
 import {ELocalStorageKey} from "@/types/enum.ts";
 
-const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
-
 export const useFlightArea = () => {
+  const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
+
   const mapState = useSceneStore(state => state.mapState);
   // const coverMap = useSceneStore(state => state.coverMap);
   const useGMapCoverHook = useGMapCover();

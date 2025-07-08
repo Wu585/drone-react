@@ -27,8 +27,6 @@ import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import DrawPanel from "@/components/drone/DrawPanel.tsx";
 
-const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
-
 const formSchema = z.object({
   name: z.string().min(1, {message: "请输入飞行区名称"}),
   longitude: z.coerce.number({
@@ -40,6 +38,8 @@ const formSchema = z.object({
 });
 
 const FlightArea = () => {
+  const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
+
   const {data: flightAreas, mutate} = useFlightAreas(workspaceId);
   const {getGcj02} = useFlightArea();
   const useGMapCoverHook = useGMapCover();

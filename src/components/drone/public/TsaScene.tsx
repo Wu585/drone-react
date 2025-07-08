@@ -120,9 +120,9 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
           label: {
             text: `机场: ${nickname || "未知"} \n飞行器: ${droneNickname || "未知"}`,
             font: "14pt sans-serif",
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,  // 垂直对齐：底部
-            horizontalOrigin: Cesium.HorizontalOrigin.LEFT, // 水平对齐：左对齐
-            pixelOffset: new Cesium.Cartesian2(-80, -20),    // 偏移量（向下偏移 20 像素）
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,  // Anchor to bottom of label
+            horizontalOrigin: Cesium.HorizontalOrigin.CENTER, // 水平对齐：左对齐
+            pixelOffset: new Cesium.Cartesian2(0, -20),    // 偏移量（向下偏移 20 像素）
             fillColor: Cesium.Color.WHITE,                // 文字颜色
             backgroundColor: new Cesium.Color(0.2, 0.2, 0.2, 0.7), // 背景颜色（灰色，70% 透明度）
             padding: new Cesium.Cartesian2(10, 10),       // 内边距

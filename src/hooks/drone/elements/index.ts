@@ -164,6 +164,8 @@ export const useAddAllElements = () => {
 
     groups.forEach(group => {
       group.elements.forEach(element => {
+        console.log('element');
+        console.log(element);
         if (!element.visual) return;
         const entity = elementsSource.entities.getById(element.id);
         if (!entity) {
@@ -172,12 +174,12 @@ export const useAddAllElements = () => {
               const coordinates = element.resource.content.geometry.coordinates;
               elementsSource.entities.add({
                 id: element.id,
-                position: Cesium.Cartesian3.fromDegrees(coordinates[0], coordinates[1], coordinates[2] + 5),
+                position: Cesium.Cartesian3.fromDegrees(coordinates[0], coordinates[1], (coordinates[2] || 0) + 5),
                 label: generateLabelConfig(element.name),
                 polyline: {
                   positions: Cesium.Cartesian3.fromDegreesArrayHeights([
                     coordinates[0], coordinates[1], 0,  // 地面点
-                    coordinates[0], coordinates[1], coordinates[2] + 5  // 标记点
+                    coordinates[0], coordinates[1], (coordinates[2] || 0) + 5  // 标记点
                   ]),
                   width: 1,
                   material: new Cesium.PolylineDashMaterialProperty({

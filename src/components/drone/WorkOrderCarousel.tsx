@@ -87,7 +87,7 @@ export function WorkOrderCarousel({dockSn}: Props) {
                           src={item.url}
                           type={"image"}
                           triggerElement={
-                            <img className={"aspect-square h-[200px] rounded-lg object-cover"} src={item.url}
+                            <img className={"aspect-square h-[150px] rounded-lg object-fill -translate-y-[20px]"} src={item.url}
                                  alt={item.name}/>
                           }
                         />
