@@ -1,10 +1,22 @@
 import TopBar from "@/components/drone/public/TopBar.tsx";
 import {Outlet, useLocation, useNavigate} from "react-router-dom";
 import {cn} from "@/lib/utils.ts";
-import {BookText, Cog, Film, Image, LayoutList, MapPin, Proportions, Send, Share, Waypoints} from "lucide-react";
-import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
+import {
+  BookText,
+  Cog,
+  Film,
+  Image,
+  LayoutList,
+  MapPin,
+  Proportions,
+  Send,
+  Share,
+  SquareActivity,
+  Waypoints
+} from "lucide-react";
 import {useState} from "react";
 import {Button} from "@/components/ui/button.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 
 const menuList = [
   {
@@ -13,6 +25,14 @@ const menuList = [
     href: "/tsa",
     permission: "Collection_DeviceDetail",
     menuName: "机场"
+  },
+  {
+    name: "flight-area",
+    icon: <SquareActivity size={24}/>,
+    href: "/flight-area",
+    activeHref: "flight-area",
+    // permission: "Collection_AnnotationView",
+    menuName: "自定义飞行区"
   },
   {
     name: "elements",
@@ -114,13 +134,12 @@ const Layout = () => {
                 <div key={item.name} className={cn("flex items-center justify-center",
                   pathname.includes(item.name) ? "bg-gradient-to-l from-[#3085E5] to-[#5FA1EB]" : "",
                   index === 0 ? "rounded-tl-lg" : "rounded-none")}>
-                  <PermissionButton permissionKey={item.permission} variant={"link"}
-                                    className={cn(
-                                      "py-[32px] cursor-pointer text-white rounded-none " +
-                                      "hover:no-underline w-full text-left flex justify-start text-base",
-                                      "transition-all duration-200 ease-in-out",
+                  <CommonButton permissionKey={item.permission} variant={"link"}
+                                    className={"bg-transparent py-[32px] cursor-pointer text-white rounded-none " +
+                                      "hover:no-underline w-full text-left flex justify-start text-base "+
+                                      "transition-all duration-200 ease-in-out "+
                                       "whitespace-nowrap"
-                                    )}
+                                    }
                                     onClick={() => navigate(item.href)}
                   >
                     <span>{item.icon}</span>
@@ -130,7 +149,7 @@ const Layout = () => {
                     )}>
                       {item.menuName}
                     </span>
-                  </PermissionButton>
+                  </CommonButton>
                 </div>
               )}
             </div>

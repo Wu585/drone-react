@@ -1,10 +1,8 @@
 import {pickPosition} from "@/components/toolbar/tools";
 import {
   ElementParam,
-  generateLabelConfig,
   useAddAllElements,
   useElementActions,
-  useElementsGroup
 } from "@/hooks/drone/elements";
 import {uuidv4} from "@/lib/utils.ts";
 import {MapElementEnum} from "@/types/map.ts";
@@ -14,9 +12,7 @@ import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
 import {useDrawLine} from "@/components/toolbar/tools/drawLine.ts";
 import {useDrawPolygon} from "@/components/toolbar/tools/drawPolygon.ts";
 import {CircleResult, useDrawCircle} from "@/components/toolbar/tools/drawCircleEle.ts";
-import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import dayjs from "dayjs";
-import * as turf from "@turf/turf";
 import {Circle, DiamondIcon, Spline, Square} from "lucide-react";
 
 interface Props {
@@ -25,9 +21,7 @@ interface Props {
 }
 
 const DrawPanel = ({groupId, onSuccess}: Props) => {
-  const departId = localStorage.getItem("departId");
   const {addElement} = useElementActions();
-  const {data: groups} = useElementsGroup(departId ? +departId : undefined);
   // 使用 ref 来保存最新的 groupId
   const groupIdRef = useRef(groupId);
   // 更新 ref

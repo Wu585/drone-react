@@ -10,22 +10,17 @@ import {useFlightArea} from "@/hooks/drone/map/useFlightArea.ts";
 import {useGMapCover} from "@/hooks/drone/map/useGMapCover.ts";
 import {useMapTool} from "@/hooks/drone/map/useMapTool.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
 import {useAjax} from "@/lib/http.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form.tsx";
-import {Input} from "@/components/ui/input.tsx";
-import {Button} from "@/components/ui/button.tsx";
 import DrawPanel from "@/components/drone/DrawPanel.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
 
 const formSchema = z.object({
   name: z.string().min(1, {message: "请输入飞行区名称"}),
@@ -196,10 +191,11 @@ const FlightArea = () => {
   return (
     <div className={"w-full h-full flex"}>
       <div
-        className={cn("w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r from-[#074578]/[.5] to-[#0B142E]/[.9] border-l-0", currentArea ? "" : "rounded-tr-lg rounded-br-lg")}>
+        className={cn("w-[340px] min-w-[340px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-l from-[#32547E]/[.5] to-[#1F2D4B] border-l-0",
+          currentArea ? "" : "rounded-tr-lg rounded-br-lg")}>
         <div
           className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 text-sm justify-between"}>
-          <span>自定义飞行区</span>
+          <h1 className={"h-8 text-base"}>自定义飞行区</h1>
         </div>
         <div className={"px-[12px] py-4 space-y-2 h-[calc(100vh-180px)] overflow-y-auto"}>
           {flightAreas && flightAreas.length > 0 ? flightAreas.map(area =>
@@ -207,7 +203,7 @@ const FlightArea = () => {
                  style={{
                    backgroundSize: "100% 100%"
                  }}
-                 className={cn("bg-panel-item text-[14px] p-4 space-y-[6px]", area.status ? "" : "opacity-60")}
+                 className={cn("bg-panel-item text-[14px] p-4 space-y-[6px] cursor-pointer", area.status ? "" : "opacity-60", area.area_id === currentArea?.area_id && "bg-panel-item-active")}
                  onClick={() => onClickArea(area)}
             >
               <div className={"font-bold"}>{area.name}</div>
@@ -226,55 +222,40 @@ const FlightArea = () => {
                   </div>
                 </div>
                 <div className={"content-center space-x-2"}>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      {area.status ?
-                        <Ban size={18} className={""}/>
-                        : <CircleCheck size={18} className={""}/>}
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          {area.status ? "关闭飞行区" : "启动飞行区"}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {area.status ? "确定关闭飞行区吗？" : "确定启动飞行区吗？"}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
-                        <AlertDialogAction
-                          type={"button"}
-                          onClick={() => changeAreaStatus(!area.status, area.area_id)}>确定</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                  <MapPin onClick={() => locationArea(area)} size={18} className={""}/>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Trash2 size={18} className={""}/>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>删除飞行区</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          确定删除飞行区吗？
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
-                        <AlertDialogAction type={"button"}
-                                           onClick={() => onDeleteFlightArea(area.area_id)}>确定</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <CommonAlertDialog
+                    title={area.status ? "禁用飞行区" : "启用飞行区"}
+                    trigger={
+                      area.status ?
+                        <IconButton>
+                          <Ban size={16}/>
+                        </IconButton>
+                        : <IconButton>
+                          <CircleCheck size={16} className={""}/>
+                        </IconButton>
+                    }
+                    description={area.status ? "确定禁用飞行区吗？" : "确定启用飞行区吗？"}
+                    onConfirm={() => changeAreaStatus(!area.status, area.area_id)}
+                  />
+                  <IconButton onClick={() => locationArea(area)}>
+                    <MapPin size={16}/>
+                  </IconButton>
+                  <CommonAlertDialog
+                    title={"删除飞行区"}
+                    trigger={
+                      <IconButton>
+                        <Trash2 size={16}/>
+                      </IconButton>
+                    }
+                    description={"确定删除飞行区吗？"}
+                    onConfirm={() => onDeleteFlightArea(area.area_id)}
+                  />
                 </div>
               </div>
             </div>) : <div className={"content-center py-8 text-[#d0d0d0]"}>暂无数据</div>}
         </div>
       </div>
       {currentArea && <div className={"w-[266px] border-[1px] h-full border-[#43ABFF] bg-gradient-to-r " +
-        "from-[#074578]/[.5] to-[#0B142E]/[.9] rounded-tr-lg rounded-br-lg border-l-0 relative text-sm"}>
+        "from-[#074578]/[.5] to-[#0B142E]/[.9] rounded-tr-lg rounded-br-lg border-l-0 relative text-base"}>
         <X className={"absolute right-2 top-2 cursor-pointer"} onClick={() => setCurrentArea(null)}/>
         <div className={"border-b-[#265C9A] border-b-[1px] p-4"}>飞行区编辑</div>
         <Form {...form}>
@@ -285,8 +266,7 @@ const FlightArea = () => {
                 <FormItem className={"space-y-4"}>
                   <FormLabel>飞行区名称：</FormLabel>
                   <FormControl>
-                    <Input defaultValue={currentArea?.name} {...field} placeholder={"请输入飞行区名称"}
-                           className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                    <CommonInput defaultValue={currentArea?.name} {...field} placeholder={"请输入飞行区名称"}/>
                   </FormControl>
                   <FormMessage/>
                 </FormItem>
@@ -301,8 +281,7 @@ const FlightArea = () => {
                     <FormItem className={"space-y-4"}>
                       <FormLabel>经度：</FormLabel>
                       <FormControl>
-                        <Input  {...field} placeholder={"请输入中心点经度"}
-                                className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                        <CommonInput  {...field} placeholder={"请输入中心点经度"}/>
                       </FormControl>
                       <FormMessage/>
                     </FormItem>
@@ -315,8 +294,7 @@ const FlightArea = () => {
                     <FormItem className={"space-y-4"}>
                       <FormLabel>纬度：</FormLabel>
                       <FormControl>
-                        <Input  {...field} placeholder={"请输入中心点纬度"}
-                                className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                        <CommonInput {...field} placeholder={"请输入中心点纬度"}/>
                       </FormControl>
                       <FormMessage/>
                     </FormItem>
@@ -324,8 +302,8 @@ const FlightArea = () => {
                   name={"latitude"}
                 />
               </>}
-            <div className={"text-right"}>
-              <Button className={"bg-[#43ABFF] px-4 my-4"} type={"submit"}>确定</Button>
+            <div className={"text-right py-4"}>
+              <CommonButton type={"submit"}>确定</CommonButton>
             </div>
           </form>
         </Form>
