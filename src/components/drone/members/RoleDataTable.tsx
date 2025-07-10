@@ -51,15 +51,14 @@ const RoleDataTable = () => {
       header: () => <div className="text-center">操作</div>,
       cell: ({row}) => (
         <div className={"flex items-center justify-center space-x-2"}>
-          <Edit
-            size={16}
-            className="cursor-pointer hover:text-[#43ABFF] transition-colors"
-            onClick={() => handleEdit(row.original)}
-          />
+          <IconButton onClick={() => handleEdit(row.original)} permissionKey={"Collection_RoleCreateEdit"}>
+            <Edit size={16}/>
+          </IconButton>
+
           {row.original.name !== "组织管理员" && row.original.name !== "组织成员" && <CommonAlertDialog
             title={"删除角色"}
             trigger={
-              <IconButton>
+              <IconButton permissionKey={"Collection_RoleDelete"}>
                 <Trash2 size={16}/>
               </IconButton>
             }
@@ -190,6 +189,7 @@ const RoleDataTable = () => {
       </CommonDialog>
       <div className={"flex justify-end mb-4"}>
         <CommonButton
+          permissionKey={"Collection_RoleCreateEdit"}
           onClick={() => {
             setOpen(true);
             form.reset();

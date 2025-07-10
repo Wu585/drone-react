@@ -215,11 +215,16 @@ const DepartPage = () => {
         <div
           className={"flex items-center space-x-4 border-b-[1px] border-b-[#265C9A] px-[12px] py-4 justify-between"}>
           <span>部门信息</span>
-          <Plus onClick={() => {
-            setVisible(true);
-            setDepartId(0);
-            form.reset(defaultValues);
-          }}/>
+          <IconButton
+            permissionKey={"Collection_OrganCreateEdit"}
+            onClick={() => {
+              setVisible(true);
+              setDepartId(0);
+              form.reset(defaultValues);
+            }}
+          >
+            <Plus/>
+          </IconButton>
           {/*<Button className={"bg-[#43ABFF] w-20"} onClick={() => setVisible(true)}>创建</Button>*/}
         </div>
         <div className={"px-[12px] py-4 space-y-2 h-[calc(100vh-180px)] overflow-y-auto"}>
@@ -247,28 +252,28 @@ const DepartPage = () => {
                   <span>{dayjs(item.create_time).format("YYYY-MM-DD HH:MM:ss")}</span>
                 </div>
                 <div className={"flex space-x-2 items-center"}>
-                  {permission && <>
-                    <IconButton onClick={() => {
+                  <IconButton
+                    permissionKey={"Collection_OrganCreateEdit"}
+                    onClick={() => {
                       setVisible(true);
                       setDepartId(item.id);
                     }}>
-                      <Pencil size={16}/>
-                    </IconButton>
-                    <CommonAlertDialog
-                      title={"删除部门"}
-                      trigger={
-                        <IconButton>
-                          <Trash2 size={16}/>
-                        </IconButton>
-                      }
-                      description={<div>确认删除部门吗？</div>}
-                      onConfirm={() => {
-                        onDeleteDepart(item.id);
-                        form.reset();
-                        setVisible(false);
-                      }}
-                    />
-                  </>}
+                    <Pencil size={16}/>
+                  </IconButton>
+                  <CommonAlertDialog
+                    title={"删除部门"}
+                    trigger={
+                      <IconButton permissionKey={"Collection_OrganDelete"}>
+                        <Trash2 size={16}/>
+                      </IconButton>
+                    }
+                    description={<div>确认删除部门吗？</div>}
+                    onConfirm={() => {
+                      onDeleteDepart(item.id);
+                      form.reset();
+                      setVisible(false);
+                    }}
+                  />
                   {(permission || hasPermission(item)) &&
                     <IconButton
                       onClick={() => {

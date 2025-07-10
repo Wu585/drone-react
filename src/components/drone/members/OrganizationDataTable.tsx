@@ -190,15 +190,13 @@ const OrganizationDataTable = () => {
       header: () => <div className="text-center">操作</div>,
       cell: ({row}) => (
         <div className="content-center space-x-2">
-          <Edit
-            size={16}
-            className="cursor-pointer hover:text-[#43ABFF] transition-colors inline-block"
-            onClick={() => handleEdit(row.original)}
-          />
+          <IconButton permissionKey={"Collection_WorkspaceCreateEdit"} onClick={() => handleEdit(row.original)}>
+            <Edit size={16}/>
+          </IconButton>
           <CommonAlertDialog
             title={"删除组织"}
             trigger={
-              <IconButton>
+              <IconButton permissionKey={"Collection_WorkspaceDelete"}>
                 <Trash size={16}/>
               </IconButton>}
             description={"确认删除组织吗?"}
@@ -406,7 +404,8 @@ const OrganizationDataTable = () => {
         </Form>
       </CommonDialog>
       <div className={"flex justify-end mb-4"}>
-        <CommonButton onClick={() => handleOpenChange(true)}>创建</CommonButton>
+        <CommonButton onClick={() => handleOpenChange(true)}
+                      permissionKey={"Collection_WorkspaceCreateEdit"}>添加</CommonButton>
       </div>
       <CommonTable
         data={nestedData}

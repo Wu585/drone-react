@@ -10,17 +10,20 @@ const OrganDetail = () => {
     {
       name: "组织管理",
       icon: <Network size={16}/>,
-      content: <OrganizationDataTable/>
+      content: <OrganizationDataTable/>,
+      permission: "Collection_WorkspaceView"
     },
     {
       name: "角色管理",
       icon: <UserSearch size={16}/>,
-      content: <RoleDataTable/>
+      content: <RoleDataTable/>,
+      permission: "Collection_RoleView"
     },
     {
       name: "用户管理",
       icon: <User size={16}/>,
-      content: <MembersDataTable/>
+      content: <MembersDataTable/>,
+      permission: "Collection_UserView"
     }
   ];
 

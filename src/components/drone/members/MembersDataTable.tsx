@@ -127,7 +127,7 @@ const MembersDataTable = () => {
     {
       header: "操作",
       cell: ({row}) => <div className={"flex"}>
-        <IconButton onClick={() => handleEdit(row.original)}>
+        <IconButton onClick={() => handleEdit(row.original)} permissionKey={"Collection_UserCreateEdit"}>
           <Edit size={16}/>
         </IconButton>
       </div>
@@ -215,7 +215,7 @@ const MembersDataTable = () => {
           open={open}
           onOpenChange={handleOpenChange}
           title={"新增用户"}
-          trigger={<CommonButton className={"ml-auto"}>添加</CommonButton>}
+          trigger={<CommonButton permissionKey={"Collection_UserCreateEdit"} className={"ml-auto"}>添加</CommonButton>}
           showCancel={false}
           customFooter={<div className="flex">
             <CommonButton type="submit" form="user-form" className={"ml-auto"}>确认</CommonButton>

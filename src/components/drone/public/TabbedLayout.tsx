@@ -7,6 +7,7 @@ type TabItem = {
   name: string;
   icon: ReactNode;
   content: ReactNode;
+  permission: string
 };
 
 type TabbedLayoutProps = {
@@ -55,6 +56,7 @@ export const TabbedLayout = ({
           <div className={"flex space-x-8 px-4"}>
             {tabs.map((item) => (
               <CommonButton
+                permissionKey={item.permission}
                 key={item.name}
                 style={{
                   backgroundSize: "100% 100%",

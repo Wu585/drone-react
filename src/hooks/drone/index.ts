@@ -454,6 +454,7 @@ export interface UserItem {
   name: string;
   role: number;
   workspace_id: string;
+  workspace_id_primary_key: number;
   organs: number[];
   phone?: string;
   resources: {
@@ -722,8 +723,12 @@ export const useCurrentUser = () => {
 // 判断是否是组织管理员
 export const useWorkspaceManager = () => {
   const {data: user} = useCurrentUser();
+  const {data: workSpaceList} = useWorkspaceList();
 
-  return user?.role === 3;
+  const currentWorkSpaceId = localStorage.getItem(ELocalStorageKey.SelectedWorkspaceId)!;
+  if (!currentWorkSpaceId) return false;
+
+  return workSpaceList?.find(item => item.workspace_id === currentWorkSpaceId)?.parent === user?.workspace_id_primary_key;
 };
 
 export const useDepartPermission = (departId: number, workSpaceId: string) => {
