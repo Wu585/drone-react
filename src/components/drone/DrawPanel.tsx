@@ -5,12 +5,20 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.tsx";
 import {EFlightAreaType, EGeometryType, FlightAreaTypeTitleMap} from "@/types/flight-area.ts";
-import {cn} from "@/lib/utils.ts";
+import {cn, geographic2Coordinate, uuidv4} from "@/lib/utils.ts";
 import {MapDoodleEnum, MapDoodleType} from "@/types/map.ts";
 import {useMouseTool} from "@/hooks/drone/map/useMouseTool.ts";
 import {useFlightArea} from "@/hooks/drone/map/useFlightArea.ts";
 import {useCallback, useEffect, useState} from "react";
 import {X} from "lucide-react";
+import {CircleResult, useDrawCircle} from "@/components/toolbar/tools/drawCircleEle.ts";
+import {ELocalStorageKey} from "@/types/enum.ts";
+import {useAjax} from "@/lib/http.ts";
+import {toast} from "@/components/ui/use-toast.ts";
+import dayjs from "dayjs";
+import {DATE_FORMAT} from "@/constants";
+
+const MAP_API_PREFIX = "/map/api/v1";
 
 const actionList = [
   {
@@ -34,6 +42,40 @@ const actionList = [
 
 
 const DrawPanel = () => {
+  const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
+  const {post} = useAjax();
+  const {startDraw: startDrawCircle, clearDraw: clearDrawCircle} =
+    useDrawCircle(async ({center, radius}: CircleResult) => {
+      console.log(center);
+      try {
+        await post(`${MAP_API_PREFIX}/workspaces/${workspaceId}/flight-area`, {
+          id: uuidv4(),
+          name: `dfence-${dayjs().format(DATE_FORMAT)}`,
+          type: "dfence",
+          content: {
+            type: "Feature",
+            properties: {
+              color: "#2D8CF0"
+            },
+            geometry: {
+              type: "Circle",
+              coordinates: [center.longitude, center.latitude],
+              radius: radius,
+            },
+          }
+        });
+      } catch (error) {
+        toast({
+          description: "自定义飞行区域创建失败！",
+          variant: "destructive",
+        });
+      }
+    });
+
+  const clear = () => {
+    clearDrawCircle();
+  };
+
   const useMouseToolHook = useMouseTool();
   const [mouseMode, setMouseMode] = useState(false);
   const [state, setState] = useState({
@@ -66,8 +108,13 @@ const DrawPanel = () => {
   };
 
   const onSelectFlightArea = ({type, isCircle}: { type: EFlightAreaType, isCircle: boolean }) => {
-    draw(isCircle ? MapDoodleEnum.CIRCLE : MapDoodleEnum.POLYGON, true, type);
+    // draw(isCircle ? MapDoodleEnum.CIRCLE : MapDoodleEnum.POLYGON, true, type);
+    if (isCircle) {
+      startDrawCircle();
+    }
   };
+
+
   return (
     <div className={"text-black flex flex-col space-y-4"}>
       <DropdownMenu>
@@ -90,7 +137,7 @@ const DrawPanel = () => {
             </div>)}
         </DropdownMenuContent>
       </DropdownMenu>
-      <X onClick={() => draw("off", false)} className={"cursor-pointer"} color={"#EF4444"} size={18}/>
+      <X onClick={() => clear()} className={"cursor-pointer"} color={"#EF4444"} size={18}/>
     </div>
   );
 };

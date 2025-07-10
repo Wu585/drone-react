@@ -1,4 +1,3 @@
-import GMap from "@/components/drone/public/GMap.tsx";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {AreaItem, MAP_API_PREFIX, useElementsGroups, useFlightAreas} from "@/hooks/drone";
 import {useEffect, useState} from "react";
@@ -21,6 +20,7 @@ import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
 import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import FlightAreaScene from "@/components/drone/public/FlightAreaScene.tsx";
 
 const formSchema = z.object({
   name: z.string().min(1, {message: "请输入飞行区名称"}),
@@ -309,7 +309,7 @@ const FlightArea = () => {
         </Form>
       </div>}
       <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative ml-[20px]"}>
-        <GMap/>
+        <FlightAreaScene/>
         <div className={"absolute right-16 top-8"}>
           <DrawPanel/>
         </div>
