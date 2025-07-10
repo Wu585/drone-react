@@ -765,6 +765,7 @@ const MediaDataTable = ({onChangeDir}: Props) => {
             </CommonDialog>
 
             <CommonDialog
+              autoTrigger={false}
               titleClassname={"pl-8"}
               contentClassName={"max-w-[900px]"}
               title={"创建工单"}

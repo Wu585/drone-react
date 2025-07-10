@@ -150,9 +150,10 @@ const TaskDataTable = () => {
       size: 120,
       cell: ({row}) =>
         <div className={"flex whitespace-nowrap space-x-2"}>
-          <IconButton onClick={() => navigate(`/task-create-apply?id=${row.original.id}`)}>
-            <Edit size={16}/>
-          </IconButton>
+          {row.original.status === ApplyTaskStatus.PENDING_REVIEW &&
+            <IconButton onClick={() => navigate(`/task-create-apply?id=${row.original.id}`)}>
+              <Edit size={16}/>
+            </IconButton>}
           {row.original.status === ApplyTaskStatus.PENDING_REVIEW && <IconButton onClick={() => {
             setOpen(true);
             setCurrentId(row.original.id);

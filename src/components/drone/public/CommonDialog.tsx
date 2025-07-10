@@ -42,6 +42,7 @@ interface CommonDialogProps {
   contentClassName?: string;
   titleClassname?: string;
   childrenClassname?: string;
+  autoTrigger?: boolean;
 }
 
 const CommonDialog = ({
@@ -60,7 +61,8 @@ const CommonDialog = ({
                         confirmDisabled = false,
                         contentClassName = "",
                         titleClassname = "",
-                        childrenClassname = ""
+                        childrenClassname = "",
+                        autoTrigger = true
                       }: CommonDialogProps) => {
   const handleCancel = () => {
     onCancel?.();
@@ -68,9 +70,9 @@ const CommonDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
+      {autoTrigger ? <DialogTrigger asChild>
         {trigger}
-      </DialogTrigger>
+      </DialogTrigger> : trigger}
       <DialogContent
         className={cn("bg-transparent bg-gradient-to-b from-[#203152]/[.78] to-[#1A2337]/[.78] p-0 " +
           "text-white sm:rounded-none border-none text-sm", contentClassName)}>
