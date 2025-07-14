@@ -124,7 +124,7 @@ const TaskDataTable = () => {
       },
       {
         header: "媒体上传",
-        size: 140,
+        size: 160,
         cell: ({row}) => {
           return <div
             className={cn("flex items-center ", row.original.uploaded_count > 0 && "cursor-pointer hover:text-green-500")}
@@ -137,7 +137,7 @@ const TaskDataTable = () => {
       },
       {
         header: "操作",
-        size: 140,
+        size: 130,
         cell: ({row}) =>
           <div className={"flex whitespace-nowrap space-x-2"}>
             {row.original.status === TaskStatus.Wait && <CommonAlertDialog
