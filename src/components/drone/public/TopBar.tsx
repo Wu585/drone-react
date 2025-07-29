@@ -45,7 +45,7 @@ const TopBar = () => {
         <span className={"tracking-wider"}>{currentWorkSpace?.platform_name || "绣花针低空管控平台"}</span>
       </div>
       <div className={"flex space-x-4"}>
-        <div className="flex space-x-6 text-lg mr-2">
+        {weatherInfo && <div className="flex space-x-6 text-lg mr-2  border-2">
           {/*<div>奉贤区：</div>*/}
           <div className={"space-x-2 content-center"}>
             <img className={"h-6"} src={wenduPng} alt=""/>
@@ -63,8 +63,7 @@ const TopBar = () => {
             <img className={"h-6"} src={fengxiangPng} alt=""/>
             <span>{weatherInfo?.[0]?.realtime.wD}</span>
           </div>
-        </div>
-
+        </div>}
         <div className={"content-center space-x-3"}>
           <CircleUserRound strokeWidth={1.25}/>
           <span>姓名： {currentUser?.name || "未登录"} </span>

@@ -334,6 +334,31 @@ const TaskDataTable = () => {
     subTopic: ""
   });
 
+  /*const aaa = () => setX({
+    sn: "8UUXN2N00A01AX",
+    pubTopic: "thing/product/1581F8HGD25110010022/state",
+    subTopic: "thing/product/1581F8HGD25110010022/state"
+  });
+
+  const {publishMqtt} = useMqtt(x);
+
+  const bbb = () => {
+    publishMqtt("thing/product/8UUXN2N00A01AX/services", {
+      "bid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "data": {
+        "psdk_index": 2,
+        "tts": {
+          "md5": "0bfb9bceee974f41a6ddfd81521bd733",
+          "name": "1111",
+          "text": "111111111111"
+        }
+      },
+      "method": "speaker_tts_play_start",
+      "tid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "timestamp": 1689860575397
+    });
+  };*/
+
   const aaa = () => setX({
     sn: "8UUXN2N00A01AX",
     pubTopic: "thing/product/1581F8HGD25110010022/state",

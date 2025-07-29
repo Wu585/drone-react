@@ -36,6 +36,8 @@ const FlightArea = () => {
   const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
 
   const {data: flightAreas, mutate} = useFlightAreas(workspaceId);
+  console.log('flightAreas====');
+  console.log(flightAreas);
   const {getGcj02} = useFlightArea();
   const useGMapCoverHook = useGMapCover();
   const useMapToolHook = useMapTool();
@@ -218,7 +220,7 @@ const FlightArea = () => {
                     )}
                   />
                   <div>
-                    {FlightAreaTypeTitleMap[area.type][area.content.geometry.type === EGeometryType.CIRCLE ? EGeometryType.CIRCLE : EGeometryType.POLYGON]}
+                    {FlightAreaTypeTitleMap[area.type]?.[area.content.geometry.type === EGeometryType.CIRCLE ? EGeometryType.CIRCLE : EGeometryType.POLYGON]}
                   </div>
                 </div>
                 <div className={"content-center space-x-2"}>
@@ -308,7 +310,7 @@ const FlightArea = () => {
           </form>
         </Form>
       </div>}
-      <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative ml-[20px]"}>
+      <div className={"flex-1 border-[2px] rounded-lg border-[#43ABFF] relative ml-[20px] overflow-hidden"}>
         <FlightAreaScene/>
         <div className={"absolute right-16 top-8"}>
           <DrawPanel/>

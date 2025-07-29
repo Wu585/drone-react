@@ -40,7 +40,7 @@ export const clarityList = [
   },
   {
     value: 2,
-    label: "标准"
+    label: "标清"
   },
   {
     value: 3,
@@ -143,7 +143,7 @@ export const useDeviceLive = (ele?: HTMLVideoElement | null, dockSn?: string, dr
         url: CURRENT_CONFIG.rtmpURL,
         url_type: 1,
         video_id: isDock ? dockVideoId : droneVideoId,
-        video_quality: 2,
+        video_quality: 3,
       });
       if (ele) {
         const url = res.data.data.url;

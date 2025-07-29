@@ -42,6 +42,8 @@ import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import {waylinePointConfig} from "@/lib/wayline.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useSetViewByWaylineData} from "@/hooks/drone/wayline/useSetViewByWaylineData.ts";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 
 const formSchema = z.object({
   name: z.string()
@@ -368,8 +370,7 @@ const TaskCreate = () => {
                   <FormItem className={"space-y-4"}>
                     <FormLabel>任务名称：</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={"请输入任务名称"}
-                             className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                      <CommonInput {...field} placeholder={"请输入任务名称"}/>
                     </FormControl>
                     <FormMessage/>
                   </FormItem>
@@ -569,8 +570,7 @@ const TaskCreate = () => {
                   <FormItem className={"space-y-4"}>
                     <FormLabel>当存储级别达到时启动任务（MB）:</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={""}
-                             className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                      <CommonInput {...field} placeholder={""}/>
                     </FormControl>
                     <FormMessage/>
                   </FormItem>
@@ -584,23 +584,20 @@ const TaskCreate = () => {
                   <FormItem className={"space-y-4"}>
                     <FormLabel>任务开始执行的电量（%）：</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={""}
-                             className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                      <CommonInput {...field} placeholder={""}/>
                     </FormControl>
                     <FormMessage/>
                   </FormItem>
                 )}
                 name={"min_battery_capacity"}
-              />
-              }
+              />}
               <FormField
                 control={form.control}
                 render={({field}) => (
                   <FormItem className={"space-y-4"}>
                     <FormLabel>RTH相对高度（m）：</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={""}
-                             className={"rounded-none h-[28px] bg-[#072E62]/[.7] border-[#43ABFF]"}/>
+                      <CommonInput {...field} placeholder={"请输入返航高度"}/>
                     </FormControl>
                     <FormMessage/>
                   </FormItem>
@@ -637,7 +634,7 @@ const TaskCreate = () => {
                 }}
               />
               <div className={"text-right"}>
-                <Button className={"bg-[#43ABFF] px-8 my-4"} type={"submit"}>创建</Button>
+                <CommonButton type={"submit"}>创建</CommonButton>
               </div>
             </div>
           </div>

@@ -1,13 +1,13 @@
 {
-  "event_id": "eventId9933",
+  "event_id": "eventIdxxx1",
   "event_state": 0,
   "device_name": "BM1684-180",
   "device_id": "2f1e469a-c0a0-4883-e11e-d60e5a16faa9",
-  "task_name": "测试",
+  "task_name": "建筑物楼顶违章搭建",
   "task_id": "3a5aaacf-56b3-4307-8d39-337bf476bc86",
-  "app_name": "高速抛洒物识别",
+  "app_name": "建筑物楼顶违章搭建",
   "app_id": "100001",
-  "src_name": "1581F8HGD25110010022",
+  "src_name": "1581F5BMD239S002ZGK5",
   "src_id": "camera01",
   "created": 1649317910,
   "details": [

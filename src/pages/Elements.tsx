@@ -341,7 +341,7 @@ const Elements = () => {
 
   // 构建树状结构
   const buildTree = (groups: Layer[]) => {
-    const topLevel = groups.filter(g => !g.parent_id);
+    const topLevel = groups;
     const getChildren = (parentId: string) => {
       return groups.filter(g => g.parent_id === parentId);
     };

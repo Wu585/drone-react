@@ -139,7 +139,7 @@ const CreateOrder = ({currentOrder, onSuccess, type = "create"}: Props) => {
         pic_list: currentOrder.pic_list_origin
       });
     }
-  }, [currentOrder?.pic_list_origin.join(","), form]);
+  }, [currentOrder?.pic_list_origin?.join(","), form]);
 
   useEffect(() => {
     const subscription = form.watch((value) => {

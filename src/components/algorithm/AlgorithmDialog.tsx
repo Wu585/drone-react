@@ -123,6 +123,7 @@ const AlgorithmDialog = ({open, onOpenChange, onSuccess, id}: Props) => {
         toast({
           description: "算法配置更新成功"
         });
+        await mutate();
         await onSuccess?.();
       } else {
         await post(`${ALGORITHM_CONFIG_API_PREFIX}`, values);

@@ -7,10 +7,11 @@ import {getAuthToken} from "@/lib/http.ts";
 import Uploady from "@rpldy/uploady";
 import {useState} from "react";
 
-const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
 const OPERATION_HTTP_PREFIX = "operation/api/v1";
 
 const Media = () => {
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+
   const departId = localStorage.getItem("departId");
   const [dirId, setDirId] = useState(0);
   const [isUploadOrder, setIsUploadOrder] = useState(false);

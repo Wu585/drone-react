@@ -5,6 +5,7 @@ import AlgorithmDialog from "@/components/algorithm/AlgorithmDialog.tsx";
 import {useState} from "react";
 import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
 import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import noDataPng from "@/assets/images/drone/no-data.png";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -75,7 +76,7 @@ const AlgorithmGrid = () => {
   };
 
   return (
-    <div className="relative ">
+    <div className="relative">
       <div className="flex justify-end mb-4">
         <CommonButton
           onClick={() => {
@@ -83,11 +84,15 @@ const AlgorithmGrid = () => {
             setConfigId(undefined);
           }}>添加</CommonButton>
       </div>
-      <div className={"grid grid-cols-6 gap-4 h-[calc(100vh-250px)] overflow-auto"}>
+      {algorithmConfigList?.records.length === 0 && <div className={"content-center flex-col space-y-4 h-[calc(100vh-250px)]"}>
+        <img src={noDataPng} alt=""/>
+        <span className={"text-[#bababa] pr-1.5 text-xs"}>暂无数据</span>
+      </div>}
+      <div className={"grid grid-cols-6 gap-4 w-full max-h-[calc(100vh-250px)] overflow-auto"}>
         <AlgorithmDialog open={open} onOpenChange={setOpen} onSuccess={onSuccess} id={configId}/>
         {algorithmConfigList?.records.map((record) => (
           <div
-            className={"bg-algorithm-panel bg-full-size flex flex-col justify-between items-center py-4 relative space-y-8 overflow-hidden"}
+            className={"bg-algorithm-panel bg-full-size flex flex-col justify-between items-center py-4 relative space-y-8 w-full"}
             key={record.id}>
             <div style={{
               background: `${warnLevelColorMap[record.warning_level]}`,
@@ -119,10 +124,8 @@ const AlgorithmGrid = () => {
           </div>
         ))}
       </div>
-
     </div>
   );
 };
 
 export default AlgorithmGrid;
-

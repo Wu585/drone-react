@@ -6,9 +6,9 @@ import {DEVICE_MODEL_KEY} from "@/types/device.ts";
 
 const MEDIA_API = "/media/api/v1";
 
-const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
-
 export const useDirectory = (onSuccess?: () => void) => {
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+
   const [name, setName] = useState("新建文件夹");
   const [updateName, setUpdateName] = useState("");
   const {toast} = useToast();

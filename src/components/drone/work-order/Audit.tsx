@@ -213,9 +213,15 @@ const Audit = ({currentOrder, onSuccess}: Props) => {
       }
     });
     const device = bindingDevices.list.find(item => item.device_sn === values.dock_sn);
+    console.log('device===');
+    console.log(device);
     const map: Record<string, any> = {
       "67-1": {
         payload_type: 53,
+        payload_position: 0
+      },
+      "91-1": {
+        payload_type: 81,
         payload_position: 0
       },
       "100-1": {

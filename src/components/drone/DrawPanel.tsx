@@ -114,7 +114,6 @@ const DrawPanel = () => {
     }
   };
 
-
   return (
     <div className={"text-black flex flex-col space-y-4"}>
       <DropdownMenu>
