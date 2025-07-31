@@ -1335,7 +1335,7 @@ const Cockpit = () => {
                 <div className={"flex flex-col col-span-3"}>
                   <span className={"text-[#D0D0D0]"}>电池电量</span>
                   <span
-                    className={"whitespace-nowrap"}>{capacity_percent ? capacity_percent + " %" : "--"}</span>
+                    className={"whitespace-nowrap"}>{capacity_percent && +capacity_percent <= 100 ? capacity_percent + " %" : "--"}</span>
                 </div>
               </div>
               <div className={"space-x-6 grid grid-cols-4 pl-12 items-center"}>

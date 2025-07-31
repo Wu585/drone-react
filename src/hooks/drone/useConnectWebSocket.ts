@@ -45,6 +45,12 @@ export const useInitialConnectWebSocket = () => {
         setHmsInfo(payload.data);
         break;
       }
+      case EBizCode.FlightAreasSyncProgress: {
+        console.log('payload.data===');
+        console.log(payload.data);
+        EventBus.emit("flightAreasSyncProgressWs", payload.data);
+        break;
+      }
       case EBizCode.FlightAreasUpdate: {
         EventBus.emit("flightAreasUpdateWs", payload.data);
         break;

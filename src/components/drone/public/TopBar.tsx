@@ -45,7 +45,7 @@ const TopBar = () => {
         <span className={"tracking-wider"}>{currentWorkSpace?.platform_name || "绣花针低空管控平台"}</span>
       </div>
       <div className={"flex space-x-4"}>
-        {weatherInfo && <div className="flex space-x-6 text-lg mr-2  border-2">
+        {weatherInfo && <div className="flex space-x-6 text-lg mr-2">
           {/*<div>奉贤区：</div>*/}
           <div className={"space-x-2 content-center"}>
             <img className={"h-6"} src={wenduPng} alt=""/>

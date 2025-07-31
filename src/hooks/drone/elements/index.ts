@@ -6,9 +6,10 @@ import {MapElementEnum} from "@/types/map.ts";
 import {useEffect} from "react";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import * as turf from "@turf/turf";
+import {useFlightAreas} from "@/hooks/drone";
+import {EFlightAreaType, EGeometryType} from "@/types/flight-area.ts";
 
 const PREFIX = "/map/api/v1";
-const workspace_id = localStorage.getItem(ELocalStorageKey.WorkspaceId);
 
 export interface Element {
   id: string;
@@ -148,6 +149,58 @@ export const generateLabelConfig = (text: string) => ({
   disableDepthTestDistance: Number.POSITIVE_INFINITY
 });
 
+export const useAllFlightAreas = () => {
+  const workspaceId: string = localStorage.getItem(ELocalStorageKey.WorkspaceId) || "";
+
+  const {data: flightAreas} = useFlightAreas(workspaceId);
+  useEffect(() => {
+    if (!flightAreas) return;
+    getCustomSource("flight-area")?.entities.removeAll();
+    const flightAreaSource = getCustomSource("flight-area");
+    if (!flightAreaSource) return;
+    flightAreas.forEach(area => {
+      const areaType = area.type;
+      const geometryType = area.content.geometry.type;
+      switch (geometryType) {
+        case EGeometryType.CIRCLE:
+          flightAreaSource.entities.add({
+            id: area.area_id,
+            position: Cesium.Cartesian3.fromDegrees(...area.content.geometry.coordinates),
+            ellipse: {
+              semiMinorAxis: area.content.geometry.radius,
+              semiMajorAxis: area.content.geometry.radius,
+              material: Cesium.Color.fromCssColorString(areaType === EFlightAreaType.DFENCE ? "#00FF00" : "#FF0000").withAlpha(0.5),
+              outline: true,
+              outlineColor: Cesium.Color.fromCssColorString(area.content.properties.color),
+              outlineWidth: 5,
+            },
+            label: generateLabelConfig(`${areaType === EFlightAreaType.DFENCE ? "作业区" : "限飞区"} ${area.name}\n半径：${area.content.geometry.radius}m\n面积：${(3.14 * area.content.geometry.radius! * area.content.geometry.radius!).toFixed(2)}㎡`)
+          });
+          break;
+        case EGeometryType.POLYGON: {
+          const coordinates = area.content.geometry.coordinates;
+          const feature = turf.points(coordinates[0]);
+          const center = turf.center(feature);
+          const polygon = turf.polygon([[...coordinates.flat(), coordinates.flat()[0]]]);
+          const polygonArea = turf.area(polygon);
+          flightAreaSource.entities.add({
+            id: area.area_id,
+            position: Cesium.Cartesian3.fromDegrees(...center.geometry.coordinates),
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(area.content.geometry.coordinates.flat(2)),
+              material: Cesium.Color.fromCssColorString(areaType === EFlightAreaType.DFENCE ? "#00FF00" : "#FF0000").withAlpha(0.5),
+              outline: true,
+              outlineColor: Cesium.Color.fromCssColorString(area.content.properties.color),
+            },
+            label: generateLabelConfig(`${areaType === EFlightAreaType.DFENCE ? "作业区" : "限飞区"}  ${area.name}\n面积：${polygonArea.toFixed(2)} ㎡`)
+          });
+          break;
+        }
+      }
+    });
+  }, [flightAreas]);
+};
+
 // 初始化所有显示的标签
 export const useAddAllElements = () => {
   const departId = localStorage.getItem("departId");
@@ -164,7 +217,7 @@ export const useAddAllElements = () => {
 
     groups.forEach(group => {
       group.elements.forEach(element => {
-        console.log('element');
+        console.log("element");
         console.log(element);
         if (!element.visual) return;
         const entity = elementsSource.entities.getById(element.id);

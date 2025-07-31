@@ -7,7 +7,7 @@ import {EDeviceTypeName, EModeCode, OnlineDevice} from "@/hooks/drone/device.ts"
 import {useToast} from "@/components/ui/use-toast.ts";
 import {OutOfControlAction, TaskStatus, TaskType} from "@/types/task.ts";
 import {WaylineType} from "@/types/wayline.ts";
-import {EFlightAreaType, FlightAreaContent} from "@/types/flight-area.ts";
+import {EFlightAreaType, FlightAreaContent, GetDeviceStatus} from "@/types/flight-area.ts";
 import {MediaFileType} from "@/hooks/drone/media";
 import useSWRImmutable from "swr/immutable";
 
@@ -192,6 +192,26 @@ export const useBindingDevice = (workspace_id: string, body: Pagination & {
   const url = `${HTTP_PREFIX}/devices/${workspace_id}/devices/bound`;
   const key = body ? [url, body] as const : null;
   return useSWR(key, async ([path, body]) => (await get<Resource<BindingDevice>>(path, body)).data.data);
+};
+
+interface DeviceStatus {
+  device_name: string;
+  device_sn: string;
+  flight_area_status: {
+    sync_code: number
+    sync_msg: string
+    sync_status: string
+  };
+  nickname: string;
+  online: boolean;
+}
+
+// 获取设备飞行区的状态
+export const useDeviceStatus = (workspace_id: string) => {
+  const {get} = useAjax();
+  const url = `${MAP_API_PREFIX}/workspaces/${workspace_id}/device-status`;
+  const key = workspace_id ? [url, workspace_id] as const : null;
+  return useSWR(key, async ([path]) => (await get<Resource<GetDeviceStatus[]>>(path)).data.data);
 };
 
 // 获取文件地址

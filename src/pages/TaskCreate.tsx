@@ -1,4 +1,4 @@
-import {Camera, CircleMinus, CirclePlus, Minus, Rocket, User, X} from "lucide-react";
+import {Camera, CircleMinus, CirclePlus, Drone, Minus, Package2, Rocket, User, X} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 import {Input} from "@/components/ui/input.tsx";
 import {useVisible} from "@/hooks/public/utils.ts";
@@ -337,9 +337,18 @@ const TaskCreate = () => {
              form.setValue("dock_sn", device.device_sn);
              setSelectedDevice(device);
            }}
-           className={"bg-panel-item bg-full-size text-[14px] p-4 cursor-pointer"}>
-        <div>{device.nickname}</div>
-        <div>{device.children?.nickname ?? "No Drone"}</div>
+           style={{
+             backgroundSize: "100% 100%"
+           }}
+           className={cn("bg-panel-item text-[14px] p-4 cursor-pointer space-y-1 mb-2", selectedDevice?.device_sn === device.device_sn && "bg-panel-item-active")}>
+        <div className={"flex items-center space-x-2"}>
+          <Package2 className={"text-white"} size={15}/>
+          <span>{device.nickname}</span>
+        </div>
+        <div className={"flex items-center space-x-2"}>
+          <Drone color={"white"} size={15}/>
+          <span>{device.children?.nickname ?? "无设备"}</span>
+        </div>
       </div>)}
   </>);
 

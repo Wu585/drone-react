@@ -511,7 +511,7 @@ const DronePanel = () => {
               <TooltipTrigger>
                 <div className={"flex items-center space-x-2"}>
                   <BatteryFull size={18}/>
-                  <span>{capacity_percent ? capacity_percent + "%" : "--"}</span>
+                  <span>{capacity_percent && +capacity_percent <= 100 ? capacity_percent + "%" : "--"}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
