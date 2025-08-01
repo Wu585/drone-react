@@ -22,7 +22,6 @@ import DistributeDialog from "@/components/drone/work-order/DistributeDialog.tsx
 import Feedback from "@/components/drone/work-order/Feedback.tsx";
 import Audit from "@/components/drone/work-order/Audit.tsx";
 import Complete from "@/components/drone/work-order/Complete.tsx";
-import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
 import {CommonTable, ReactTableInstance} from "@/components/drone/public/CommonTable.tsx";
 import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
@@ -357,6 +356,23 @@ const WorkOrderDataTable = () => {
     }
   };
 
+  const onBatchDeleteOrder = async () => {
+    const ids = selectedRows.map(row => row.id);
+    try {
+      await deleteClient(`${OPERATION_HTTP_PREFIX}/order/delete`, undefined, {ids});
+      toast({
+        description: "删除工单成功！"
+      });
+      await mutate();
+      tableRef.current?.resetRowSelection();
+    } catch (err) {
+      toast({
+        description: "删除工单失败！",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <Uploady
       destination={{
@@ -424,7 +440,13 @@ const WorkOrderDataTable = () => {
         <div className={"col-span-2 flex items-center text-right justify-end space-x-4"}>
           {selectedRows.length > 0 &&
             <CommonButton onClick={onLoadOrderToMap}>地图加载</CommonButton>}
-
+          {selectedRows.length > 0 &&
+            <CommonAlertDialog
+              description={"确认删除工单吗？"}
+              onConfirm={onBatchDeleteOrder}
+              title={"删除工单"}
+              trigger={<CommonButton>删除</CommonButton>}
+            />}
           <CommonDialog
             showCancel={false}
             contentClassName={"max-w-[1016px] py-0"}
