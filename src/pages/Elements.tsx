@@ -20,7 +20,7 @@ import {
   useElementsGroupActions
 } from "@/hooks/drone/elements";
 import {cn} from "@/lib/utils";
-import {useState} from "react";
+import {useMemo, useState} from "react";
 import {Label} from "@/components/ui/label.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {toast} from "@/components/ui/use-toast.ts";
@@ -218,7 +218,8 @@ const Elements = () => {
   const [editElement, setEditElement] = useState<ElementParam>();
   const [editParam, setEditParam] = useState<Element>();
 
-  const {data: groups, mutate} = useElementsGroup(departId ? +departId : undefined);
+  const {data: _groups, mutate} = useElementsGroup(departId ? +departId : undefined);
+  const groups = useMemo(() => _groups?.slice(1) || [], [_groups]);
   const {addGroup, updateGroup, deleteGroup} = useElementsGroupActions();
   const {deleteElement, updateElement, updateElementVisible} = useElementActions();
 

@@ -17,6 +17,7 @@ import {useAddWaylineEntityById} from "@/hooks/drone/useAddWaylineEntityById.ts"
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useSetViewToCurrentDepart} from "@/hooks/drone/depart/useAddDepartEntity.ts";
+import {useAddAllElements} from "@/hooks/drone/elements";
 
 const mapLayerList = [
   {
@@ -88,17 +89,21 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
 
     return () => {
       setViewerInitialized(false);
-      viewer.destroy();
+      // viewer.destroy();
     };
   }, []);
 
   useSetViewToCurrentDepart();
 
+  useEntityCustomSource("elements");
   useEntityCustomSource("dock");
   useEntityCustomSource("drone");
   useEntityCustomSource("drone-wayline");
   useEntityCustomSource("waylines-create");
   useEntityCustomSource("waylines-preview");
+  // 标注相关的集合
+
+  useAddAllElements();
 
   useEffect(() => {
     if (!viewer || !deviceTopo) return;

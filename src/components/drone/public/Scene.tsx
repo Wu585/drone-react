@@ -59,7 +59,7 @@ const Scene = () => {
     yx && (yx.show = false);
 
     return () => {
-      viewer.destroy();
+      // viewer.destroy();
     };
   }, []);
 

@@ -97,7 +97,7 @@ export const useAjax = () => {
     put: <T>(url: string, data?: Record<string, JSONValue> | string[], config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
       return client.put<T>(url, data, config).catch(onError);
     },
-    delete: <T>(url: string, query?: Record<string, string>, data?: Record<string, JSONValue> | string[], config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
+    delete: <T>(url: string, query?: Record<string, string>, data?: Record<string, JSONValue> | string[] | number[], config?: Omit<AxiosRequestConfig, "url" | "data" | "method">) => {
       return client.delete<T>(url, query, data, config).catch(onError);
     },
   };

@@ -2,10 +2,10 @@ import {Forward} from "lucide-react";
 import {useState} from "react";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
-import PermissionButton from "@/components/drone/public/PermissionButton.tsx";
 import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
 import {CommonSelect} from "@/components/drone/public/CommonSelect.tsx";
 import {useCurrentDepartList, useUserListByDepartId} from "@/hooks/drone";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
 
 interface Props {
   onOpen?: () => void;
@@ -52,12 +52,11 @@ const DistributeDialog = ({onOpen, currentWorkOrderId, onConfirm}: Props) => {
         onOpen?.();
       }}
       trigger={
-        <PermissionButton
-          className={"w-4 h-4 bg-transparent px-0"}
+        <IconButton
           permissionKey={"Collection_TicketAssign"}
         >
-          <Forward/>
-        </PermissionButton>
+          <Forward size={16}/>
+        </IconButton>
       }
       onConfirm={onDistribute}
     >

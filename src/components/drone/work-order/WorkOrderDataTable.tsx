@@ -10,7 +10,7 @@ import {
   WorkOrder
 } from "@/hooks/drone";
 import {ELocalStorageKey} from "@/types/enum.ts";
-import {Edit, Eye} from "lucide-react";
+import {Edit, Eye, Trash} from "lucide-react";
 import {getAuthToken, useAjax} from "@/lib/http.ts";
 import {defineStepper} from "@stepperize/react";
 import {Separator} from "@/components/ui/separator.tsx";
@@ -32,6 +32,8 @@ import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 import {CommonDateRange} from "@/components/drone/public/CommonDateRange.tsx";
 import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
 import CreateOrder0630 from "@/components/drone/work-order/CreateOrder0630.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import CommonAlertDialog from "@/components/drone/public/CommonAlertDialog.tsx";
 
 // 定义告警等级类型
 type WarnLevel = 1 | 2 | 3 | 4;
@@ -101,7 +103,7 @@ const WorkOrderDataTable = () => {
   const departId = localStorage.getItem("departId");
 
   const {data: currentUser} = useCurrentUser();
-  const {post} = useAjax();
+  const {post, delete: deleteClient} = useAjax();
   const {hasPermission} = usePermission();
   const isGly = hasPermission("Collection_TicketAssign");
 
@@ -110,6 +112,21 @@ const WorkOrderDataTable = () => {
   const [selectedRows, setSelectedRows] = useState<WorkOrder[]>([]);
 
   const tableRef = useRef<ReactTableInstance<WorkOrder>>(null);
+
+  const onDeleteWorkOrder = async (ids: number[]) => {
+    try {
+      await deleteClient(`${OPERATION_HTTP_PREFIX}/order/delete`, undefined, {ids});
+      toast({
+        description: "删除工单成功！"
+      });
+      await mutate();
+    } catch (err) {
+      toast({
+        description: "删除工单失败！",
+        variant: "destructive"
+      });
+    }
+  };
 
   const columns: ColumnDef<WorkOrder>[] = useMemo(() => {
     return [
@@ -191,9 +208,8 @@ const WorkOrderDataTable = () => {
         cell: ({row}) => {
           return (
             <span className={`flex items-center space-x-2`}>
-            {isGly && row.original.status === 0 && <PermissionButton
+            {isGly && row.original.status === 0 && <IconButton
               permissionKey={"Collection_TicketCreateEdit"}
-              className={"h-4 bg-transparent px-0"}
               onClick={() => {
                 // setDistributeOpen(true);
                 stepper.goTo(getStepByStatus(row.original.status));
@@ -202,18 +218,27 @@ const WorkOrderDataTable = () => {
                 setOrderType("edit");
               }}
             >
-              <Edit className={"w-4"}/>
-            </PermissionButton>}
+              <Edit size={16}/>
+            </IconButton>}
               {(isGly && row.original.status === 0) &&
                 <DistributeDialog onConfirm={mutate} currentWorkOrderId={row.original.id}/>}
-              <Eye className={"w-4"} onClick={() => {
+              <IconButton onClick={() => {
                 isGly ? setOrderHandleType("preview") : setOrderHandleType("handle");
                 setOrderType("preview");
                 setCurrentOrder(row.original);
                 stepper.goTo(getStepByStatus(row.original.status));
                 setOpen(true);
-              }}/>
-              {/*<Trash className={"w-4"}/>*/}
+              }}>
+                <Eye size={16}/>
+              </IconButton>
+              <CommonAlertDialog
+                title={"删除工单"}
+                trigger={<IconButton>
+                  <Trash size={16}/>
+                </IconButton>}
+                description={"确认删除工单吗？"}
+                onConfirm={() => onDeleteWorkOrder([row.original.id])}
+              />
           </span>
           );
         }
@@ -522,7 +547,7 @@ const WorkOrderDataTable = () => {
                         mutate();
                         mutateCurrentOrder();
                       }}
-                    /> ,
+                    />,
                   "4": () => <Complete currentOrder={currentOrderData}/>
                 })}
               </div>

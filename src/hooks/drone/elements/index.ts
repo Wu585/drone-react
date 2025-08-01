@@ -190,7 +190,8 @@ export const useAllFlightAreas = () => {
               hierarchy: Cesium.Cartesian3.fromDegreesArray(area.content.geometry.coordinates.flat(2)),
               material: Cesium.Color.fromCssColorString(areaType === EFlightAreaType.DFENCE ? "#00FF00" : "#FF0000").withAlpha(0.5),
               outline: true,
-              outlineColor: Cesium.Color.fromCssColorString(area.content.properties.color),
+              outlineColor: Cesium.Color.fromCssColorString(areaType === EFlightAreaType.DFENCE ? "#00FF00" : "#FF0000"),
+              outlineWidth: 2,
             },
             label: generateLabelConfig(`${areaType === EFlightAreaType.DFENCE ? "作业区" : "限飞区"}  ${area.name}\n面积：${polygonArea.toFixed(2)} ㎡`)
           });
@@ -208,17 +209,12 @@ export const useAddAllElements = () => {
 
   useEffect(() => {
     const elementsSource = getCustomSource("elements");
-    console.log("elementsSource==");
-    console.log(elementsSource);
     if (!groups || !elementsSource) return;
-    console.log("remove all===");
     // 清理现有实体
-    elementsSource.entities.removeAll();
+    elementsSource.entities?.removeAll();
 
-    groups.forEach(group => {
+    groups.slice(1).forEach(group => {
       group.elements.forEach(element => {
-        console.log("element");
-        console.log(element);
         if (!element.visual) return;
         const entity = elementsSource.entities.getById(element.id);
         if (!entity) {
@@ -325,6 +321,7 @@ export const useAddAllElements = () => {
                   material: Cesium.Color.fromCssColorString(element.resource.content.properties.color).withAlpha(0.5),
                   outline: true,
                   outlineColor: Cesium.Color.fromCssColorString(element.resource.content.properties.color),
+                  outlineWidth: 2,
                 },
                 label: generateLabelConfig(`${element.name}\n面积：${area.toFixed(2)} ㎡`)
               });
@@ -338,8 +335,10 @@ export const useAddAllElements = () => {
                   semiMinorAxis: element.resource.content.geometry.radius,
                   semiMajorAxis: element.resource.content.geometry.radius,
                   material: Cesium.Color.fromCssColorString(element.resource.content.properties.color).withAlpha(0.5),
+                  // height: 0,
                   outline: true,
                   outlineColor: Cesium.Color.fromCssColorString(element.resource.content.properties.color),
+                  // outlineWidth: 2.0, // 显式设置宽度（建议 2.0-5.0）
                 },
                 label: generateLabelConfig(`${element.name}\n半径：${element.resource.content.geometry.radius}m\n面积：${(3.14 * element.resource.content.geometry.radius! * element.resource.content.geometry.radius!).toFixed(2)}㎡`)
               });
@@ -353,7 +352,7 @@ export const useAddAllElements = () => {
     // 组件卸载时清理所有实体
     return () => {
       const source = getCustomSource("elements");
-      source?.entities.removeAll();
+      source?.entities?.removeAll();
     };
   }, [groups]);
 };
