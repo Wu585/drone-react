@@ -1,5 +1,14 @@
 import Keyboard from "@/components/drone/public/Keyboard.tsx";
-import {ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Drone, RedoDot} from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp, Cog,
+  Drone,
+  RedoDot,
+} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
 import {useFlightControl} from "@/hooks/drone/useFlightControl.ts";
 import {useMqtt} from "@/hooks/drone/use-mqtt.ts";
@@ -12,8 +21,19 @@ import {usePermission} from "@/hooks/drone";
 import {Button} from "@/components/ui/button.tsx";
 import titleIcon from "@/assets/images/drone/cockpit/title-icon.png";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
+import {CommonTooltip} from "@/components/drone/public/CommonTooltip.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
+import CustomPopover from "@/components/public/CustomPopover.tsx";
+import {Label} from "@/components/ui/label.tsx";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import {ELocalStorageKey} from "@/types/enum.ts";
+import {useAjax} from "@/lib/http.ts";
+
+const MNG_API_PREFIX = "/manage/api/v1";
 
 const CockpitFlyControl = ({sn}: { sn?: string }) => {
+  const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
+  const {put} = useAjax();
   const {
     isRemoteControl,
     exitFlightControl,
@@ -61,20 +81,58 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
   const {hasPermission} = usePermission();
   const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
 
+  const onSetCommander_flight_height = async () => {
+    await put(`${MNG_API_PREFIX}/devices/${workspaceId}/devices/${sn}/property`, {
+      commander_flight_height: 160
+    });
+  };
+
   return (
     <div className={""}>
       <div className={"flex justify-between pr-6 pt-2"}>
         <div className={"flex space-x-[16px] items-center whitespace-nowrap text-lg"}>
           <img src={titleIcon} alt="" className={"w-4"}/>
           <span>飞行控制</span>
+          <CommonTooltip
+            trigger={
+              <CustomPopover
+                align={"end"}
+                trigger={
+                  <IconButton>
+                    <Cog size={16}/>
+                  </IconButton>}
+                content={<div className={"space-y-2"}>
+                  <div className={"grid grid-cols-8 items-center"}>
+                    <Label className={"col-span-3"}>飞行作业高：</Label>
+                    <div className={"col-span-5 flex space-x-1"}>
+                      <CommonInput type={"number"}/>
+                      <span>m</span>
+                    </div>
+                  </div>
+                  <div className={"grid grid-cols-8 items-center"}>
+                    <Label className={"col-span-3"}>目标点高度：</Label>
+                    <div className={"col-span-5 flex space-x-1"}>
+                      <CommonInput type={"number"}/>
+                      <span>m</span>
+                    </div>
+                  </div>
+                  <Button onClick={onSetCommander_flight_height}>确认</Button>
+                </div>}
+              />}>
+            <span className={"text-base"}>飞行设置</span>
+          </CommonTooltip>
+
         </div>
-        {hasFlyControlPermission && <span
-          onClick={onClickFightControl}
-          className={cn("w-[32px] content-center border-[1px] border-[#43ABFF] cursor-pointer",
-            isRemoteControl ? "bg-[#43ABFF]" : "")}>
+        {hasFlyControlPermission && <CommonTooltip
+          trigger={<span
+            onClick={onClickFightControl}
+            className={cn("w-[32px] content-center border-[1px] border-[#43ABFF] cursor-pointer",
+              isRemoteControl ? "bg-[#43ABFF]" : "")}>
                         {/*<img src={remoteControlPng} className={"w-[24px]"} alt=""/>*/}
-          <Drone className={"w-[24px]"}/>
-        </span>}
+            <Drone className={"w-[24px]"}/>
+        </span>}>
+          <span className={"text-base"}>{isRemoteControl ? "退出飞行控制" : "进入飞行控制"}</span>
+        </CommonTooltip>}
       </div>
 
       <div className={"grid grid-cols-4 px-[12px] pt-[12px] gap-[32px]"}>

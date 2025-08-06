@@ -14,6 +14,8 @@ import {CameraMode} from "@/types/live-stream.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
 import {clarityList, videoTypeLabel} from "@/hooks/drone/useDeviceLive.ts";
+import {CommonTooltip} from "@/components/drone/public/CommonTooltip.tsx";
+import {IconButton} from "@/components/drone/public/IconButton.tsx";
 
 interface Props {
   onRefreshVideo: () => Promise<void>;
@@ -178,12 +180,38 @@ const PayloadControl: FC<Props> = ({
   return (
     <div style={{
       background: "linear-gradient( 270deg, rgba(76,175,255,0) 0%, rgba(36,144,232,0.29) 16%, rgba(58,186,255,0.45) 51%, rgba(40,141,222,0.37) 84%, rgba(67,171,255,0) 100%)"
-    }} className={"h-[30px] flex content-center space-x-4 z-50"}>
-      <RefreshCcw size={16} className={"cursor-pointer"} onClick={onRefreshVideo}/>
-      <Maximize2 size={16} className={"cursor-pointer"} onClick={toggleFullscreen}/>
+    }} className={"h-8 flex content-center space-x-4 z-50"}>
+      <CommonTooltip
+        trigger={<IconButton onClick={onRefreshVideo}>
+          <RefreshCcw size={16}/>
+        </IconButton>}
+        contentProps={{
+          side: "bottom"
+        }}>
+        <span className={"text-sm"}>刷新</span>
+      </CommonTooltip>
+
+      <CommonTooltip
+        trigger={<IconButton onClick={toggleFullscreen}>
+          <Maximize2 size={16}/>
+        </IconButton>}
+        contentProps={{
+          side: "bottom"
+        }}>
+        <span className={"text-sm"}>全屏</span>
+      </CommonTooltip>
+
       <DropdownMenu>
         <DropdownMenuTrigger>
-          <Settings size={16}/>
+          <CommonTooltip
+            trigger={<IconButton className={"h-8"}>
+              <Settings size={16}/>
+            </IconButton>}
+            contentProps={{
+              side: "bottom",
+            }}>
+            <span className={"text-sm"}>清晰度</span>
+          </CommonTooltip>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-16">
           <DropdownMenuLabel>清晰度</DropdownMenuLabel>
@@ -203,7 +231,15 @@ const PayloadControl: FC<Props> = ({
       </DropdownMenu>
       <DropdownMenu>
         <DropdownMenuTrigger>
-          <Aperture size={16}/>
+          <CommonTooltip
+            trigger={<IconButton className={"h-8"}>
+              <Aperture size={16}/>
+            </IconButton>}
+            contentProps={{
+              side: "bottom",
+            }}>
+            <span className={"text-sm"}>视角</span>
+          </CommonTooltip>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-16">
           <DropdownMenuLabel>视角</DropdownMenuLabel>
@@ -220,12 +256,47 @@ const PayloadControl: FC<Props> = ({
       <ArrowUpDown onClick={onCameraModeSwitch} size={16}/>
       <Camera onClick={onTakePhoto} size={16}/>
       <Video onClick={onRecording} size={16}/>*/}
-      <CloudFog className={"cursor-pointer"} size={16} onClick={getPayloadControl}/>
-      <Camera className={"cursor-pointer"} onClick={onTakePhoto} size={16}/>
-      <Video className={"cursor-pointer"} onClick={onRecording} size={16}/>
+      <CommonTooltip
+        trigger={<IconButton onClick={getPayloadControl}>
+          <CloudFog size={16} onClick={getPayloadControl}/>
+        </IconButton>}
+        contentProps={{
+          side: "bottom"
+        }}>
+        <span className={"text-sm"}>获取云台控制权</span>
+      </CommonTooltip>
+
+      <CommonTooltip
+        trigger={<IconButton onClick={onTakePhoto}>
+          <Camera onClick={onTakePhoto} size={16}/>
+        </IconButton>}
+        contentProps={{
+          side: "bottom"
+        }}>
+        <span className={"text-sm"}>拍照</span>
+      </CommonTooltip>
+
+      <CommonTooltip
+        trigger={<IconButton onClick={onRecording}>
+          <Video className={"cursor-pointer"} onClick={onRecording} size={16}/>
+        </IconButton>}
+        contentProps={{
+          side: "bottom"
+        }}>
+        <span className={"text-sm"}>录像</span>
+      </CommonTooltip>
+
       <DropdownMenu>
         <DropdownMenuTrigger>
-          <RotateCw className={"cursor-pointer"} size={16}/>
+          <CommonTooltip
+            trigger={<IconButton className={"h-8"}>
+              <RotateCw className={"cursor-pointer"} size={16}/>
+            </IconButton>}
+            contentProps={{
+              side: "bottom",
+            }}>
+            <span className={"text-sm"}>云台复位</span>
+          </CommonTooltip>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-16">
           {gimbalResetMode.map(item =>

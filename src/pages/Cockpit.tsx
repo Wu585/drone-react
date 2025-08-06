@@ -80,6 +80,7 @@ import dayjs from "dayjs";
 import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
 import {ColumnDef} from "@tanstack/react-table";
 import {formatTaskStatus} from "@/hooks/drone/task";
+import {CommonTooltip} from "@/components/drone/public/CommonTooltip.tsx";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -110,6 +111,14 @@ const Cockpit = () => {
   // const instanceId = searchParams.get("instance_id") || "";
   const [instanceId, setInstanceId] = useState("");
   const deviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
+
+  // 是否适宜飞行
+  const canFly = useMemo(() => {
+    if (!deviceInfo || !deviceInfo.dock || !deviceInfo.dock.basic_osd) {
+      return "--";
+    }
+    return deviceInfo.dock.basic_osd.wind_speed < 8 && deviceInfo.dock.basic_osd.rainfall < 1;
+  }, [deviceInfo]);
 
   const deviceStatus2 = useMemo(() => {
     if (!deviceInfo?.dock) return "离线";
@@ -1062,22 +1071,29 @@ const Cockpit = () => {
           </div>
           {/* 右边部分（靠右） */}
           <div className="absolute right-0 flex py-4 space-x-6 pr-4 text-lg">
-            <div className={"space-x-2 content-center"}>
+            <div className={canFly ? "text-[#40F2FF]" : "text-red-500"}>
+              {canFly ? "适宜飞行" : "不宜飞行"}：
+            </div>
+            <CommonTooltip trigger={<div className={"space-x-2 content-center"}>
               <img className={"h-6"} src={wenduPng} alt=""/>
-              <span>{deviceInfo.dock?.basic_osd?.environment_temperature}°C</span>
-            </div>
-            <div className={"space-x-2 content-center"}>
+              <span>{deviceInfo.dock?.basic_osd?.environment_temperature} °C</span>
+            </div>}>
+              <span className={"text-base"}>温度</span>
+            </CommonTooltip>
+
+            <CommonTooltip trigger={<div className={"space-x-2 content-center"}>
               <img className={"h-6"} src={fengliPng} alt=""/>
-              <span>{weatherInfo?.[0]?.realtime.wS}</span>
-            </div>
-            <div className={"space-x-2 content-center"}>
-              <img className={"h-6"} src={fengxiangPng} alt=""/>
-              <span>{weatherInfo?.[0]?.realtime.wD}</span>
-            </div>
-            <div className={"space-x-2 content-center"}>
+              <span>{deviceInfo.dock?.basic_osd?.wind_speed} m/s</span>
+            </div>}>
+              <span className={"text-base"}>风速</span>
+            </CommonTooltip>
+
+            <CommonTooltip trigger={<div className={"space-x-2 content-center"}>
               <img className={"h-6"} src={jiangyuPng} alt=""/>
               <span>{RainfallMap[deviceInfo.dock?.basic_osd?.rainfall]}</span>
-            </div>
+            </div>}>
+              <span className={"text-base"}>降雨</span>
+            </CommonTooltip>
           </div>
         </div>
         <div className={"pt-32 pl-10 z-40"}>
