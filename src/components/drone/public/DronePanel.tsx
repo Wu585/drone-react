@@ -652,7 +652,7 @@ const DronePanel = () => {
           </div>
         </div>
       </div>
-      <div className={"absolute left-full"}>
+      <div className={"absolute left-full z-50"}>
         {visible && <TakeOffFormPanel type={takeOffType} sn={osdVisible.gateway_sn || ""} droneSn={osdVisible.sn || ""}
                                       onClose={hide}/>}
         {debugPanelvisible && <DebugPanel sn={osdVisible.gateway_sn || ""} onClose={hideDebugPanel}/>}

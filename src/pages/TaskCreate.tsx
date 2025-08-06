@@ -1,6 +1,5 @@
 import {Camera, CircleMinus, CirclePlus, Drone, Minus, Package2, Rocket, User, X} from "lucide-react";
 import {useNavigate} from "react-router-dom";
-import {Input} from "@/components/ui/input.tsx";
 import {useVisible} from "@/hooks/public/utils.ts";
 import {cn} from "@/lib/utils.ts";
 import {useEffect, useState} from "react";

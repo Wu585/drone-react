@@ -138,7 +138,7 @@ export const initDeviceSetting = {
 
 export const initDeviceSettingFormModel = {
   nightLightsState: false, // 夜航灯开关
-  heightLimit: 20, // 限高设置
+  heightLimit: 120, // 限高设置
   distanceLimitStatus: { state: false, distanceLimit: 15 }, // 限远开关
   obstacleAvoidanceHorizon: false, // 飞行器避障-水平开关设置
   obstacleAvoidanceUpside: false, // 飞行器避障-上视开关设置
@@ -146,3 +146,10 @@ export const initDeviceSettingFormModel = {
 }
 
 export type DeviceSettingFormModel = typeof initDeviceSettingFormModel
+
+export interface PutDevicePropsBody {
+  night_lights_state?: NightLightsStateEnum;// 夜航灯开关
+  height_limit?: number;// 限高设置
+  distance_limit_status?: DistanceLimitStatus;// 限远开关
+  obstacle_avoidance?: ObstacleAvoidance;// 飞行器避障开关设置
+}
