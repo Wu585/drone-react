@@ -1339,7 +1339,7 @@ const Cockpit = () => {
               <div className={"absolute right-36 top-16 z-50 content-center space-x-4"}>
                 {renderMainViewActionGroup(mainView)}
               </div>
-              {droneCloudMode === VideoType.IR && <div className={"absolute left-[64px] top-1/2 z-50 -translate-y-1/2"}>
+              {deviceStatus !== EModeCodeMap[EModeCode.Disconnected] && droneCloudMode === VideoType.IR && <div className={"absolute left-[64px] top-1/2 z-50 -translate-y-1/2"}>
                 <CustomPopover
                   align={"start"}
                   trigger={
