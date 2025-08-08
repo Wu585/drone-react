@@ -40,7 +40,7 @@ const TopBar = () => {
   return (
     <div className={"h-[70px] bg-gradient-to-b from-[#1A3369]/[.82] to-[#305286] " +
       "flex justify-between items-center px-[30px] py-[18px] whitespace-nowrap"}>
-      <div className={"text-[24px] font-semibold content-center space-x-2"}>
+      <div className={"text-[24px] font-semibold content-center space-x-4"}>
         <img src={logo} alt=""/>
         <span className={"tracking-wider"}>{currentWorkSpace?.platform_name || "绣花针低空管控平台"}</span>
       </div>

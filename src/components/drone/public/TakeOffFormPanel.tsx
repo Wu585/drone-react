@@ -1,20 +1,15 @@
 import {z} from "zod";
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
 import {X} from "lucide-react";
-import {Input} from "@/components/ui/input.tsx";
-import {Button} from "@/components/ui/button.tsx";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {
-  CommanderFlightModeInCommandFlightOptions,
-  CommanderModeLostActionInCommandFlightOptions, ECommanderFlightMode,
+  ECommanderFlightMode,
   ECommanderModeLostAction,
   ERthMode,
   LostControlActionInCommandFLight,
-  LostControlActionInCommandFLightOptions, RthModeInCommandFlightOptions,
-  WaylineLostControlActionInCommandFlight, WaylineLostControlActionInCommandFlightOptions
+  WaylineLostControlActionInCommandFlight
 } from "@/types/drone.ts";
-import {Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {FC, useEffect} from "react";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useAjax} from "@/lib/http.ts";
@@ -22,7 +17,6 @@ import {pickPosition} from "@/components/toolbar/tools";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {clearPickPosition} from "@/components/toolbar/tools/pickPosition.ts";
-import dayjs from "dayjs";
 import {useNavigate} from "react-router-dom";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import startPng from "@/assets/images/start.png";

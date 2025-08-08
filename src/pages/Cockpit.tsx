@@ -20,17 +20,7 @@ import {cn} from "@/lib/utils.ts";
 import PayloadControl from "@/components/drone/PayloadControl.tsx";
 import compassPng from "@/assets/images/drone/cockpit/compass.png";
 import pointerPng from "@/assets/images/drone/cockpit/pointer.png";
-import {
-  ArrowRightLeft,
-  ChevronsUpDown,
-  ClipboardList,
-  Maximize2,
-  RefreshCcw,
-  Settings,
-  Triangle,
-  Undo2,
-  X
-} from "lucide-react";
+import {ArrowRightLeft, ChevronsUpDown, ClipboardList, Maximize2, RefreshCcw, Settings, Undo2, X} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,7 +32,7 @@ import {
 import {useFullscreen} from "@/hooks/useFullscreen";
 import {PayloadCommandsEnum} from "@/hooks/drone/usePayloadControl.ts";
 import {useRightClickPanel} from "@/components/drone/public/useRightClickPanel.tsx";
-import {useDeviceLive} from "@/hooks/drone/useDeviceLive.ts";
+import {useDeviceLive, VideoType} from "@/hooks/drone/useDeviceLive.ts";
 import CockpitScene from "@/components/drone/public/CockpitScene.tsx";
 import {
   AlgorithmConfig,
@@ -78,6 +68,8 @@ import {ColumnDef} from "@tanstack/react-table";
 import {formatTaskStatus} from "@/hooks/drone/task";
 import {CommonTooltip} from "@/components/drone/public/CommonTooltip.tsx";
 import {useImmer} from "use-immer";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import {HeatTypeChinese, useIrMode} from "@/hooks/drone/useIr.ts";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -306,16 +298,13 @@ const Cockpit = () => {
   });
 
   const onFlyTo = useCallback(async () => {
-    console.log('flyParams===');
-    console.log(flyParams);
     const targetHeight = +flyParams.target_height;
     // const commander_flight_height = localStorage.getItem(ELocalStorageKey.CommanderFlightHeight) ? +localStorage.getItem(ELocalStorageKey.CommanderFlightHeight)! : +flyParams.commander_flight_height;
     const commander_flight_height = +flyParams.commander_flight_height;
     const security_takeoff_height = localStorage.getItem(ELocalStorageKey.SecurityTakeoffHeight) ? +localStorage.getItem(ELocalStorageKey.SecurityTakeoffHeight)! : 120;
     const dockHeight = deviceInfo.dock?.basic_osd?.height;
     const flyingHeight = Math.max(commander_flight_height, security_takeoff_height) + dockHeight;
-    console.log("flyingHeight==");
-    console.log(flyingHeight);
+
     try {
       await post(`${DRC_API_PREFIX}/devices/${dockSn}/jobs/fly-to-point`, {
         max_speed: 14,
@@ -999,6 +988,8 @@ const Cockpit = () => {
     organs: departId ? [+departId] : undefined
   });
 
+  const {onChangeIrMode} = useIrMode(dockSn);
+
   return (
     <FitScreen mode={"full"}>
       <div
@@ -1061,7 +1052,6 @@ const Cockpit = () => {
                 columns={columns}
               />
             </CommonDialog>
-
           </div>
           {/* 中间部分（绝对居中） */}
           <div className={"py-4 text-xl font-bold text-[#63E5FF] z-50 absolute left-1/2 top-0 -translate-x-1/2"}>
@@ -1081,7 +1071,7 @@ const Cockpit = () => {
             <div className={canFly ? "text-[#40F2FF]" : "text-red-500"}>
               {canFly ? "适宜飞行" : "不宜飞行"}：
             </div>
-            <CommonTooltip trigger={<div className={"space-x-2 content-center"}>
+            <CommonTooltip trigger={<div className={"space-x-2 content-center w-24"}>
               <img className={"h-6"} src={wenduPng} alt=""/>
               <span>{deviceInfo.dock?.basic_osd?.environment_temperature} °C</span>
             </div>}>
@@ -1349,6 +1339,20 @@ const Cockpit = () => {
               <div className={"absolute right-36 top-16 z-50 content-center space-x-4"}>
                 {renderMainViewActionGroup(mainView)}
               </div>
+              {droneCloudMode === VideoType.IR && <div className={"absolute left-[64px] top-1/2 z-50 -translate-y-1/2"}>
+                <CustomPopover
+                  align={"start"}
+                  trigger={
+                    <CommonButton>红外</CommonButton>
+                  }
+                  content={
+                    <div className={"grid grid-cols-2 gap-2"}>
+                      {Object.entries(HeatTypeChinese).map(([mode, value]) =>
+                        <CommonButton key={mode} onClick={() => onChangeIrMode(+mode)}>{value}</CommonButton>)}
+                    </div>
+                  }
+                />
+              </div>}
             </div>
           </div>
           <div className={"row-span-3 grid grid-cols-5"}>

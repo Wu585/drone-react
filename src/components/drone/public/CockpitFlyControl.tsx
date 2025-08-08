@@ -115,15 +115,13 @@ const CockpitFlyControl = ({sn, flyParams, updateFlyParams}: Props) => {
     subscribeMqtt(`thing/product/${sn}/property/set_reply`, (message) => {
       const payloadStr = new TextDecoder("utf-8").decode(message?.payload);
       const payloadObj = JSON.parse(payloadStr);
-      if (payloadObj.data.commander_flight_height.result === 0) {
-        console.log("_flyParams===");
-        console.log(_flyParams);
+      if (payloadObj.data.commander_flight_height?.result === 0) {
         updateFlyParams?.(() => _flyParams);
         localStorage.setItem(ELocalStorageKey.CommanderFlightHeight, _flyParams.commander_flight_height.toString());
         toast({
           description: "设置飞行参数成功！"
         });
-      } else {
+      } else if (payloadObj.data.commander_flight_height && payloadObj.data.commander_flight_height?.result !== 0) {
         toast({
           description: "飞行参数设置失败！",
           variant: "destructive"
