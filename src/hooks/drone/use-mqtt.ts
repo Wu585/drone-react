@@ -11,7 +11,11 @@ export interface DeviceTopicInfo {
   subTopic: string;
 }
 
-type MessageMqtt = (topic: string, payload: Buffer, packet: IPublishPacket) => void | Promise<void>
+type MessageMqtt = ({topic, payload, packet}: {
+  topic: string,
+  payload: Buffer,
+  packet: IPublishPacket
+}) => void | Promise<void>
 
 export const useMqtt = (deviceTopicInfo: DeviceTopicInfo) => {
   const cacheSubscribeArr = useRef<{
@@ -36,6 +40,9 @@ export const useMqtt = (deviceTopicInfo: DeviceTopicInfo) => {
           break;
         case DRC_METHOD.DELAY_TIME_INFO_PUSH:
         case DRC_METHOD.HSI_INFO_PUSH:
+          console.log("payloadObj===");
+          console.log(payloadObj);
+          break;
         case DRC_METHOD.OSD_INFO_PUSH:
         case DRC_METHOD.DRONE_CONTROL:
         case DRC_METHOD.DRONE_EMERGENCY_STOP:

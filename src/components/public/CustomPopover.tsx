@@ -32,7 +32,7 @@ const CustomPopover: FC<CustomPopoverProps> = ({
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        "z-[100] bg-[#122B4D] bg-opacity-90 shadow-md shadow-[#031529]/72 rounded-[6px] border-none text-white",
+        "bg-[#122B4D] bg-opacity-90 shadow-md shadow-[#031529]/72 rounded-[6px] border-none text-white",
         contentClassName
       )}
     >

@@ -42,7 +42,7 @@ const CommonTooltip = forwardRef<HTMLButtonElement, CommonTooltipProps>(
           <TooltipContent
             {...contentProps}
             className={cn(
-              "z-50 overflow-hidden rounded-md border bg-[#1E3762] border-[#2D5FAC]/[.85] text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95",
+              "z-[100] overflow-hidden rounded-md border bg-[#1E3762] border-[#2D5FAC]/[.85] text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95",
               contentClassName
             )}
           >

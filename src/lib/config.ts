@@ -6,10 +6,11 @@ export const CURRENT_CONFIG = {
   appLicense: 'Please enter the app license.', // You need to go to the development website to apply.
 
   // http
-  baseURL: 'http://36.152.38.220:6789/', // This url must end with "/". Example: 'http://192.168.1.1:6789/'
+  // baseURL: 'http://36.152.38.220:6789/', // This url must end with "/". Example: 'http://192.168.1.1:6789/'
+  baseURL: import.meta.env.VITE_BASE_URL, // This url must end with "/". Example: 'http://192.168.1.1:6789/'
   // baseURL: '/cloudApi', // This url must end with "/". Example: 'http://192.168.1.1:6789/'
   // baseURL: 'http://10.248.227.230:6789/', // This url must end with "/". Example: 'http://192.168.1.1:6789/'
-  websocketURL: 'ws://36.152.38.220:6789/api/v1/ws', // Example: 'ws://192.168.1.1:6789/api/v1/ws'
+  websocketURL: import.meta.env.VITE_WS_BASE_URL, // Example: 'ws://192.168.1.1:6789/api/v1/ws'
   // websocketURL: '/cloudApi/api/v1/ws', // Example: 'ws://192.168.1.1:6789/api/v1/ws'
   // websocketURL: 'ws://10.248.227.230:6789/api/v1/ws', // Example: 'ws://192.168.1.1:6789/api/v1/ws'
 

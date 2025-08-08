@@ -53,17 +53,14 @@ import {
 } from "@/hooks/drone/algorithm";
 import JSWebrtc from "@/vendor/jswebrtc.min.js";
 import {useInitialConnectWebSocket} from "@/hooks/drone/useConnectWebSocket.ts";
-import {useWeatherInfo} from "@/hooks/flood-prevention/api.ts";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import wenduPng from "@/assets/images/drone/cockpit/wendu.png";
 import fengliPng from "@/assets/images/drone/cockpit/fengli.png";
-import fengxiangPng from "@/assets/images/drone/cockpit/fengxiang.png";
 import jiangyuPng from "@/assets/images/drone/cockpit/jiangyu.png";
 import compassAroundPng from "@/assets/images/drone/cockpit/bg-compass-around.png";
 import wurenjiPng from "@/assets/icons/wurenji.svg";
 import GaugeBar from "@/components/public/GaugeBar.tsx";
 import titleIcon from "@/assets/images/drone/cockpit/title-icon.png";
-import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group.tsx";
 import {WorkOrderCarousel} from "@/components/drone/WorkOrderCarousel.tsx";
 import {Switch} from "@/components/ui/switch.tsx";
@@ -73,7 +70,6 @@ import {TaskStatus, TaskType, TaskTypeMap} from "@/types/task.ts";
 import {getCustomSource} from "@/hooks/public/custom-source.ts";
 import startPng from "@/assets/images/start.png";
 import endPng from "@/assets/images/end.png";
-import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 import CommonDialog from "@/components/drone/public/CommonDialog.tsx";
 import {IconButton} from "@/components/drone/public/IconButton.tsx";
 import dayjs from "dayjs";
@@ -81,6 +77,7 @@ import {CommonTable} from "@/components/drone/public/CommonTable.tsx";
 import {ColumnDef} from "@tanstack/react-table";
 import {formatTaskStatus} from "@/hooks/drone/task";
 import {CommonTooltip} from "@/components/drone/public/CommonTooltip.tsx";
+import {useImmer} from "use-immer";
 
 // DRC 链路
 const DRC_API_PREFIX = "/control/api/v1";
@@ -303,11 +300,22 @@ const Cockpit = () => {
     }
   };
 
-  const onFlyTo = useCallback(async () => {
-    const targetHeight = +deviceInfo.device.height;
-    const commander_flight_height = localStorage.getItem(ELocalStorageKey.CommanderFlightHeight) ? +localStorage.getItem(ELocalStorageKey.CommanderFlightHeight)! : 120;
-    const dockHeight = deviceInfo.dock?.basic_osd?.height;
+  const [flyParams, updateFlyParams] = useImmer({
+    commander_flight_height: localStorage.getItem(ELocalStorageKey.CommanderFlightHeight) ? +localStorage.getItem(ELocalStorageKey.CommanderFlightHeight)! : "120",
+    target_height: "120"
+  });
 
+  const onFlyTo = useCallback(async () => {
+    console.log('flyParams===');
+    console.log(flyParams);
+    const targetHeight = +flyParams.target_height;
+    // const commander_flight_height = localStorage.getItem(ELocalStorageKey.CommanderFlightHeight) ? +localStorage.getItem(ELocalStorageKey.CommanderFlightHeight)! : +flyParams.commander_flight_height;
+    const commander_flight_height = +flyParams.commander_flight_height;
+    const security_takeoff_height = localStorage.getItem(ELocalStorageKey.SecurityTakeoffHeight) ? +localStorage.getItem(ELocalStorageKey.SecurityTakeoffHeight)! : 120;
+    const dockHeight = deviceInfo.dock?.basic_osd?.height;
+    const flyingHeight = Math.max(commander_flight_height, security_takeoff_height) + dockHeight;
+    console.log("flyingHeight==");
+    console.log(flyingHeight);
     try {
       await post(`${DRC_API_PREFIX}/devices/${dockSn}/jobs/fly-to-point`, {
         max_speed: 14,
@@ -341,13 +349,13 @@ const Cockpit = () => {
         polyline: {
           positions: Cesium.Cartesian3.fromDegreesArrayHeights([
             longitude, latitude, height,
-            longitude, latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
+            longitude, latitude, flyingHeight,
 
-            longitude, latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
-            contextMenu.longitude, contextMenu.latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
+            longitude, latitude, flyingHeight,
+            contextMenu.longitude, contextMenu.latitude, flyingHeight,
 
-            contextMenu.longitude, contextMenu.latitude, targetHeight > +dockHeight + commander_flight_height ? targetHeight : +dockHeight + commander_flight_height,
-            contextMenu.longitude, contextMenu.latitude, height,
+            contextMenu.longitude, contextMenu.latitude, flyingHeight,
+            contextMenu.longitude, contextMenu.latitude, targetHeight,
           ]),
           width: 3,  // 设置折线的宽度
           material: Cesium.Color.BLUE,  // 折线的颜色
@@ -355,7 +363,7 @@ const Cockpit = () => {
       });
 
       getCustomSource("drone-wayline")?.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(contextMenu.longitude, contextMenu.latitude, height),
+        position: Cesium.Cartesian3.fromDegrees(contextMenu.longitude, contextMenu.latitude, targetHeight),
         billboard: {
           image: endPng,
           width: 64,
@@ -368,7 +376,7 @@ const Cockpit = () => {
         variant: "destructive"
       });
     }
-  }, [deviceInfo.device?.longitude, deviceInfo.device?.latitude, deviceInfo.device?.height, deviceInfo.dock?.basic_osd?.height, dockSn, contextMenu]);
+  }, [deviceInfo.device?.longitude, deviceInfo.device?.latitude, deviceInfo.device?.height, deviceInfo.dock?.basic_osd?.height, dockSn, contextMenu, flyParams]);
 
   // 添加状态记录鼠标按下的位置和是否正在拖动
   const [isDragging, setIsDragging] = useState(false);
@@ -523,7 +531,6 @@ const Cockpit = () => {
     }
   }, [currentPlatform, instanceId]);
 
-  const {data: weatherInfo} = useWeatherInfo("101021000");
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const {data: currentJobList} = useWaylinJobs(workspaceId, {
     page: 1,
@@ -1569,7 +1576,7 @@ const Cockpit = () => {
               </div>
             </div>
           </div>
-          <CockpitFlyControl sn={dockSn}/>
+          <CockpitFlyControl sn={dockSn} flyParams={flyParams} updateFlyParams={updateFlyParams}/>
         </div>
       </div>
     </FitScreen>

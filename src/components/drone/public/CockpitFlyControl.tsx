@@ -9,7 +9,7 @@ import {
   Drone,
   RedoDot,
 } from "lucide-react";
-import {cn} from "@/lib/utils.ts";
+import {cn, uuidv4} from "@/lib/utils.ts";
 import {useFlightControl} from "@/hooks/drone/useFlightControl.ts";
 import {useMqtt} from "@/hooks/drone/use-mqtt.ts";
 import {useManualControl} from "@/hooks/drone/useManualControl.ts";
@@ -28,10 +28,29 @@ import {Label} from "@/components/ui/label.tsx";
 import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import {useAjax} from "@/lib/http.ts";
+import {useEffect} from "react";
+import {Updater, useImmer} from "use-immer";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
+import dayjs from "dayjs";
 
 const MNG_API_PREFIX = "/manage/api/v1";
 
-const CockpitFlyControl = ({sn}: { sn?: string }) => {
+interface Props {
+  sn?: string;
+  flyParams: {
+    commander_flight_height: string
+    target_height: string
+    rth_altitude: string
+    height_limit: string
+    distance_limit_status: {
+      state: boolean
+      distance_limit: string
+    }
+  };
+  updateFlyParams?: Updater<{ commander_flight_height: string; target_height: string; }>;
+}
+
+const CockpitFlyControl = ({sn, flyParams, updateFlyParams}: Props) => {
   const workspaceId = localStorage.getItem(ELocalStorageKey.WorkspaceId)!;
   const {put} = useAjax();
   const {
@@ -81,9 +100,60 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
   const {hasPermission} = usePermission();
   const hasFlyControlPermission = hasPermission("Collection_DeviceControlBasic");
 
+  const [_flyParams, _updateFlyParams] = useImmer({
+    commander_flight_height: localStorage.getItem(ELocalStorageKey.CommanderFlightHeight) ? +localStorage.getItem(ELocalStorageKey.CommanderFlightHeight)! : "120",
+    target_height: "120"
+  });
+
+  const {publishMqtt, subscribeMqtt} = useMqtt({
+    sn: "",
+    pubTopic: "",
+    subTopic: ""
+  });
+
+  useEffect(() => {
+    subscribeMqtt(`thing/product/${sn}/property/set_reply`, (message) => {
+      const payloadStr = new TextDecoder("utf-8").decode(message?.payload);
+      const payloadObj = JSON.parse(payloadStr);
+      if (payloadObj.data.commander_flight_height.result === 0) {
+        console.log("_flyParams===");
+        console.log(_flyParams);
+        updateFlyParams?.(() => _flyParams);
+        localStorage.setItem(ELocalStorageKey.CommanderFlightHeight, _flyParams.commander_flight_height.toString());
+        toast({
+          description: "设置飞行参数成功！"
+        });
+      } else {
+        toast({
+          description: "飞行参数设置失败！",
+          variant: "destructive"
+        });
+      }
+    });
+  }, [subscribeMqtt, sn, _flyParams, updateFlyParams]);
+
   const onSetCommander_flight_height = async () => {
-    await put(`${MNG_API_PREFIX}/devices/${workspaceId}/devices/${sn}/property`, {
-      commander_flight_height: 160
+    /*try {
+      await put(`${MNG_API_PREFIX}/devices/${workspaceId}/devices/${sn}/property`, {
+        commander_flight_height: parseFloat(flyParams.commander_flight_height)
+      });
+      toast({
+        description: "飞行参数设置成功！"
+      });
+    } catch (err) {
+      toast({
+        description: "飞行参数设置失败！",
+        variant: "destructive"
+      });
+    }
+    */
+    publishMqtt(`thing/product/${sn}/property/set`, {
+      "bid": uuidv4(),
+      "data": {
+        "commander_flight_height": +_flyParams.commander_flight_height
+      },
+      "tid": uuidv4(),
+      "timestamp": dayjs().valueOf()
     });
   };
 
@@ -105,18 +175,32 @@ const CockpitFlyControl = ({sn}: { sn?: string }) => {
                   <div className={"grid grid-cols-8 items-center"}>
                     <Label className={"col-span-3"}>飞行作业高：</Label>
                     <div className={"col-span-5 flex space-x-1"}>
-                      <CommonInput type={"number"}/>
+                      <CommonInput
+                        step="0.1"
+                        type={"number"}
+                        value={_flyParams?.commander_flight_height || ""}
+                        onChange={event => _updateFlyParams?.(draft => {
+                          draft.commander_flight_height = event.target.value;
+                        })}/>
                       <span>m</span>
                     </div>
                   </div>
                   <div className={"grid grid-cols-8 items-center"}>
                     <Label className={"col-span-3"}>目标点高度：</Label>
                     <div className={"col-span-5 flex space-x-1"}>
-                      <CommonInput type={"number"}/>
+                      <CommonInput
+                        type={"number"}
+                        step="0.1"
+                        value={_flyParams?.target_height || ""}
+                        onChange={event => _updateFlyParams?.(draft => {
+                          draft.target_height = event.target.value;
+                        })}/>
                       <span>m</span>
                     </div>
                   </div>
-                  <Button onClick={onSetCommander_flight_height}>确认</Button>
+                  <div className={"flex"}>
+                    <CommonButton className={"ml-auto"} onClick={onSetCommander_flight_height}>确认</CommonButton>
+                  </div>
                 </div>}
               />}>
             <span className={"text-base"}>飞行设置</span>

@@ -27,6 +27,8 @@ import {useNavigate} from "react-router-dom";
 import {ELocalStorageKey} from "@/types/enum.ts";
 import startPng from "@/assets/images/start.png";
 import endPng from "@/assets/images/end.png";
+import {CommonInput} from "@/components/drone/public/CommonInput.tsx";
+import {CommonButton} from "@/components/drone/public/CommonButton.tsx";
 
 export const formSchema = z.object({
   target_latitude: z.coerce.number({
@@ -133,17 +135,24 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
               height: 64,
             },
           });
+          // 飞行作业高
+          const commander_flight_height = +values.commander_flight_height;
+          // 安全起飞高
+          const security_takeoff_height = +values.security_takeoff_height;
+          // 飞行中的高度：安全起飞高和飞行作业高的最大值 + 机场海拔高度
+          // const flyingHeight = security_takeoff_height > commander_flight_height ? security_takeoff_height + dockHeight : commander_flight_height + dockHeight
+          const flyingHeight = Math.max(commander_flight_height, security_takeoff_height) + dockHeight;
           getCustomSource("drone-wayline")?.entities.add({
             polyline: {
               // positions: Cesium.Cartesian3.fromDegreesArrayHeights([longitude, latitude, realtimeDeviceInfo.device.height, values.target_longitude, values.target_latitude, realtimeDeviceInfo.device.height]),
               positions: Cesium.Cartesian3.fromDegreesArrayHeights([
                 longitude, latitude, dockHeight,
-                longitude, latitude, +dockHeight + 120,
+                longitude, latitude, flyingHeight,
 
-                longitude, latitude, +dockHeight + 120,
-                body.target_longitude, body.target_latitude, +dockHeight + 120,
+                longitude, latitude, flyingHeight,
+                body.target_longitude, body.target_latitude, flyingHeight,
 
-                body.target_longitude, body.target_latitude, +dockHeight + 120,
+                body.target_longitude, body.target_latitude, flyingHeight,
                 body.target_longitude, body.target_latitude, body.target_height,
               ]),
               width: 3,  // 设置折线的宽度
@@ -184,17 +193,20 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
       getCustomSource("drone-wayline")?.entities.removeAll();
       const longitude = realtimeDeviceInfo.device?.longitude;
       const latitude = realtimeDeviceInfo.device?.latitude;
+      const commander_flight_height = +values.commander_flight_height;
+      const security_takeoff_height = +values.security_takeoff_height;
+      const flyingHeight = Math.max(commander_flight_height, security_takeoff_height) + dockHeight;
       if (realtimeDeviceInfo.device && longitude && latitude) {
         getCustomSource("drone-wayline")?.entities.add({
           polyline: {
             positions: Cesium.Cartesian3.fromDegreesArrayHeights([
               longitude, latitude, realtimeDeviceInfo.device.height,
-              longitude, latitude, values.security_takeoff_height + dockHeight,
+              longitude, latitude, flyingHeight,
 
-              longitude, latitude, values.security_takeoff_height + dockHeight,
-              values.target_longitude, values.target_latitude, values.security_takeoff_height + dockHeight,
+              longitude, latitude, flyingHeight,
+              values.target_longitude, values.target_latitude, flyingHeight,
 
-              values.target_longitude, values.target_latitude, values.security_takeoff_height + dockHeight,
+              values.target_longitude, values.target_latitude, flyingHeight,
               values.target_longitude, values.target_latitude, values.target_height
             ]),
             width: 3,  // 设置折线的宽度
@@ -249,8 +261,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
                   <FormItem className={"grid grid-cols-6 px-4"}>
                     <FormLabel className={"col-span-3 flex items-center"}>目标经度</FormLabel>
                     <FormControl className={"col-span-3"}>
-                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}
-                             placeholder={"填入目标经度信息"}/>
+                      <CommonInput type={"number"} {...field} placeholder={"填入目标经度信息"}/>
                     </FormControl>
                   </FormItem>
                 )}
@@ -262,8 +273,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
                   <FormItem className={"grid grid-cols-6 px-4"}>
                     <FormLabel className={"col-span-3 flex items-center"}>目标纬度</FormLabel>
                     <FormControl className={"col-span-3"}>
-                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}
-                             placeholder={"填入目标纬度信息"}/>
+                      <CommonInput type={"number"}  {...field} placeholder={"填入目标纬度信息"}/>
                     </FormControl>
                   </FormItem>
                 )}
@@ -275,7 +285,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
                   <FormItem className={"grid grid-cols-6 px-4"}>
                     <FormLabel className={"col-span-3 flex items-center"}>目标高度</FormLabel>
                     <FormControl className={"col-span-3"}>
-                      <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
+                      <CommonInput type={"number"} {...field} placeholder={"填入目标高度信息"}/>
                     </FormControl>
                   </FormItem>
                 )}
@@ -288,7 +298,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
                     <FormItem className={"grid grid-cols-6 px-4"}>
                       <FormLabel className={"col-span-3 flex items-center"}>安全起飞高度</FormLabel>
                       <FormControl className={"col-span-3"}>
-                        <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
+                        <CommonInput type={"number"} {...field}/>
                       </FormControl>
                     </FormItem>
                   )}
@@ -300,7 +310,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
                     <FormItem className={"grid grid-cols-6 px-4"}>
                       <FormLabel className={"col-span-3 flex items-center"}>飞行作业高</FormLabel>
                       <FormControl className={"col-span-3"}>
-                        <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
+                        <CommonInput type={"number"} {...field} step={0.1}/>
                       </FormControl>
                     </FormItem>
                   )}
@@ -312,7 +322,7 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
                     <FormItem className={"grid grid-cols-6 px-4"}>
                       <FormLabel className={"col-span-3 flex items-center"}>返航高度</FormLabel>
                       <FormControl className={"col-span-3"}>
-                        <Input type={"number"} className={"bg-[#072E62]/[.7]"} {...field}/>
+                        <CommonInput type={"number"} {...field}/>
                       </FormControl>
                     </FormItem>
                   )}
@@ -437,9 +447,8 @@ const TakeOffFormPanel: FC<Props> = ({sn, onClose, type, droneSn}) => {
                 />*/}
               </>}
               <div className={"flex justify-between mt-2 pl-2 pr-4"}>
-                <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]"} type={"button"}
-                        onClick={onPickPosition}>坐标拾取</Button>
-                <Button className={"bg-[#43ABFF] hover:bg-[#43ABFF]"} type={"submit"}>立即执行</Button>
+                <CommonButton type={"button"} onClick={onPickPosition}>坐标拾取</CommonButton>
+                <CommonButton type={"submit"}>立即执行</CommonButton>
               </div>
             </div>
           </div>

@@ -1,5 +1,4 @@
 import {useCallback, useEffect, useRef} from "react";
-import {findMapLayer} from "@/lib/view.ts";
 import {useRealTimeDeviceInfo} from "@/hooks/drone/device.ts";
 import {useSceneStore} from "@/store/useSceneStore.ts";
 import {getCustomSource, useEntityCustomSource} from "@/hooks/public/custom-source.ts";
@@ -18,21 +17,7 @@ import {ELocalStorageKey} from "@/types/enum.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {useSetViewToCurrentDepart} from "@/hooks/drone/depart/useAddDepartEntity.ts";
 import {useAddAllElements} from "@/hooks/drone/elements";
-
-const mapLayerList = [
-  {
-    url: "http://36.139.117.52:8090/iserver/services/map-tianditu/rest/maps/Vector%20Base%20Map%20_%20Longitude%20and%20Latitude",
-    name: "矢量图"
-  },
-  {
-    url: "http://36.139.117.52:8090/iserver/services/map-tianditu/rest/maps/Image%20Base%20Map%20_%20Longitude%20and%20Latitude",
-    name: "影像"
-  },
-  {
-    url: "http://36.139.117.52:8090/iserver/services/map-tianditu/rest/maps/Vector%20Chinese%20Notes%20_%20Longitude%20and%20Latitude",
-    name: "中文注记"
-  },
-];
+import {useAddScene} from "@/hooks/drone/useAddScene.ts";
 
 interface Props {
   dockSn?: string;
@@ -42,13 +27,7 @@ interface Props {
 const TsaScene = ({dockSn, deviceSn}: Props) => {
   const deviceState = useSceneStore(state => state.deviceState);
   const viewerInitialized = useSceneStore(state => state.viewerInitialized);
-  const setViewerInitialized = useSceneStore(state => state.setViewerInitialized);
-  const addMapLayer = () => {
-    mapLayerList.forEach(item => {
-      const layer = new Cesium.SuperMapImageryProvider(item);
-      viewer.imageryLayers.addImageryProvider(layer);
-    });
-  };
+  // const setViewerInitialized = useSceneStore(state => state.setViewerInitialized);
   // useInitialConnectWebSocket();
   useConnectMqtt();
   const realTimeDeviceInfo = useRealTimeDeviceInfo(dockSn, deviceSn);
@@ -56,42 +35,7 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
   const {data: deviceTopo} = useDeviceTopo();
 
   // const [viewerInitialized, setViewerInitialized] = useState(false);
-
-  useEffect(() => {
-    window.viewer = new Cesium.Viewer("cesiumContainer", {
-      shadows: true,
-      infoBox: false,
-      navigation: true, //指南针
-      selectionIndicator: false, //绿色选择框
-      requestRenderMode: false
-    });
-
-    const {scene} = viewer;
-
-    scene.postProcessStages.fxaa.enabled = false;
-    // viewer._cesiumWidget._creditContainer.style.display = "none";
-    scene.globe.depthTestAgainstTerrain = false; // 图标不埋地下
-
-    scene.shadowMap.darkness = 0.3; //设置第二重烘焙纹理的效果（明暗程度）
-
-    scene.debugShowFramesPerSecond = false;
-    scene.hdrEnabled = false;
-    scene.sun.show = true;
-
-    addMapLayer();
-    // const nameMap = findMapLayer("中文注记");
-    // viewer.scene.layers.raiseToTop(nameMap);
-    // resetView();
-
-    const yx = findMapLayer("影像");
-    yx && (yx.show = false);
-    setViewerInitialized(true);
-
-    return () => {
-      setViewerInitialized(false);
-      // viewer.destroy();
-    };
-  }, []);
+  useAddScene();
 
   useSetViewToCurrentDepart();
 
@@ -233,12 +177,6 @@ const TsaScene = ({dockSn, deviceSn}: Props) => {
   }
 
   useAddWaylineEntityById(currentJobList?.list?.[0]?.file_id, viewerInitialized, dockSn, deviceSn);
-
-  useEffect(() => {
-    return () => {
-      setViewerInitialized(false);
-    };
-  }, [setViewerInitialized]);
 
   return (
     <div id="cesiumContainer" className={"h-full relative"}>

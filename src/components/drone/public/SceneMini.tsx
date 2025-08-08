@@ -1,8 +1,5 @@
 import {useEffect, useMemo, useState} from "react";
 import {findMapLayer} from "@/lib/view.ts";
-import {Slider} from "@/components/ui/slider.tsx";
-import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group.tsx";
-import {Bold, Italic, Underline} from "lucide-react";
 
 const mapLayerList = [
   {
